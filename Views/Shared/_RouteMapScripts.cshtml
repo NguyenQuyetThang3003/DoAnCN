@@ -1,0 +1,73 @@
+@* Views/Shared/_RouteMapScripts.cshtml *@
+<script>
+    /**
+     * Vẽ tuyến đường trên Google Maps.
+     * elementId: id của <div> chứa map
+     * routePoints: mảng [{ address: "..." }, ...] theo thứ tự muốn đi
+     */
+    function drawRouteOnMap(elementId, routePoints) {
+        if (!routePoints || routePoints.length === 0) return;
+
+        const mapElement = document.getElementById(elementId);
+        if (!mapElement) {
+            console.error("Không tìm thấy element map: " + elementId);
+            return;
+        }
+
+        const map = new google.maps.Map(mapElement, {
+            zoom: 12,
+            center: { lat: 10.762622, lng: 106.660172 } // Tạm dùng HCM, không ảnh hưởng nhiều
+        });
+
+        // Nếu chỉ có 1 điểm: geocode & gắn marker
+        if (routePoints.length === 1) {
+            const geocoder = new google.maps.Geocoder();
+            geocoder.geocode({ address: routePoints[0].address }, (results, status) => {
+                if (status === "OK" && results[0]) {
+                    map.setCenter(results[0].geometry.location);
+                    new google.maps.Marker({
+                        map: map,
+                        position: results[0].geometry.location
+                    });
+                } else {
+                    console.error("Geocode failed: " + status);
+                }
+            });
+            return;
+        }
+
+        const directionsService = new google.maps.DirectionsService();
+        const directionsRenderer = new google.maps.DirectionsRenderer({
+            map: map
+        });
+
+        // origin = điểm đầu, destination = điểm cuối, giữa là waypoints
+        const origin = routePoints[0].address;
+        const destination = routePoints[routePoints.length - 1].address;
+
+        const waypoints = routePoints
+            .slice(1, routePoints.length - 1)
+            .map(p => ({ location: p.address, stopover: true }));
+
+        directionsService.route(
+            {
+                origin: origin,
+                destination: destination,
+                waypoints: waypoints,
+                travelMode: google.maps.TravelMode.DRIVING,
+                // GIỮ THỨ TỰ GỢI Ý TỪ SERVER
+                optimizeWaypoints: false
+            },
+            (response, status) => {
+                if (status === "OK") {
+                    directionsRenderer.setDirections(response);
+                } else {
+                    console.error("Directions request failed: " + status);
+                    mapElement.innerHTML =
+                        "<div class='alert alert-warning m-0'>Không vẽ được tuyến: "
+                        + status + "</div>";
+                }
+            }
+        );
+    }
+</script>

@@ -1,0 +1,15 @@
+@{
+    ViewData["Title"] = "Access Denied";
+}
+
+<div class="container text-center mt-5">
+    <h1 class="text-danger display-5">🚫 Truy cập bị từ chối</h1>
+    <p class="lead mt-3">Bạn không có quyền truy cập vào trang này.</p>
+
+    @if (ViewBag.ReturnUrl != null)
+    {
+        <p class="text-muted">Yêu cầu trước đó: @ViewBag.ReturnUrl</p>
+    }
+
+    <a class="btn btn-primary mt-3" href="/">Về trang chủ</a>
+</div>

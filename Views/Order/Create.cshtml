@@ -1,0 +1,803 @@
+@model WedNightFury.Models.Order
+@{
+    ViewData["Title"] = "Tạo đơn hàng - NightFury Express";
+    var hubs = ViewBag.Hubs as IEnumerable<dynamic> ?? new List<dynamic>();
+}
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+<div class="container py-5">
+    <h2 class="text-center text-danger fw-bold mb-4">
+        <i class="bi bi-truck"></i> TẠO ĐƠN HÀNG NIGHTFURY
+    </h2>
+
+    @using (Html.BeginForm("Create", "Order", FormMethod.Post, new { id = "orderForm" }))
+    {
+        @Html.AntiForgeryToken()
+
+        <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+        <!-- 1. NGƯỜI GỬI -->
+        <div class="card p-3 mb-4">
+            <h5>1. NGƯỜI GỬI</h5>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Tên người gửi</label>
+                    <input asp-for="SenderName" class="form-control" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Số điện thoại</label>
+                    <input asp-for="SenderPhone" class="form-control" />
+                </div>
+                <div class="col-md-12">
+                    <label class="form-label">Địa chỉ gửi</label>
+                    <input asp-for="SenderAddress" class="form-control" />
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. NGƯỜI NHẬN -->
+        <div class="card p-3 mb-4">
+            <h5>2. NGƯỜI NHẬN</h5>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Tên người nhận</label>
+                    <input asp-for="ReceiverName" class="form-control" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">SĐT người nhận</label>
+                    <input asp-for="ReceiverPhone" class="form-control" />
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Tỉnh/Thành phố</label>
+                    <select id="province" name="ProvinceId" class="form-select"></select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Quận/Huyện</label>
+                    <select id="district" name="DistrictId" class="form-select"></select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Phường/Xã</label>
+                    <select id="ward" name="WardId" class="form-select"></select>
+                </div>
+
+                <div class="col-md-12" id="detailWrap">
+                    <label class="form-label">Địa chỉ chi tiết (không bắt buộc nếu đã chọn bản đồ)</label>
+                    <input asp-for="ReceiverAddress" id="DetailAddress" class="form-control" autocomplete="off" />
+                    <small class="text-muted">
+                        Nếu không dùng map: nhập <b>số nhà + tên đường</b> hoặc <b>tên tòa nhà</b>.
+                        (VD: <i>161 Xa lộ Hà Nội, Vincom Mega Mall Thảo Điền</i>)
+                    </small>
+
+                    <div class="text-danger mt-2 d-none" id="addrErr">
+                        Địa chỉ đang quá mơ hồ. Hãy thêm số nhà / tên đường / tên tòa nhà để lấy tọa độ chính xác.
+                    </div>
+                </div>
+
+                <div class="text-danger mt-2 d-none" id="coordErr">
+                    Chưa có tọa độ (Lat/Lng). Hãy bấm <b>Tìm tọa độ</b> hoặc <b>click chọn vị trí trên bản đồ</b>.
+                </div>
+
+                <div class="col-md-12 mt-2">
+                    <div class="d-flex flex-wrap gap-2 align-items-end">
+                        <div style="flex: 1; min-width: 260px;">
+                            <label class="form-label mb-1">Tìm tọa độ theo địa chỉ (tuỳ chọn)</label>
+                            <input id="GeoQuery" class="form-control"
+                                   placeholder="VD: Vincom Mega Mall Thảo Điền, 161 Võ Nguyên Giáp"
+                                   autocomplete="off" />
+                            <small class="text-muted">Bạn có thể bỏ qua và click map trực tiếp.</small>
+                        </div>
+                        <div>
+                            <button type="button" class="btn btn-outline-primary" id="btnGeocode">
+                                <i class="bi bi-search"></i> Tìm tọa độ
+                            </button>
+                        </div>
+                        <div>
+                            <button type="button" class="btn btn-outline-secondary" id="btnUseDetail">
+                                <i class="bi bi-arrow-repeat"></i> Dùng “địa chỉ chi tiết”
+                            </button>
+                        </div>
+                        <div class="ms-auto">
+                            <span class="badge text-bg-light border" id="coordBadge">Lat/Lng: (chưa chọn)</span>
+                        </div>
+                    </div>
+
+                    <div class="mt-2 d-none" id="geoResultsWrap">
+                        <label class="form-label mb-1">Kết quả tìm thấy (chọn 1)</label>
+                        <div class="list-group" id="geoResults"></div>
+                    </div>
+
+                    <div class="mt-3" style="height: 320px; border-radius: 12px; overflow: hidden; border: 1px solid #e5e5e5;">
+                        <div id="map" style="height: 100%; width: 100%;"></div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <small class="text-muted">
+                            Tip: <b>Click bản đồ</b> để lấy Lat/Lng chuẩn. Có Lat/Lng thì không cần địa chỉ chi tiết.
+                        </small>
+                        <button type="button" class="btn btn-sm btn-outline-danger d-none" id="btnClearPin">
+                            <i class="bi bi-x-circle"></i> Xoá vị trí đã chọn
+                        </button>
+                    </div>
+                </div>
+
+                <input type="hidden" name="Lat" id="Lat"
+                       value="@(Model.Lat?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")" />
+                <input type="hidden" name="Lng" id="Lng"
+                       value="@(Model.Lng?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")" />
+            </div>
+        </div>
+
+        <!-- 3. THÔNG TIN HÀNG HÓA -->
+        <div class="card p-3 mb-4">
+            <h5>3. THÔNG TIN HÀNG HÓA</h5>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Tên hàng</label>
+                    <input asp-for="ProductName" class="form-control" />
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Loại hàng</label>
+                    <select name="GoodsType" class="form-select">
+                        <option value="">-- Chọn loại hàng --</option>
+                        <option value="document">Tài liệu / Hồ sơ</option>
+                        <option value="normal">Hàng thông thường</option>
+                        <option value="fragile">Hàng dễ vỡ</option>
+                        <option value="electronic">Điện tử / Giá trị cao</option>
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Khối lượng (kg)</label>
+                    <input asp-for="Weight" id="Weight" type="number" step="0.1" min="0"
+                           class="form-control" oninput="calculateShipping()" />
+                    <small class="text-muted">Ví dụ: 1.5 kg</small>
+                </div>
+
+                <div class="col-md-4 mt-3">
+                    <label class="form-label">Giá trị hàng (VNĐ)</label>
+                    <input id="Value" name="ValueText" class="form-control"
+                           oninput="formatCurrency(this);
+                                    document.getElementById('ValueHidden').value=this.value.replace(/\\D/g,'');" />
+                    <small class="text-muted">Nếu không COD thì để trống hoặc 0.</small>
+                </div>
+
+                <div class="col-md-8 mt-3">
+                    <label class="form-label">Ghi chú</label>
+                    <textarea asp-for="Note" class="form-control"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. CẤU HÌNH GIAO HÀNG -->
+        <div class="card p-3 mb-4">
+            <h5>4. CẤU HÌNH GIAO HÀNG</h5>
+
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Khu vực giao nhận</label>
+                    <div class="btn-group d-flex" role="group">
+                        <input type="radio" name="AreaType" id="area-inner" value="inner"
+                               class="btn-check" checked onchange="calculateShipping()" />
+                        <label class="btn btn-outline-secondary w-50" for="area-inner">Nội thành</label>
+
+                        <input type="radio" name="AreaType" id="area-outer" value="outer"
+                               class="btn-check" onchange="calculateShipping()" />
+                        <label class="btn btn-outline-secondary w-50" for="area-outer">Ngoại thành</label>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Phương thức gửi hàng</label>
+                    <div class="btn-group d-flex" role="group">
+                        <input type="radio" name="PickupMethod" id="pickup-staff" value="pickup"
+                               class="btn-check" checked onchange="calculateShipping(); onPickupMethodChanged();" />
+                        <label class="btn btn-outline-primary w-50" for="pickup-staff">Nhân viên đến lấy</label>
+
+                        <input type="radio" name="PickupMethod" id="pickup-hub" value="dropoff_hub"
+                               class="btn-check" onchange="calculateShipping(); onPickupMethodChanged();" />
+                        <label class="btn btn-outline-primary w-50" for="pickup-hub">Tự đem đến hub</label>
+                    </div>
+                </div>
+
+                <div class="col-md-4 d-none" id="hub-wrapper">
+                    <label class="form-label">Chọn Hub (bắt buộc khi tự đem đến)</label>
+                    <select class="form-select" id="HubId" name="HubId">
+                        <option value="">-- Chọn hub --</option>
+                        @foreach (var h in hubs)
+                        {
+                            <option value="@h.Id">@h.Name</option>
+                        }
+                    </select>
+                    <small class="text-muted">Chỉ cần chọn khi bạn “Tự đem đến hub”.</small>
+                </div>
+
+                <div class="col-md-6 mt-3">
+                    <label class="form-label">Mức dịch vụ</label>
+                    <div class="btn-group d-flex" role="group">
+                        <input type="radio" name="ServiceLevel" id="sv-standard" value="standard"
+                               class="btn-check" checked onchange="calculateShipping()" />
+                        <label class="btn btn-outline-success w-100" for="sv-standard">Tiêu chuẩn</label>
+
+                        <input type="radio" name="ServiceLevel" id="sv-fast" value="fast"
+                               class="btn-check" onchange="calculateShipping()" />
+                        <label class="btn btn-outline-success w-100" for="sv-fast">Nhanh</label>
+
+                        <input type="radio" name="ServiceLevel" id="sv-express" value="express"
+                               class="btn-check" onchange="calculateShipping()" />
+                        <label class="btn btn-outline-success w-100" for="sv-express">Hỏa tốc</label>
+                    </div>
+                </div>
+
+                <div class="col-md-3 mt-3">
+                    <label class="form-label">Phí vận chuyển dự kiến</label>
+                    <input id="shipping-fee" class="form-control fw-bold text-danger" disabled />
+                </div>
+
+                <div class="col-md-3 mt-3">
+                    <label class="form-label">COD (tiền thu hộ)</label>
+                    <input id="codInput" type="text" class="form-control"
+                           oninput="formatCurrency(this);
+                                    document.getElementById('CodHidden').value=this.value.replace(/\\D/g,'');
+                                    updateSenderSummary();" />
+                    <div class="form-check mt-2">
+                        <input id="codByValue" class="form-check-input" type="checkbox" onclick="useOrderValue()">
+                        <label class="form-check-label">Thu bằng giá trị hàng</label>
+                    </div>
+                </div>
+
+                <div class="col-md-3 mt-3">
+                    <label class="form-label">Ai trả phí vận chuyển?</label>
+
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="ShipPayer"
+                               id="payer-sender" value="sender"
+                               onchange="onShipPayerChanged(); syncSenderPayMethod(); updateSenderSummary();">
+                        <label class="form-check-label" for="payer-sender">Người gửi</label>
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="ShipPayer"
+                               id="payer-receiver" value="receiver" checked
+                               onchange="onShipPayerChanged(); syncSenderPayMethod(); updateSenderSummary();">
+                        <label class="form-check-label" for="payer-receiver">Người nhận</label>
+                    </div>
+
+                    <small class="text-muted">Mặc định: người nhận trả ship.</small>
+
+                    <div class="mt-3 d-none" id="sender-paymethod-wrap">
+                        <label class="form-label mb-1">Hình thức thanh toán (người gửi)</label>
+
+                        <!-- UI radio: không gửi lên server trực tiếp -->
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="SenderPayMethodUi"
+                                   id="pay-cash" value="cash" checked onchange="syncSenderPayMethod();">
+                            <label class="form-check-label" for="pay-cash">Tiền mặt</label>
+                        </div>
+
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="SenderPayMethodUi"
+                                   id="pay-momo" value="momo" onchange="syncSenderPayMethod();">
+                            <label class="form-check-label" for="pay-momo">MoMo</label>
+                        </div>
+
+                        <small class="text-muted">Chỉ hiện khi người gửi trả phí ship.</small>
+                    </div>
+                </div>
+
+                <div class="col-md-3 mt-3">
+                    <label class="form-label">Phí ship người gửi chịu</label>
+                    <input id="sender-ship-fee" class="form-control fw-bold" disabled />
+                </div>
+
+                <div class="col-md-3 mt-3">
+                    <label class="form-label">Tổng tiền shop dự kiến nhận được</label>
+                    <input id="sender-net" class="form-control fw-bold" disabled />
+                </div>
+            </div>
+        </div>
+
+        <!-- Hidden dữ liệu submit -->
+        <input type="hidden" id="ShipFeeHidden" name="ShipFee" />
+        <input type="hidden" id="CodHidden" name="CodAmount" />
+        <input type="hidden" id="ValueHidden" name="Value" />
+
+        <input type="hidden" id="ProvinceHidden" name="Province" />
+        <input type="hidden" id="DistrictHidden" name="District" />
+        <input type="hidden" id="WardHidden" name="Ward" />
+
+        <!-- ✅ QUAN TRỌNG: Controller đọc Request.Form["SenderPayMethod"] -->
+        <input type="hidden" id="SenderPayMethod" name="SenderPayMethod" value="" />
+
+        <div class="text-center">
+            <button type="submit" class="btn btn-danger btn-lg px-5">GỬI NGAY</button>
+        </div>
+    }
+</div>
+
+<script>
+    function formatCurrency(input) {
+        let value = (input.value || "").replace(/\D/g, "");
+        input.value = value ? new Intl.NumberFormat("vi-VN").format(value) : "";
+    }
+
+    function useOrderValue() {
+        let v = (document.getElementById("Value").value || "").replace(/\D/g, "");
+        document.getElementById("codInput").value = v ? new Intl.NumberFormat("vi-VN").format(v) : "";
+        document.getElementById("CodHidden").value = v;
+        updateSenderSummary();
+    }
+
+    function onPickupMethodChanged() {
+        const method = document.querySelector('input[name="PickupMethod"]:checked')?.value || "pickup";
+        const hubWrap = document.getElementById("hub-wrapper");
+        const hubSel = document.getElementById("HubId");
+        if (!hubWrap || !hubSel) return;
+
+        if (method === "dropoff_hub") {
+            hubWrap.classList.remove("d-none");
+            hubSel.setAttribute("required", "required");
+        } else {
+            hubWrap.classList.add("d-none");
+            hubSel.removeAttribute("required");
+            hubSel.value = "";
+        }
+    }
+
+    function onShipPayerChanged() {
+        const payer = document.querySelector('input[name="ShipPayer"]:checked')?.value || "receiver";
+        const wrap = document.getElementById("sender-paymethod-wrap");
+        if (!wrap) return;
+
+        if (payer === "sender") wrap.classList.remove("d-none");
+        else wrap.classList.add("d-none");
+    }
+
+    // ✅ sync UI -> hidden SenderPayMethod (controller dùng)
+    function syncSenderPayMethod() {
+        const payer = document.querySelector('input[name="ShipPayer"]:checked')?.value || "receiver";
+        const hidden = document.getElementById("SenderPayMethod");
+        if (!hidden) return;
+
+        if (payer !== "sender") {
+            hidden.value = ""; // người nhận trả => không dùng
+            return;
+        }
+
+        const method = document.querySelector('input[name="SenderPayMethodUi"]:checked')?.value || "cash";
+        hidden.value = method; // cash | momo
+    }
+
+    const provinceEl = document.getElementById("province");
+    const districtEl = document.getElementById("district");
+    const wardEl = document.getElementById("ward");
+
+    const provinceHidden = document.getElementById("ProvinceHidden");
+    const districtHidden = document.getElementById("DistrictHidden");
+    const wardHidden = document.getElementById("WardHidden");
+
+    const latEl = document.getElementById("Lat");
+    const lngEl = document.getElementById("Lng");
+    const detailEl = document.getElementById("DetailAddress");
+
+    const detailWrap = document.getElementById("detailWrap");
+    const addrErr = document.getElementById("addrErr");
+    const coordErr = document.getElementById("coordErr");
+    const coordBadge = document.getElementById("coordBadge");
+    const btnClearPin = document.getElementById("btnClearPin");
+
+    let provinces = [];
+    let map, marker;
+    let isAutoSubmitting = false;
+
+    function setHiddenText(selectEl, hiddenEl) {
+        if (!selectEl || !hiddenEl) return;
+        const text = selectEl.options[selectEl.selectedIndex]?.text?.trim() || "";
+        hiddenEl.value = text.startsWith("--") ? "" : text;
+    }
+
+    function resetSelect(selectEl, placeholder) {
+        if (!selectEl) return;
+        selectEl.innerHTML = `<option value="">${placeholder}</option>`;
+        selectEl.value = "";
+    }
+
+    function hasPin() {
+        const lat = (latEl?.value || "").trim();
+        const lng = (lngEl?.value || "").trim();
+        return !!lat && !!lng;
+    }
+
+    function updateCoordBadge() {
+        const lat = (latEl?.value || "").trim();
+        const lng = (lngEl?.value || "").trim();
+        coordBadge.textContent = (!lat || !lng) ? "Lat/Lng: (chưa chọn)" : `Lat/Lng: ${lat}, ${lng}`;
+    }
+
+    function toggleDetailByPin() {
+        if (hasPin()) {
+            detailWrap?.classList.add("d-none");
+            addrErr?.classList.add("d-none");
+            btnClearPin?.classList.remove("d-none");
+        } else {
+            detailWrap?.classList.remove("d-none");
+            btnClearPin?.classList.add("d-none");
+        }
+    }
+
+    function clearPin() {
+        if (latEl) latEl.value = "";
+        if (lngEl) lngEl.value = "";
+        updateCoordBadge();
+        toggleDetailByPin();
+        coordErr?.classList.add("d-none");
+
+        if (marker) {
+            map.removeLayer(marker);
+            marker = null;
+        }
+    }
+
+    btnClearPin?.addEventListener("click", clearPin);
+
+    function loadProvinces() {
+        resetSelect(provinceEl, "--Chọn--");
+        provinces.forEach(p => {
+            provinceEl.insertAdjacentHTML("beforeend", `<option value="${p.Id}">${p.Name}</option>`);
+        });
+
+        setHiddenText(provinceEl, provinceHidden);
+        districtHidden.value = "";
+        wardHidden.value = "";
+
+        resetSelect(districtEl, "--Chọn--");
+        resetSelect(wardEl, "--Chọn--");
+    }
+
+    function loadDistrictsByProvinceId(pid) {
+        resetSelect(districtEl, "--Chọn--");
+        resetSelect(wardEl, "--Chọn--");
+
+        districtHidden.value = "";
+        wardHidden.value = "";
+
+        if (!pid) return;
+
+        const pObj = provinces.find(x => String(x.Id) === String(pid));
+        if (!pObj) return;
+
+        pObj.Districts.forEach(d => {
+            districtEl.insertAdjacentHTML("beforeend", `<option value="${d.Id}">${d.Name}</option>`);
+        });
+
+        setHiddenText(districtEl, districtHidden);
+    }
+
+    function loadWardsByDistrictId(pid, did) {
+        resetSelect(wardEl, "--Chọn--");
+        wardHidden.value = "";
+
+        if (!pid || !did) return;
+
+        const pObj = provinces.find(x => String(x.Id) === String(pid));
+        const dObj = pObj?.Districts?.find(d => String(d.Id) === String(did));
+        if (!dObj) return;
+
+        dObj.Wards.forEach(w => {
+            wardEl.insertAdjacentHTML("beforeend", `<option value="${w.Id}">${w.Name}</option>`);
+        });
+
+        setHiddenText(wardEl, wardHidden);
+    }
+
+    provinceEl.addEventListener("change", () => {
+        setHiddenText(provinceEl, provinceHidden);
+        loadDistrictsByProvinceId(provinceEl.value);
+    });
+
+    districtEl.addEventListener("change", () => {
+        setHiddenText(districtEl, districtHidden);
+        loadWardsByDistrictId(provinceEl.value, districtEl.value);
+    });
+
+    wardEl.addEventListener("change", () => {
+        setHiddenText(wardEl, wardHidden);
+    });
+
+    detailEl?.addEventListener("input", () => {
+        addrErr?.classList.add("d-none");
+        coordErr?.classList.add("d-none");
+    });
+
+    fetch("https://raw.githubusercontent.com/kenzouno1/DiaGioiHanhChinhVN/master/data.json")
+        .then(res => res.json())
+        .then(data => {
+            provinces = data || [];
+            loadProvinces();
+        })
+        .catch(() => loadProvinces());
+
+    function isTooVagueAddress(s) {
+        s = (s || "").trim().toLowerCase();
+        if (!s) return true;
+
+        const hasNumber = /\d+/.test(s);
+        const hasStreetKeyword =
+            s.includes("đường") || s.includes(" duong ") || s.includes("street") ||
+            s.includes("hẻm") || s.includes("hem") || s.includes("ngõ") || s.includes("alley") ||
+            s.includes("chung cư") || s.includes("chung cu") || s.includes("tòa") || s.includes("toa") || s.includes("building") ||
+            s.includes("khu phố") || s.includes("khu pho") || s.includes("khu dân cư") || s.includes("khu dan cu");
+
+        const hasPoi =
+            s.includes("vincom") || s.includes("lotte") || s.includes("landmark") ||
+            s.includes("đại học") || s.includes("dai hoc") ||
+            s.includes("bệnh viện") || s.includes("benh vien") ||
+            s.includes("metro") || s.includes("ga") || s.includes("trạm") || s.includes("tram") ||
+            s.includes("suối tiên") || s.includes("suoi tien");
+
+        const longEnough = s.length >= 25;
+        return !(hasNumber || hasStreetKeyword || hasPoi || longEnough);
+    }
+
+    function setMarker(lat, lng, zoom = 17) {
+        if (!map) return;
+        const ll = [lat, lng];
+
+        if (!marker) {
+            marker = L.marker(ll, { draggable: true }).addTo(map);
+            marker.on("dragend", async () => {
+                const pos = marker.getLatLng();
+                await applyCoordinates(pos.lat, pos.lng, true);
+            });
+        } else {
+            marker.setLatLng(ll);
+        }
+
+        map.setView(ll, zoom);
+    }
+
+    async function applyCoordinates(lat, lng, doReverse) {
+        lat = Number(lat);
+        lng = Number(lng);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+        latEl.value = String(lat);
+        lngEl.value = String(lng);
+        updateCoordBadge();
+        toggleDetailByPin();
+        coordErr?.classList.add("d-none");
+
+        setMarker(lat, lng);
+
+        if (doReverse) {
+            try {
+                const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}&zoom=18&addressdetails=1`;
+                const res = await fetch(url, { headers: { "Accept": "application/json" } });
+                const data = await res.json();
+                const display = data?.display_name || "";
+                if (display && detailEl) detailEl.value = display;
+            } catch { }
+        }
+    }
+
+    function buildClientQuery() {
+        const detail = (detailEl?.value || "").trim();
+        const w = (wardHidden?.value || "").trim();
+        const d = (districtHidden?.value || "").trim();
+        const p = (provinceHidden?.value || "").trim();
+
+        let q = detail;
+        if (w && !q.toLowerCase().includes(w.toLowerCase())) q += (q ? ", " : "") + w;
+        if (d && !q.toLowerCase().includes(d.toLowerCase())) q += (q ? ", " : "") + d;
+        if (p && !q.toLowerCase().includes(p.toLowerCase())) q += (q ? ", " : "") + p;
+        q += ", Việt Nam";
+        return q.trim().replace(/\s+/g, " ");
+    }
+
+    function showGeoResults(list) {
+        const wrap = document.getElementById("geoResultsWrap");
+        const box = document.getElementById("geoResults");
+        box.innerHTML = "";
+
+        if (!Array.isArray(list) || list.length === 0) {
+            wrap.classList.add("d-none");
+            return;
+        }
+
+        wrap.classList.remove("d-none");
+
+        list.forEach((it, idx) => {
+            const name = it.display_name || `Kết quả ${idx + 1}`;
+            const lat = it.lat;
+            const lon = it.lon;
+
+            const el = document.createElement("button");
+            el.type = "button";
+            el.className = "list-group-item list-group-item-action";
+            el.textContent = name;
+            el.addEventListener("click", async () => {
+                await applyCoordinates(lat, lon, false);
+                wrap.classList.add("d-none");
+            });
+            box.appendChild(el);
+        });
+    }
+
+    async function geocodeQuery(q) {
+        try {
+            const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&addressdetails=1&countrycodes=vn&q=${encodeURIComponent(q)}`;
+            const res = await fetch(url, { headers: { "Accept": "application/json" } });
+            if (!res.ok) return [];
+            return await res.json();
+        } catch {
+            return [];
+        }
+    }
+
+    document.getElementById("btnUseDetail")?.addEventListener("click", () => {
+        document.getElementById("GeoQuery").value = buildClientQuery();
+    });
+
+    document.getElementById("btnGeocode")?.addEventListener("click", async () => {
+        addrErr?.classList.add("d-none");
+        coordErr?.classList.add("d-none");
+
+        const qInput = (document.getElementById("GeoQuery").value || "").trim();
+        const q = qInput || buildClientQuery();
+
+        const list = await geocodeQuery(q);
+        showGeoResults(list);
+
+        if (Array.isArray(list) && list.length > 0) {
+            await applyCoordinates(list[0].lat, list[0].lon, false);
+        } else {
+            if (coordErr) {
+                coordErr.textContent = "Không tìm được tọa độ từ địa chỉ. Hãy click chọn vị trí trên bản đồ để lấy Lat/Lng.";
+                coordErr.classList.remove("d-none");
+            }
+        }
+    });
+
+    // ===== UI phí ship dự kiến (server sẽ tính lại khi submit) =====
+    function calculateShipping() {
+        let w = parseFloat((document.getElementById("Weight").value || "0").replace(",", ".")) || 0;
+
+        if (w <= 0) {
+            document.getElementById("shipping-fee").value = "";
+            document.getElementById("ShipFeeHidden").value = "";
+            updateSenderSummary();
+            return;
+        }
+
+        let area = document.querySelector('input[name="AreaType"]:checked')?.value || "inner";
+        let method = document.querySelector('input[name="PickupMethod"]:checked')?.value || "pickup";
+        let service = document.querySelector('input[name="ServiceLevel"]:checked')?.value || "standard";
+
+        let basePerKg = area === "inner" ? 15000 : 20000;
+        let fee = basePerKg * w;
+        if (method === "pickup") fee += 10000;
+
+        let factor = 1.0;
+        if (service === "fast") factor = 1.2;
+        if (service === "express") factor = 1.5;
+
+        fee = Math.round(fee * factor);
+
+        document.getElementById("shipping-fee").value = new Intl.NumberFormat("vi-VN").format(fee) + " đ";
+        document.getElementById("ShipFeeHidden").value = fee;
+
+        updateSenderSummary();
+    }
+
+    function updateSenderSummary() {
+        const ship = parseInt(document.getElementById("ShipFeeHidden").value || "0", 10) || 0;
+        const cod = parseInt(document.getElementById("CodHidden").value || "0", 10) || 0;
+        const payer = document.querySelector('input[name="ShipPayer"]:checked')?.value || "receiver";
+
+        let senderShip = payer === "sender" ? ship : 0;
+        let net = cod > 0 ? (cod - senderShip) : 0;
+        if (net < 0) net = 0;
+
+        document.getElementById("sender-ship-fee").value =
+            senderShip > 0 ? new Intl.NumberFormat("vi-VN").format(senderShip) + " đ" : "0 đ";
+
+        document.getElementById("sender-net").value =
+            net > 0 ? new Intl.NumberFormat("vi-VN").format(net) + " đ" : "0 đ";
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        onPickupMethodChanged();
+        calculateShipping();
+        updateSenderSummary();
+        updateCoordBadge();
+        toggleDetailByPin();
+
+        onShipPayerChanged();
+        syncSenderPayMethod();
+
+        map = L.map("map").setView([10.8231, 106.6297], 12);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19,
+            attribution: "&copy; OpenStreetMap"
+        }).addTo(map);
+
+        const initLat = (latEl?.value || "").trim();
+        const initLng = (lngEl?.value || "").trim();
+        if (initLat && initLng) {
+            setMarker(Number(initLat), Number(initLng), 16);
+        }
+
+        map.on("click", async (e) => {
+            await applyCoordinates(e.latlng.lat, e.latlng.lng, true);
+        });
+
+        const form = document.getElementById("orderForm");
+
+        form?.addEventListener("submit", async function (e) {
+            if (isAutoSubmitting) return;
+
+            // ✅ sync trước khi submit
+            syncSenderPayMethod();
+
+            setHiddenText(provinceEl, provinceHidden);
+            setHiddenText(districtEl, districtHidden);
+            setHiddenText(wardEl, wardHidden);
+
+            const method = document.querySelector('input[name="PickupMethod"]:checked')?.value || "pickup";
+            if (method === "dropoff_hub") {
+                const hubId = document.getElementById("HubId")?.value || "";
+                if (!hubId) {
+                    e.preventDefault();
+                    alert("Bạn chọn 'Tự đem đến hub' thì phải chọn Hub.");
+                    return;
+                }
+            }
+
+            if (hasPin()) {
+                coordErr?.classList.add("d-none");
+                addrErr?.classList.add("d-none");
+                return;
+            }
+
+            const detail = (detailEl?.value || "").trim();
+            if (!detail || isTooVagueAddress(detail)) {
+                e.preventDefault();
+                addrErr?.classList.remove("d-none");
+                detailEl?.focus();
+                return;
+            }
+
+            // ===== AUTO GEOCODE rồi SUBMIT luôn =====
+            e.preventDefault();
+            coordErr?.classList.add("d-none");
+
+            const q = buildClientQuery();
+            document.getElementById("GeoQuery").value = q;
+
+            const list = await geocodeQuery(q);
+            showGeoResults(list);
+
+            if (Array.isArray(list) && list.length > 0) {
+                await applyCoordinates(list[0].lat, list[0].lon, false);
+
+                isAutoSubmitting = true;
+                form.submit();
+                return;
+            }
+
+            if (coordErr) {
+                coordErr.textContent = "Không tìm được tọa độ từ địa chỉ. Hãy click chọn vị trí trên bản đồ để lấy Lat/Lng.";
+                coordErr.classList.remove("d-none");
+            }
+            document.getElementById("btnGeocode")?.scrollIntoView({ behavior: "smooth", block: "center" });
+        });
+    });
+</script>

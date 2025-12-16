@@ -1,0 +1,311 @@
+@model WedNightFury.Models.ViewModels.DeliveredViewModel
+
+@{
+    Layout = "_LayoutDriver";
+    ViewData["Title"] = "Xác nhận giao thành công";
+
+    bool hasCod = Model.CodAmount > 0;
+}
+
+<div class="container py-4">
+    <h2 class="fw-bold mb-4 text-success">
+        ✔ Xác nhận giao thành công
+    </h2>
+
+    <div class="row g-4">
+        <!-- Cột trái: Form nhập -->
+        <div class="col-lg-7">
+            <form asp-action="Delivered" method="post" enctype="multipart/form-data" id="deliveredForm">
+                <input type="hidden" asp-for="OrderId" />
+
+                <div class="mb-2">
+                    <span class="text-muted">Mã đơn:</span>
+                    <span class="fw-bold">@Model.Code</span>
+                </div>
+                <div class="mb-2">
+                    <span class="text-muted">Người nhận:</span>
+                    <span class="fw-bold">@Model.ReceiverName</span>
+                </div>
+                <div class="mb-3">
+                    <span class="text-muted">Địa chỉ:</span>
+                    <span class="fw-bold">@Model.ReceiverAddress</span>
+                </div>
+
+                @* Thông tin COD *@
+                @if (hasCod)
+                {
+                    <div class="alert alert-warning mb-3">
+                        <strong>COD cần thu:</strong>
+                        <span class="fw-bold text-danger">
+                            @Model.CodAmount.ToString("N0") đ
+                        </span>
+                        <br />
+                        <small class="text-muted">
+                            Số tiền tài xế thực tế thu được có thể chỉnh bên dưới.
+                        </small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="fw-bold">Số tiền tài xế đã thu</label>
+
+                        <div class="input-group">
+                            <!-- Ô hiển thị tiền có format -->
+                            <input id="CollectedCodDisplay"
+                                   type="text"
+                                   class="form-control"
+                                   value="@Model.CollectedCod.ToString("N0")" />
+
+                            <span class="input-group-text">đ</span>
+                        </div>
+
+                        <!-- Giá trị numeric thực sự submit về server -->
+                        <input asp-for="CollectedCod"
+                               type="hidden"
+                               id="CollectedCod" />
+
+                        <small id="codDiffHint" class="text-muted d-block mt-1">
+                            Mặc định bằng số COD. Nếu khách trả thiếu / thừa thì chỉnh lại.
+                        </small>
+                        <span asp-validation-for="CollectedCod" class="text-danger"></span>
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info mb-3">
+                        Đơn này <strong>không có COD</strong>. Bạn chỉ cần upload ảnh POD và ký tên.
+                    </div>
+                }
+
+                <div class="mb-3">
+                    <label class="fw-bold">Ảnh POD (bắt buộc)</label>
+                    <input asp-for="PodImage"
+                           type="file"
+                           accept="image/*"
+                           class="form-control"
+                           required
+                           id="PodImage" />
+                    <small class="text-muted" id="podFileName"></small>
+                    <span asp-validation-for="PodImage" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="fw-bold">Ghi chú giao hàng</label>
+                    <textarea asp-for="Note"
+                              class="form-control"
+                              rows="2"
+                              placeholder="Ví dụ: Khách kiểm tra hàng ok, giao tại cổng bảo vệ..."></textarea>
+                    <span asp-validation-for="Note" class="text-danger"></span>
+                </div>
+
+                <!-- Vẽ chữ ký tài xế -->
+                <div class="mb-3">
+                    <label class="fw-bold d-block mb-2">Chữ ký tài xế</label>
+
+                    <div class="border rounded bg-white" style="height: 200px;">
+                        <canvas id="signatureCanvas" style="width:100%; height:100%;"></canvas>
+                    </div>
+
+                    <div class="mt-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="clearSignature">
+                            Xóa chữ ký
+                        </button>
+                    </div>
+
+                    <!-- Hidden để gửi base64 về server -->
+                    <input asp-for="DriverSignature" type="hidden" id="DriverSignature" />
+                    <span asp-validation-for="DriverSignature" class="text-danger"></span>
+
+                    <small class="text-muted d-block mt-1">
+                        Ký trực tiếp trên khung, hệ thống sẽ lưu lại hình chữ ký.
+                    </small>
+                </div>
+
+                <button type="submit" class="btn btn-success btn-lg mt-2">
+                    ✔ Xác nhận giao hàng & thu COD
+                </button>
+            </form>
+        </div>
+
+        <!-- Cột phải: Tóm tắt thanh toán -->
+        <div class="col-lg-5">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light fw-bold">
+                    Tóm tắt thanh toán
+                </div>
+                <div class="card-body">
+                    <p class="mb-2">
+                        <span class="text-muted">Mã đơn:</span>
+                        <span class="fw-bold">@Model.Code</span>
+                    </p>
+                    <p class="mb-2">
+                        <span class="text-muted">Người nhận:</span>
+                        <span class="fw-bold">@Model.ReceiverName</span>
+                    </p>
+
+                    @if (hasCod)
+                    {
+                        <hr />
+                        <p class="mb-1">
+                            <span class="text-muted">COD phải thu:</span>
+                            <span class="fw-bold text-danger">
+                                @Model.CodAmount.ToString("N0") đ
+                            </span>
+                        </p>
+                        <p class="mb-1">
+                            <span class="text-muted">Số tiền bạn khai báo đã thu:</span>
+                            <span class="fw-bold" id="summaryCollected">
+                                @Model.CollectedCod.ToString("N0") đ
+                            </span>
+                        </p>
+                        <small class="text-muted">
+                            Sau khi xác nhận, hệ thống sẽ đánh dấu đơn là
+                            <strong>đã giao & đã thu COD</strong> (nếu COD do người nhận trả).
+                        </small>
+                    }
+                    else
+                    {
+                        <hr />
+                        <p class="mb-0 text-muted">
+                            Đơn không COD. Chỉ cần xác nhận giao thành công.
+                        </p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <!-- Thư viện SignaturePad để vẽ chữ ký -->
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.2.0/dist/signature_pad.umd.min.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // ===== File POD: hiển thị tên file =====
+            const podInput = document.getElementById("PodImage");
+            const podFileName = document.getElementById("podFileName");
+            if (podInput && podFileName) {
+                podInput.addEventListener("change", function () {
+                    if (this.files && this.files.length > 0) {
+                        podFileName.textContent = "Đã chọn: " + this.files[0].name;
+                    } else {
+                        podFileName.textContent = "";
+                    }
+                });
+            }
+
+            // ===== Định dạng tiền & đồng bộ CollectedCod =====
+            const codAmount = @Model.CodAmount;
+            const displayInput = document.getElementById("CollectedCodDisplay");
+            const hiddenInput = document.getElementById("CollectedCod");
+            const codDiffHint = document.getElementById("codDiffHint");
+            const summaryCollected = document.getElementById("summaryCollected");
+
+            function formatCurrency(val) {
+                return val.toLocaleString("vi-VN") + " đ";
+            }
+
+            function normalizeMoney(str) {
+                // Lấy toàn bộ chữ số, bỏ dấu phẩy, khoảng trắng, chữ
+                const digits = (str || "").replace(/\D/g, "");
+                if (!digits) return 0;
+                return parseInt(digits, 10);
+            }
+
+            if (displayInput && hiddenInput) {
+                function syncMoney() {
+                    const raw = normalizeMoney(displayInput.value);
+                    hiddenInput.value = raw;
+
+                    if (summaryCollected) {
+                        summaryCollected.textContent = formatCurrency(raw);
+                    }
+
+                    if (codDiffHint) {
+                        if (!codAmount || codAmount <= 0) {
+                            codDiffHint.textContent = "";
+                            codDiffHint.classList.remove("text-danger");
+                            codDiffHint.classList.add("text-muted");
+                            return;
+                        }
+
+                        if (raw === codAmount) {
+                            codDiffHint.textContent = "Số tiền đã thu trùng với COD.";
+                            codDiffHint.classList.remove("text-danger");
+                            codDiffHint.classList.add("text-muted");
+                        } else {
+                            codDiffHint.textContent =
+                                "Lưu ý: Số tiền đã thu KHÁC số COD. Hãy chắc chắn điều này là đúng.";
+                            codDiffHint.classList.add("text-danger");
+                        }
+                    }
+
+                    // Cập nhật lại hiển thị theo format VNĐ
+                    if (displayInput === document.activeElement) {
+                        // Khi đang focus cho phép gõ thoải mái
+                        return;
+                    } else {
+                        displayInput.value = raw ? raw.toLocaleString("vi-VN") : "";
+                    }
+                }
+
+                // Khởi tạo
+                syncMoney();
+
+                displayInput.addEventListener("blur", syncMoney);
+                displayInput.addEventListener("input", function () {
+                    // Không format ngay để user dễ gõ, chỉ đồng bộ hidden
+                    const raw = normalizeMoney(displayInput.value);
+                    hiddenInput.value = raw;
+                    if (summaryCollected) {
+                        summaryCollected.textContent = formatCurrency(raw);
+                    }
+                });
+            }
+
+            // ===== Signature Pad (vẽ chữ ký) =====
+            const canvas = document.getElementById("signatureCanvas");
+            const clearBtn = document.getElementById("clearSignature");
+            const sigHidden = document.getElementById("DriverSignature");
+            const form = document.getElementById("deliveredForm");
+
+            if (canvas && clearBtn && sigHidden && form && window.SignaturePad) {
+                // Resize canvas cho sharp trên các màn hình khác nhau
+                function resizeCanvas() {
+                    const ratio = Math.max(window.devicePixelRatio || 1, 1);
+                    const rect = canvas.getBoundingClientRect();
+                    canvas.width = rect.width * ratio;
+                    canvas.height = rect.height * ratio;
+                    const ctx = canvas.getContext("2d");
+                    ctx.scale(ratio, ratio);
+                    signaturePad.clear();
+                }
+
+                const signaturePad = new SignaturePad(canvas, {
+                    backgroundColor: 'rgb(255, 255, 255)'
+                });
+
+                window.addEventListener("resize", resizeCanvas);
+                resizeCanvas();
+
+                clearBtn.addEventListener("click", function () {
+                    signaturePad.clear();
+                    sigHidden.value = "";
+                });
+
+                form.addEventListener("submit", function (e) {
+                    if (!signaturePad.isEmpty()) {
+                        const dataUrl = signaturePad.toDataURL("image/png");
+                        sigHidden.value = dataUrl;
+                    } else {
+                        // Nếu muốn bắt buộc ký, có thể chặn submit:
+                        // e.preventDefault();
+                        // alert("Vui lòng ký vào khung chữ ký.");
+                    }
+                });
+            }
+        });
+    </script>
+}

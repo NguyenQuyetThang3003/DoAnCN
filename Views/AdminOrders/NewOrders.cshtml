@@ -1,0 +1,359 @@
+@using WedNightFury.Models
+@using WedNightFury.Controllers
+@model WedNightFury.Controllers.AdminOrderListViewModel
+
+@{
+    ViewData["Title"] = "Đơn mới / Chờ phân công";
+    Layout = "_LayoutAdmin";
+
+    var drivers = ViewBag.Drivers as List<User> ?? new List<User>();
+    var hubs = ViewBag.Hubs as List<HubOptionVm> ?? new List<HubOptionVm>();
+
+    // Hub lọc (HandlingHubId)
+    int? filterHubId = Model.HubId;
+}
+
+<h3 class="fw-bold text-primary mb-3">ĐƠN MỚI / CHỜ PHÂN CÔNG</h3>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Warning"] != null)
+{
+    <div class="alert alert-warning">@TempData["Warning"]</div>
+}
+
+<!-- ✅ FORM GET: lọc keyword/date + lọc hub phụ trách -->
+<form method="get" class="row g-2 mb-3">
+    <div class="col-md-3">
+        <input type="text" name="keyword" value="@Model.Keyword" class="form-control"
+               placeholder="Mã đơn / người gửi / người nhận..." />
+    </div>
+
+    <div class="col-md-2">
+        <input type="date" name="fromDate" value="@(Model.FromDate?.ToString("yyyy-MM-dd"))" class="form-control" />
+    </div>
+
+    <div class="col-md-2">
+        <input type="date" name="toDate" value="@(Model.ToDate?.ToString("yyyy-MM-dd"))" class="form-control" />
+    </div>
+
+    <div class="col-md-3">
+        <select id="hubFilterSelect" name="hubId" class="form-select">
+            <option value="">-- Lọc theo Hub phụ trách --</option>
+            @foreach (var h in hubs)
+            {
+                var label = string.IsNullOrWhiteSpace(h.Address) ? h.Name : $"{h.Name} - {h.Address}";
+                if (filterHubId.HasValue && filterHubId.Value == h.Id)
+                {
+                    <option value="@h.Id" selected="selected">@label</option>
+                }
+                else
+                {
+                    <option value="@h.Id">@label</option>
+                }
+            }
+        </select>
+        <div class="form-text">Chỉ hiển thị đơn có <b>HandlingHubId</b> = hub đã chọn.</div>
+    </div>
+
+    <div class="col-md-2">
+        <button type="submit" class="btn btn-outline-primary w-100">Lọc</button>
+    </div>
+
+    <div class="col-md-12 text-end">
+        <a asp-action="NewOrders" class="btn btn-outline-secondary">Bỏ lọc</a>
+        <a asp-action="Index" class="btn btn-outline-secondary ms-2">Xem tất cả đơn</a>
+    </div>
+</form>
+
+@if (Model.Items == null || !Model.Items.Any())
+{
+    <div class="alert alert-info">Hiện không có đơn nào đang chờ phân công.</div>
+}
+else
+{
+    <!-- ✅ FORM POST: Optimize + Assign single -->
+    <form id="assignRouteForm"
+          asp-action="PreviewAssignRoute"
+          asp-controller="AdminOrders"
+          method="post"
+          asp-antiforgery="true">
+
+        @Html.AntiForgeryToken()
+
+        <div class="row mb-3 align-items-end">
+            <!-- Tài xế -->
+            <div class="col-md-4">
+                <label class="form-label fw-bold">Chọn tài xế</label>
+                <select id="driverSelect" name="driverId" class="form-select" required>
+                    <option value="">-- Chọn tài xế --</option>
+                    @foreach (var d in drivers)
+                    {
+                        var name = string.IsNullOrWhiteSpace(d.UserName) ? $"Tài xế #{d.Id}" : d.UserName;
+                        <option value="@d.Id">@name</option>
+                    }
+                </select>
+            </div>
+
+            <!-- Hub xuất phát -->
+            <div class="col-md-5">
+                <label class="form-label fw-bold">Điểm xuất phát (Hub lấy hàng)</label>
+
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="useFilterAsOrigin"
+                           @(filterHubId.HasValue ? "checked" : "") />
+                    <label class="form-check-label" for="useFilterAsOrigin">
+                        Dùng Hub đang lọc làm điểm xuất phát
+                    </label>
+                </div>
+
+                <!-- name="hubId" => controller dùng hubId làm origin -->
+                <select id="hubOriginSelect" name="hubId" class="form-select">
+                    <option value="">-- Chọn hub làm điểm xuất phát --</option>
+                    @foreach (var h in hubs)
+                    {
+                        var label = string.IsNullOrWhiteSpace(h.Address) ? h.Name : $"{h.Name} - {h.Address}";
+                        if (filterHubId.HasValue && filterHubId.Value == h.Id)
+                        {
+                            <option value="@h.Id" selected="selected">@label</option>
+                        }
+                        else
+                        {
+                            <option value="@h.Id">@label</option>
+                        }
+                    }
+                </select>
+
+                <div class="form-text">
+                    Nếu bật “Dùng Hub đang lọc…”, Hub xuất phát sẽ tự bám theo Hub lọc để tránh nhầm.
+                </div>
+
+                <div class="text-warning small mt-1 d-none" id="hubMismatchWarn">
+                    ⚠️ Bạn đang chọn Hub xuất phát khác Hub đang lọc.
+                </div>
+
+                <!-- fallback -->
+                <div class="mt-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="toggleManualOrigin">
+                        Nhập thủ công địa chỉ xuất phát (fallback)
+                    </button>
+                </div>
+
+                <div id="manualOriginWrap" class="mt-2 d-none">
+                    <input type="text" name="driverOriginAddress" class="form-control"
+                           placeholder="VD: 595 Nguyễn Tri Phương, Thủ Đức, TP.HCM hoặc lat,lng"
+                           autocomplete="street-address" />
+                    <small class="text-muted">
+                        Nếu đã chọn Hub thì hệ thống ưu tiên Hub, field này chỉ dùng khi không chọn Hub.
+                    </small>
+                </div>
+            </div>
+
+            <!-- nút optimize -->
+            <div class="col-md-3 text-end">
+                <button id="btnOptimize" type="submit" class="btn btn-primary mt-3 mt-md-0" disabled>
+                    Tối ưu tuyến &amp; phân công các đơn đã chọn
+                </button>
+
+                <div class="text-danger small mt-1 d-none" id="selectWarn">
+                    Vui lòng chọn ít nhất 1 đơn để tối ưu tuyến.
+                </div>
+
+                <div class="text-danger small mt-1 d-none" id="driverWarn">
+                    Vui lòng chọn tài xế.
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header fw-bold d-flex align-items-center justify-content-between">
+                <span>Danh sách đơn chờ phân công</span>
+                <small class="text-muted">Đã chọn: <span id="selectedCount">0</span></small>
+            </div>
+
+            <div class="card-body p-0">
+                <table class="table table-striped table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width:40px;"><input id="selectAll" type="checkbox" /></th>
+                            <th>Mã đơn</th>
+                            <th>Khách hàng</th>
+                            <th>Người nhận</th>
+                            <th>SĐT nhận</th>
+                            <th>Địa chỉ nhận</th>
+                            <th>Thành phố</th>
+                            <th>Tiền COD</th>
+                            <th>Phí ship</th>
+                            <th>Ngày tạo</th>
+                            <th style="width:120px;">Thao tác</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (var o in Model.Items)
+                        {
+                            <tr>
+                                <td>
+                                    <input class="order-checkbox" type="checkbox" name="orderIds" value="@o.Id" />
+                                </td>
+                                <td>@o.Code</td>
+                                <td>@o.CustomerName</td>
+                                <td>@o.ReceiverName</td>
+                                <td>@o.ReceiverPhone</td>
+                                <td>@o.ReceiverAddress</td>
+                                <td>@o.Province</td>
+                                <td>@o.CodAmount.ToString("N0")</td>
+                                <td>@o.ShipFee.ToString("N0")</td>
+                                <td>@(o.CreatedAt?.ToString("dd/MM/yyyy HH:mm"))</td>
+
+                                <td>
+                                    <!-- Gán lẻ -->
+                                    <button type="submit"
+                                            class="btn btn-sm btn-outline-secondary"
+                                            data-mode="single"
+                                            formaction="@Url.Action("AssignDriverSimple", "AdminOrders")"
+                                            formmethod="post"
+                                            name="orderId"
+                                            value="@o.Id"
+                                            onclick="return confirmAssignSingle();">
+                                        Gán lẻ
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </form>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const form = document.getElementById("assignRouteForm");
+            const btnOptimize = document.getElementById("btnOptimize");
+            const selectWarn = document.getElementById("selectWarn");
+            const driverWarn = document.getElementById("driverWarn");
+            const countEl = document.getElementById("selectedCount");
+            const selectAll = document.getElementById("selectAll");
+            const driverSelect = document.getElementById("driverSelect");
+
+            const btnToggle = document.getElementById("toggleManualOrigin");
+            const manualWrap = document.getElementById("manualOriginWrap");
+
+            const hubFilter = document.getElementById("hubFilterSelect");
+            const hubOrigin = document.getElementById("hubOriginSelect");
+            const useFilterAsOrigin = document.getElementById("useFilterAsOrigin");
+            const hubMismatchWarn = document.getElementById("hubMismatchWarn");
+
+            function getOrderCheckboxes() {
+                return Array.from(document.querySelectorAll(".order-checkbox"));
+            }
+
+            function syncOriginWithFilterIfNeeded() {
+                if (!hubOrigin) return;
+
+                const filterVal = hubFilter ? hubFilter.value : "";
+                const originVal = hubOrigin.value;
+
+                if (useFilterAsOrigin && useFilterAsOrigin.checked) {
+                    if (filterVal) hubOrigin.value = filterVal;
+                    hubOrigin.disabled = true;
+                } else {
+                    hubOrigin.disabled = false;
+                }
+
+                const shouldWarn = !!filterVal && !!hubOrigin.value && (hubOrigin.value !== filterVal);
+                if (hubMismatchWarn) hubMismatchWarn.classList.toggle("d-none", !shouldWarn);
+            }
+
+            function updateUI() {
+                const cbs = getOrderCheckboxes();
+                const checked = cbs.filter(x => x.checked).length;
+
+                countEl.textContent = checked.toString();
+
+                const hasDriver = !!(driverSelect && driverSelect.value);
+                btnOptimize.disabled = !(checked > 0 && hasDriver);
+
+                selectWarn.classList.toggle("d-none", checked !== 0);
+                driverWarn.classList.toggle("d-none", hasDriver);
+
+                if (checked === 0) selectAll.checked = false;
+                else selectAll.checked = (checked === cbs.length);
+
+                syncOriginWithFilterIfNeeded();
+            }
+
+            if (selectAll) {
+                selectAll.addEventListener("change", function () {
+                    const cbs = getOrderCheckboxes();
+                    cbs.forEach(cb => cb.checked = selectAll.checked);
+                    updateUI();
+                });
+            }
+
+            getOrderCheckboxes().forEach(cb => cb.addEventListener("change", updateUI));
+            if (driverSelect) driverSelect.addEventListener("change", updateUI);
+
+            if (useFilterAsOrigin) useFilterAsOrigin.addEventListener("change", updateUI);
+            if (hubOrigin) hubOrigin.addEventListener("change", updateUI);
+
+            if (form) {
+                form.addEventListener("submit", function (e) {
+                    const submitter = e.submitter;
+                    const mode = submitter?.getAttribute("data-mode");
+
+                    const hasDriver = !!(driverSelect && driverSelect.value);
+                    const checked = getOrderCheckboxes().filter(x => x.checked).length;
+
+                    if (mode === "single") {
+                        if (!hasDriver) {
+                            e.preventDefault();
+                            updateUI();
+                            alert("Vui lòng chọn tài xế trước khi gán lẻ.");
+                        }
+                        return;
+                    }
+
+                    if (checked === 0 || !hasDriver) {
+                        e.preventDefault();
+                        updateUI();
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                        return;
+                    }
+                });
+            }
+
+            if (btnToggle && manualWrap) {
+                btnToggle.addEventListener("click", function () {
+                    manualWrap.classList.toggle("d-none");
+                });
+            }
+
+            if (hubOrigin && manualWrap) {
+                hubOrigin.addEventListener("change", function () {
+                    if (hubOrigin.value && !manualWrap.classList.contains("d-none")) {
+                        manualWrap.classList.add("d-none");
+                    }
+                });
+            }
+
+            updateUI();
+        });
+
+        function confirmAssignSingle() {
+            const driverSelect = document.getElementById("driverSelect");
+            if (!driverSelect || !driverSelect.value) {
+                alert("Vui lòng chọn tài xế trước khi gán lẻ.");
+                return false;
+            }
+            return confirm("Xác nhận gán đơn này cho tài xế đã chọn?");
+        }
+    </script>
+}

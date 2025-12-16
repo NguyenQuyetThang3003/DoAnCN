@@ -1,0 +1,113 @@
+@{
+    ViewData["Title"] = "Báo cáo vận hành hôm nay";
+}
+
+<div class="container mt-4">
+    <h3 class="fw-bold text-danger mb-2">📦 Báo cáo vận hành hôm nay</h3>
+    <p class="text-muted">🕒 Cập nhật lúc @ViewBag.LastUpdated</p>
+
+    <div class="row g-3">
+        <!-- KHÂU LẤY -->
+        <div class="col-md-4">
+            <div class="card border-success border-2 shadow-sm">
+                <div class="card-body">
+                    <h5 class="text-success fw-bold">📬 Khâu lấy</h5>
+                    <p>Tồn đầu ngày: <b>@ViewBag.TotalBefore</b></p>
+                    <p>Tồn hiện tại: <b>@(ViewBag.TotalBefore + ViewBag.TotalToday)</b></p>
+                    <hr />
+                    <p>Lấy thành công: <b>@ViewBag.Done</b></p>
+                    <p>Hủy lấy: <b>@ViewBag.Cancelled</b></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- KHÂU GIAO -->
+        <div class="col-md-4">
+            <div class="card border-primary border-2 shadow-sm">
+                <div class="card-body">
+                    <h5 class="text-primary fw-bold">🚚 Khâu giao</h5>
+                    <p>Tổng đơn giao hôm nay: <b>@ViewBag.TotalToday</b></p>
+                    <p>Đang giao: <b>@ViewBag.Shipping</b></p>
+                    <hr />
+                    <p>Giao thành công: <b>@ViewBag.Done</b></p>
+                    <p>Hủy giao: <b>@ViewBag.Cancelled</b></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- KHÂU HOÀN -->
+        <div class="col-md-4">
+            <div class="card border-warning border-2 shadow-sm">
+                <div class="card-body">
+                    <h5 class="text-warning fw-bold">↩️ Khâu hoàn</h5>
+                    <p>Tồn hoàn đầu ngày: <b>0</b></p>
+                    <p>Tồn hoàn hiện tại: <b>0</b></p>
+                    <hr />
+                    <p>Hoàn thành công: <b>0</b></p>
+                    <p>Hủy hoàn: <b>0</b></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr class="my-4" />
+
+    <!-- Biểu đồ Chart.js -->
+    <div class="mt-4">
+        <canvas id="statusChart" style="max-height: 350px;"></canvas>
+    </div>
+
+    <div class="form-check form-switch mt-4">
+        <input class="form-check-input" type="checkbox" id="emailSwitch">
+        <label class="form-check-label" for="emailSwitch">Nhận email báo cáo vận hành</label>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const ctx = document.getElementById('statusChart').getContext('2d');
+        const data = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.ChartData));
+
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Chờ xử lý', 'Đang giao', 'Hoàn tất', 'Đã hủy'],
+                datasets: [{
+                    label: 'Đơn hàng hôm nay',
+                    data: data,
+                    backgroundColor: [
+                        '#17a2b8',
+                        '#ffc107',
+                        '#28a745',
+                        '#dc3545'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    title: { display: true, text: 'Tỷ lệ trạng thái đơn hàng hôm nay' }
+                }
+            }
+        });
+    </script>
+}
+
+<style>
+    .card {
+        border-radius: 12px;
+        transition: all 0.2s ease;
+    }
+
+    .card:hover {
+        transform: scale(1.02);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+    }
+
+    h3 {
+        font-family: 'Segoe UI', sans-serif;
+    }
+</style>

@@ -1,0 +1,56 @@
+@model List<WedNightFury.Models.Order>
+
+<h2 class="fw-bold mb-4" style="color:#d9232d;">🛵 ĐƠN HÀNG CHƯA CÓ TÀI XẾ</h2>
+
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-info">@TempData["Message"]</div>
+}
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <table class="table table-striped table-bordered align-middle mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>Mã đơn</th>
+                    <th>Người nhận</th>
+                    <th>Địa chỉ</th>
+                    <th>Giá trị</th>
+                    <th>Nhận đơn</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @if (!Model.Any())
+                {
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">
+                            Không có đơn mới.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    foreach (var o in Model)
+                    {
+                        <tr>
+                            <td>@o.Code</td>
+                            <td>@o.ReceiverName</td>
+                            <td>@o.ReceiverAddress</td>
+                            <td>@o.Value.ToString("N0") đ</td>
+
+                            <td>
+                                <form method="post" asp-action="Accept">
+                                    <input type="hidden" name="id" value="@o.Id" />
+                                    <button class="btn btn-success btn-sm">
+                                        ✔ Nhận đơn
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

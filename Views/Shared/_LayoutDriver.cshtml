@@ -1,0 +1,268 @@
+@using Microsoft.AspNetCore.Http
+@inject IHttpContextAccessor HttpContextAccessor
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Driver | WedNightFury</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
+
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f8f9fa;
+            color: #212529;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 70px;
+            height: 100vh;
+            background-color: #fff;
+            border-right: 1px solid #dee2e6;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+            padding-top: 0;
+        }
+
+        .sidebar .logo {
+            height: 60px;
+            background: #d9232d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sidebar .nav-link {
+            text-align: center;
+            padding: 18px 0;
+            font-size: 20px;
+            color: #444;
+        }
+
+        .sidebar .nav-link.active,
+        .sidebar .nav-link:hover {
+            background: #ffe7e7;
+            color: #d9232d !important;
+        }
+
+        /* Main content */
+        .main-content {
+            margin-left: 70px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .topbar {
+            background: #fff;
+            border-bottom: 1px solid #dee2e6;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        footer {
+            background: #f1f1f1;
+            padding: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="d-flex">
+
+    <!-- ========== SIDEBAR ========= -->
+    <div class="sidebar d-flex flex-column align-items-center">
+
+        <div class="logo w-100">
+            <img src="~/images/logo.png" height="36" />
+        </div>
+
+        <!-- ⭐ Đơn chưa nhận -->
+        <a asp-controller="Taixe" asp-action="AvailableOrders"
+           class="nav-link"
+           data-bs-toggle="tooltip" title="Đơn chưa nhận"
+           data-route="/taixe/availableorders">
+            <i class="fas fa-box-open"></i>
+        </a>
+
+        <!-- Chuyến hôm nay -->
+        <a asp-controller="Taixe" asp-action="Dashboard"
+           class="nav-link"
+           data-bs-toggle="tooltip" title="Chuyến hôm nay"
+           data-route="/taixe/dashboard">
+            <i class="fas fa-route"></i>
+        </a>
+
+        <!-- Lộ trình -->
+        <a asp-controller="Trip" asp-action="Today"
+           class="nav-link"
+           data-bs-toggle="tooltip" title="Lộ trình hôm nay"
+           data-route="/trip/today">
+            <i class="fas fa-map"></i>
+        </a>
+
+        <!-- Lịch sử -->
+        <a asp-controller="Taixe" asp-action="History"
+           class="nav-link"
+           data-bs-toggle="tooltip" title="Lịch sử giao hàng"
+           data-route="/taixe/history">
+            <i class="fas fa-clock-rotate-left"></i>
+        </a>
+
+        <!-- Hỗ trợ -->
+        <a asp-controller="Support" asp-action="Index"
+           class="nav-link"
+           data-bs-toggle="tooltip" title="Hỗ trợ"
+           data-route="/support/index">
+            <i class="fas fa-headset"></i>
+        </a>
+
+        <!-- Hồ sơ -->
+        <a asp-controller="User" asp-action="Profile"
+           class="nav-link"
+           data-bs-toggle="tooltip" title="Hồ sơ"
+           data-route="/user/profile">
+            <i class="fas fa-user-circle"></i>
+        </a>
+
+        <!-- Logout -->
+        <a asp-controller="Auth" asp-action="Logout"
+           class="nav-link mt-auto"
+           data-bs-toggle="tooltip" title="Đăng xuất">
+            <i class="fas fa-sign-out-alt text-danger"></i>
+        </a>
+
+    </div>
+
+    <!-- ========== MAIN CONTENT ========= -->
+    <div class="main-content flex-grow-1">
+
+        <!-- TOPBAR -->
+        <div class="topbar">
+
+            <!-- Search -->
+            <div class="input-group" style="max-width:300px;">
+                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                <form asp-controller="Taixe" asp-action="SearchOrder" method="post" class="d-flex w-100">
+                    <input name="code" class="form-control" placeholder="Tìm đơn..." />
+                </form>
+            </div>
+
+            <!-- User -->
+            <div class="d-flex align-items-center" style="gap:20px;">
+                <div class="dropdown">
+                    <a class="dropdown-toggle d-flex align-items-center text-dark"
+                       data-bs-toggle="dropdown"
+                       style="cursor:pointer;">
+                        <span class="fw-bold me-2">@HttpContextAccessor.HttpContext.Session.GetString("UserName")</span>
+                        <img src="~/images/avatar.png" width="32" height="32" class="rounded-circle" />
+                    </a>
+
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" asp-controller="User" asp-action="Profile">Hồ sơ</a></li>
+                        <li><a class="dropdown-item" asp-controller="Auth" asp-action="Logout">Đăng xuất</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTENT -->
+        <main class="container-fluid py-4">
+            @RenderBody()
+        </main>
+
+        <!-- FOOTER -->
+        <footer class="text-center text-muted">
+            © 2025 - WedNightFury Driver
+        </footer>
+
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // Tooltip
+    [...document.querySelectorAll('[data-bs-toggle="tooltip"]')]
+        .map(e => new bootstrap.Tooltip(e));
+
+    // Active menu (client-side) - dùng data-route
+    const current = window.location.pathname.toLowerCase();
+    document.querySelectorAll(".sidebar .nav-link[data-route]").forEach(a => {
+        const route = (a.getAttribute("data-route") || "").toLowerCase();
+        if (route && current.startsWith(route)) a.classList.add("active");
+    });
+</script>
+
+<!-- =========================
+     GPS Tracking (Driver)
+     - Tự gửi vị trí lên server theo chu kỳ watchPosition
+     - Endpoint cần có: POST /Taixe/UpdateLocation (JSON)
+========================= -->
+<script>
+    const ENABLE_DRIVER_GPS = true;
+
+    async function postDriverLocation(pos) {
+        const payload = {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            accuracy: pos.coords.accuracy,
+            speed: pos.coords.speed,
+            heading: pos.coords.heading,
+            clientTimestampMs: Date.now(),
+            orderId: null
+        };
+
+        try {
+            await fetch('/Taixe/UpdateLocation', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+        } catch (e) {
+            console.log("UpdateLocation failed:", e);
+        }
+    }
+
+    function startDriverGps() {
+        if (!ENABLE_DRIVER_GPS) return;
+
+        const role = "@(HttpContextAccessor.HttpContext?.Session.GetString("Role") ?? "")".toLowerCase();
+        if (role !== "driver" && role !== "taixe") return;
+
+        if (!('geolocation' in navigator)) {
+            console.log("Browser không hỗ trợ geolocation");
+            return;
+        }
+
+        navigator.geolocation.watchPosition(
+            postDriverLocation,
+            (err) => console.log("GPS error:", err),
+            {
+                enableHighAccuracy: true,
+                maximumAge: 5000,
+                timeout: 10000
+            }
+        );
+    }
+
+    document.addEventListener("DOMContentLoaded", startDriverGps);
+</script>
+
+@await RenderSectionAsync("Scripts", required: false)
+
+</body>
+</html>

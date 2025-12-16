@@ -1,0 +1,312 @@
+@using System.Text.Json
+@model WedNightFury.Controllers.AdminReportOverviewViewModel
+
+@{
+    ViewData["Title"] = "Báo cáo & Thống kê";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+
+    var dayLabels  = Model.OrdersPerDay.Select(x => x.Date.ToString("dd/MM")).ToList();
+    var dayCounts  = Model.OrdersPerDay.Select(x => x.Count).ToList();
+
+    var areaLabels = Model.AreaStats.Select(x => x.Province).ToList();
+    var areaCounts = Model.AreaStats.Select(x => x.Count).ToList();
+
+    var ratingLabels = Model.RatingStats.Select(x => $"{x.Score}★").ToList();
+    var ratingCounts = Model.RatingStats.Select(x => x.Count).ToList();
+}
+
+<h3 class="mb-3 text-danger fw-bold">Báo cáo & Thống kê</h3>
+
+<!-- Bộ lọc ngày -->
+<form asp-action="Overview" asp-controller="AdminReports" method="get" class="card p-3 mb-3">
+    <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label">Từ ngày</label>
+            <input type="date"
+                   name="from"
+                   class="form-control"
+                   value="@Model.FromDate.ToString("yyyy-MM-dd")" />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Đến ngày</label>
+            <input type="date"
+                   name="to"
+                   class="form-control"
+                   value="@Model.ToDate.ToString("yyyy-MM-dd")" />
+        </div>
+
+        <div class="col-md-3">
+            <!-- Xem báo cáo: gửi GET tới /AdminReports/Overview?from=...&to=... -->
+            <button type="submit" class="btn btn-primary mt-4">
+                Xem báo cáo
+            </button>
+
+            <!-- Xuất Excel (CSV): dùng cùng from/to hiện nhập, nhưng gọi action ExportOrders -->
+            <button type="submit"
+                    formaction="@Url.Action("ExportOrders", "AdminReports")"
+                    class="btn btn-success mt-4 ms-2">
+                Xuất Excel (CSV)
+            </button>
+        </div>
+
+        <div class="col-md-3 text-end">
+            <span class="text-muted">
+                Khoảng thời gian:
+                @Model.FromDate.ToString("dd/MM/yyyy")
+                -
+                @Model.ToDate.ToString("dd/MM/yyyy")
+            </span>
+        </div>
+    </div>
+</form>
+
+<!-- Tổng quan KPIs -->
+<div class="row g-3 mb-3">
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h6 class="text-muted">Tổng số đơn</h6>
+                <h3 class="fw-bold">@Model.TotalOrders</h3>
+                <small class="text-muted">
+                    Pending: @Model.PendingOrders |
+                    Shipping: @Model.ShippingOrders
+                </small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h6 class="text-muted">Đơn thành công</h6>
+                <h3 class="fw-bold text-success">@Model.DoneOrders</h3>
+                <small class="text-muted">Thất bại: @Model.FailedOrders</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h6 class="text-muted">Tỷ lệ giao thành công</h6>
+                <h3 class="fw-bold">@Model.SuccessRate %</h3>
+                <small class="text-muted">Trong các đơn đã xử lý</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h6 class="text-muted">Doanh thu (COD + ship)</h6>
+                <h3 class="fw-bold text-primary">
+                    @Model.TotalRevenue.ToString("N0") đ
+                </h3>
+                <small class="text-muted">
+                    Ship: @Model.TotalShipFee.ToString("N0") đ |
+                    COD: @Model.TotalCod.ToString("N0") đ
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h6 class="text-muted">Số khách hàng</h6>
+                <h3 class="fw-bold">@Model.TotalCustomers</h3>
+                <small class="text-muted">Trong khoảng thời gian chọn</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h6 class="text-muted">Điểm đánh giá trung bình</h6>
+                <h3 class="fw-bold text-warning">@Model.AverageRating</h3>
+                <small class="text-muted">Từ 1 đến 5 sao</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Biểu đồ -->
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <h6 class="card-title">Số đơn theo ngày</h6>
+                <canvas id="ordersPerDayChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <h6 class="card-title">Đơn theo khu vực (Top 10)</h6>
+                <canvas id="areaChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h6 class="card-title">Hiệu suất tài xế (Top 5)</h6>
+                <table class="table table-sm table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Tài xế</th>
+                            <th class="text-end">Đơn thành công</th>
+                            <th class="text-end">Rating TB</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @if (Model.DriverStats.Any())
+                    {
+                        foreach (var d in Model.DriverStats)
+                        {
+                            <tr>
+                                <td>@d.DriverName (#@d.DriverId)</td>
+                                <td class="text-end">@d.TotalDone</td>
+                                <td class="text-end">@d.AvgRating</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="3" class="text-center text-muted">
+                                Chưa có dữ liệu.
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h6 class="card-title">Phân bố điểm đánh giá</h6>
+                <canvas id="ratingChart" class="mb-3"></canvas>
+                <table class="table table-sm table-bordered mb-0">
+                    <thead>
+                        <tr>
+                            <th>Điểm</th>
+                            <th class="text-end">Số lượt</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var r in Model.RatingStats)
+                    {
+                        <tr>
+                            <td>@r.Score ★</td>
+                            <td class="text-end">@r.Count</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const dayLabels   = @Html.Raw(JsonSerializer.Serialize(dayLabels));
+        const dayCounts   = @Html.Raw(JsonSerializer.Serialize(dayCounts));
+
+        const areaLabels  = @Html.Raw(JsonSerializer.Serialize(areaLabels));
+        const areaCounts  = @Html.Raw(JsonSerializer.Serialize(areaCounts));
+
+        const ratingLabels = @Html.Raw(JsonSerializer.Serialize(ratingLabels));
+        const ratingCounts = @Html.Raw(JsonSerializer.Serialize(ratingCounts));
+
+        // Biểu đồ đơn theo ngày
+        const ctxDay = document.getElementById('ordersPerDayChart');
+        if (ctxDay && dayLabels.length > 0) {
+            new Chart(ctxDay, {
+                type: 'line',
+                data: {
+                    labels: dayLabels,
+                    datasets: [{
+                        label: 'Số đơn',
+                        data: dayCounts,
+                        tension: 0.3,
+                        fill: false
+                    }]
+                },
+                options: {
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: { title: { display: true, text: 'Ngày' } },
+                        y: {
+                            title: { display: true, text: 'Số đơn' },
+                            beginAtZero: true,
+                            ticks: { precision: 0 }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Biểu đồ đơn theo khu vực
+        const ctxArea = document.getElementById('areaChart');
+        if (ctxArea && areaLabels.length > 0) {
+            new Chart(ctxArea, {
+                type: 'bar',
+                data: {
+                    labels: areaLabels,
+                    datasets: [{
+                        label: 'Số đơn',
+                        data: areaCounts
+                    }]
+                },
+                options: {
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { title: { display: true, text: 'Khu vực' } },
+                        y: {
+                            title: { display: true, text: 'Số đơn' },
+                            beginAtZero: true,
+                            ticks: { precision: 0 }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Biểu đồ phân bố điểm đánh giá
+        const ctxRating = document.getElementById('ratingChart');
+        if (ctxRating && ratingLabels.length > 0) {
+            new Chart(ctxRating, {
+                type: 'bar',
+                data: {
+                    labels: ratingLabels,
+                    datasets: [{
+                        label: 'Số lượt',
+                        data: ratingCounts
+                    }]
+                },
+                options: {
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { title: { display: true, text: 'Điểm' } },
+                        y: {
+                            title: { display: true, text: 'Số lượt' },
+                            beginAtZero: true,
+                            ticks: { precision: 0 }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+}

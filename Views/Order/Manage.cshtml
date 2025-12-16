@@ -1,0 +1,241 @@
+@model IEnumerable<WedNightFury.Models.Order>
+@{
+    ViewData["Title"] = "Quản lý vận đơn";
+    var status = (string)(ViewBag.Status ?? "all");
+}
+
+<div class="container-fluid">
+    <h3 class="mb-4">📦 Quản lý vận đơn</h3>
+
+    <!-- Bộ lọc + Xuất Excel -->
+    <form method="get" asp-action="Manage" asp-controller="Order" class="row g-2 mb-4 align-items-end">
+        <div class="col-md-3">
+            <input type="date"
+                   name="startDate"
+                   class="form-control"
+                   value="@((string)ViewBag.StartDate ?? "")" />
+        </div>
+        <div class="col-md-3">
+            <input type="date"
+                   name="endDate"
+                   class="form-control"
+                   value="@((string)ViewBag.EndDate ?? "")" />
+        </div>
+        <div class="col-md-3">
+            <select name="status" class="form-select">
+                <option value="all"
+                        selected="@(status == "all" ? "selected" : null)">
+                    Tất cả trạng thái
+                </option>
+                <option value="pending"
+                        selected="@(status == "pending" ? "selected" : null)">
+                    Chờ xử lý
+                </option>
+                <option value="shipping"
+                        selected="@(status == "shipping" ? "selected" : null)">
+                    Đang vận chuyển
+                </option>
+                <option value="done"
+                        selected="@(status == "done" ? "selected" : null)">
+                    Hoàn tất
+                </option>
+                <option value="cancelled"
+                        selected="@(status == "cancelled" ? "selected" : null)">
+                    Đã hủy
+                </option>
+            </select>
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary flex-fill">
+                🔍 Lọc
+            </button>
+            <button type="submit"
+                    formaction="@Url.Action("ExportExcel", "Order")"
+                    class="btn btn-outline-success flex-fill">
+                ⬇ Xuất Excel
+            </button>
+        </div>
+    </form>
+
+    <!-- Nút hành động khác -->
+    <div class="mb-3 d-flex gap-2">
+        <a href="#" class="btn btn-success">🖨 In đơn</a>
+        <a href="#" class="btn btn-outline-secondary">⬆ Nhập Excel</a>
+    </div>
+
+    <!-- Thông báo -->
+    @if (TempData["Message"] != null)
+    {
+        <div class="alert alert-success">@TempData["Message"]</div>
+    }
+
+    <!-- Thống kê -->
+    <div class="row text-center mb-4">
+        <div class="col-md-2">
+            <div class="card bg-light p-2">
+                <h6>Tổng số đơn</h6>
+                <h4>@ViewBag.TotalOrders</h4>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card p-2 bg-info text-white">
+                <h6>Chờ xử lý</h6>
+                <h4>@ViewBag.PendingOrders</h4>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card p-2 bg-warning text-dark">
+                <h6>Đang vận chuyển</h6>
+                <h4>@ViewBag.ShippingOrders</h4>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card p-2 bg-success text-white">
+                <h6>Hoàn tất</h6>
+                <h4>@ViewBag.DoneOrders</h4>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card p-2 bg-danger text-white">
+                <h6>Đã hủy</h6>
+                <h4>@ViewBag.CancelledOrders</h4>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bảng danh sách -->
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>#</th>
+                    <th>Mã đơn</th>
+                    <th>Người gửi</th>
+                    <th>Người nhận</th>
+                    <th>Giá trị (VNĐ)</th>
+                    <th>Trạng thái</th>
+                    <th>Ngày tạo</th>
+                    <th>Đánh giá</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="9" class="text-center text-muted">Không có đơn hàng nào</td></tr>
+                }
+                else
+                {
+                    foreach (var o in Model)
+                    {
+                        <tr>
+                            <td><b>@o.Id</b></td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(o.Code))
+                                {
+                                    <div class="d-flex align-items-center justify-content-between" style="gap:5px;">
+                                        <span class="text-primary fw-bold">@o.Code</span>
+                                        <button type="button" class="btn btn-sm btn-light border"
+                                                onclick="copyCode('@o.Code')" title="Sao chép mã">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted fst-italic">Chưa có</span>
+                                }
+                            </td>
+                            <td>@o.SenderName</td>
+                            <td>@o.ReceiverName</td>
+                            <td>@String.Format("{0:N0}", o.Value)</td>
+                            <td>
+                                @switch (o.Status)
+                                {
+                                    case "pending":
+                                        <span class="badge bg-info">Chờ xử lý</span>; break;
+                                    case "shipping":
+                                        <span class="badge bg-warning text-dark">Đang giao</span>; break;
+                                    case "done":
+                                        <span class="badge bg-success">Hoàn tất</span>; break;
+                                    case "cancelled":
+                                        <span class="badge bg-danger">Đã hủy</span>; break;
+                                }
+                            </td>
+                            <td>@(o.CreatedAt?.ToString("dd/MM/yyyy HH:mm"))</td>
+
+                            <!-- Cột đánh giá -->
+                            <td>
+                                @if (o.Status == "done")
+                                {
+                                    <a asp-controller="Rating" asp-action="Create" asp-route-orderId="@o.Id"
+                                       class="btn btn-sm btn-outline-warning">
+                                        ⭐ Đánh giá
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                            </td>
+
+                            <!-- Cột thao tác -->
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a asp-action="Details" asp-route-id="@o.Id" class="btn btn-sm btn-outline-primary">Xem</a>
+                                    <a asp-action="Print" asp-route-id="@o.Id" class="btn btn-sm btn-outline-success">In</a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ====== STYLE ====== -->
+<style>
+    .badge {
+        font-size: 0.9rem;
+        padding: 6px 10px;
+    }
+
+    select.form-select-sm {
+        font-size: 0.85rem;
+        height: 30px;
+        padding: 0 4px;
+    }
+
+    .btn-group .btn {
+        margin-right: 3px;
+    }
+
+    .table td, .table th {
+        vertical-align: middle;
+    }
+
+    /* Toast copy animation */
+    .alert {
+        animation: fadeInOut 2.5s ease forwards;
+    }
+
+    @@keyframes fadeInOut {
+        0% { opacity: 0; transform: translateY(10px); }
+        10% { opacity: 1; transform: translateY(0); }
+        90% { opacity: 1; transform: translateY(0); }
+        100% { opacity: 0; transform: translateY(10px); }
+    }
+</style>
+
+<!-- ====== SCRIPT ====== -->
+<script>
+    function copyCode(code) {
+        navigator.clipboard.writeText(code);
+        const toast = document.createElement("div");
+        toast.className = "position-fixed bottom-0 end-0 m-3 alert alert-success py-2 px-3 shadow";
+        toast.textContent = "📋 Đã sao chép mã: " + code;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2500);
+    }
+</script>

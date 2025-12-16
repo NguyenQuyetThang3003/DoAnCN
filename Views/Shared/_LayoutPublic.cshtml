@@ -1,0 +1,147 @@
+@* Views/Shared/_LayoutPublic.cshtml *@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - NightFury</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <style>
+        .navbar-brand img {
+            height: 36px;
+            margin-right: 8px;
+        }
+        /* Hero Banner */
+        .hero-banner {
+            background: url('/images/banner-city.jpg') no-repeat center center;
+            background-size: cover;
+            color: white;
+            text-align: center;
+            padding: 100px 20px;
+        }
+        .hero-banner h2 {
+            font-weight: bold;
+            font-size: 2rem;
+        }
+        .hero-banner p {
+            font-size: 1.2rem;
+        }
+        /* Service Section */
+        .service-box {
+            background: #fff;
+            border: 1px solid #eee;
+            border-radius: 6px;
+            padding: 20px;
+            height: 100%;
+        }
+        .service-menu {
+            background: #fff;
+            border: 1px solid #eee;
+            border-radius: 6px;
+        }
+        .service-menu h5 {
+            background: #dc3545;
+            color: #fff;
+            margin: 0;
+            padding: 12px;
+            border-radius: 6px 6px 0 0;
+        }
+        .service-menu ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .service-menu li {
+            padding: 12px;
+            border-top: 1px solid #eee;
+        }
+        .service-menu li a {
+            color: #000;
+            text-decoration: none;
+        }
+        .service-menu li a:hover {
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-danger">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center fw-bold" asp-controller="Home" asp-action="Index">
+                <img src="~/images/logo.png" alt="NightFury Logo" />
+                NightFury
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link text-white" href="#">Trang chủ</a></li>
+                    <li class="nav-item"><a class="nav-link text-white" href="#">Dịch vụ</a></li>
+                    <li class="nav-item"><a class="nav-link text-white" href="#">Tin tức</a></li>
+                    <li class="nav-item"><a class="nav-link text-white" href="#">Ứng dụng</a></li>
+                    <li class="nav-item"><a class="nav-link text-white" href="#">Hỗ trợ</a></li>
+                    <li class="nav-item"><a class="nav-link text-white" href="#">Tuyển dụng</a></li>
+                </ul>
+                <a class="btn btn-light fw-bold" asp-controller="Auth" asp-action="Login">Đăng ký / Đăng nhập</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Banner -->
+    <section class="hero-banner">
+        <h2>TỔNG CÔNG TY CỔ PHẦN NIGHTFURY</h2>
+        <p>"Mạng chuyển phát nhanh rộng khắp"</p>
+    </section>
+
+    <!-- Nội dung -->
+    <main role="main" class="container my-5">
+        <div class="row g-4">
+            <!-- Bên trái: dịch vụ -->
+            <div class="col-md-8">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="service-box">
+                            <h5>Phân loại địa danh</h5>
+                            <p>Căn cứ quyết định số 275/QĐ-NFPost, NightFury xin công bố đến Quý Khách hàng chi tiết phân loại địa danh.</p>
+                            <a href="#" class="text-danger fw-bold">Chi tiết &raquo;</a>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="service-box">
+                            <h5>Giao ngay Nội tỉnh</h5>
+                            <p>Dịch vụ giao hàng siêu tốc trong cùng một tỉnh/thành phố. Hàng hóa được lấy tận nơi và giao ngay trong vòng 2 giờ.</p>
+                            <a href="#" class="text-danger fw-bold">Chi tiết &raquo;</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bên phải: menu dịch vụ -->
+            <div class="col-md-4">
+                <div class="service-menu">
+                    <h5>Danh mục dịch vụ</h5>
+                    <ul>
+                        <li><a href="#">Dịch vụ trong nước</a></li>
+                        <li><a href="#">Dịch vụ quốc tế</a></li>
+                        <li><a href="#">Dịch vụ kho vận</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        @RenderBody()
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-light text-center py-3">
+        &copy; 2025 - NightFury Logistics
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

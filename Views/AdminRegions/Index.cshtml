@@ -1,0 +1,50 @@
+@model IEnumerable<WedNightFury.Models.Region>
+@{
+    ViewData["Title"] = "Quản lý khu vực giao";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    int stt = 1;
+}
+
+<h3 class="mb-3 text-danger fw-bold">Quản lý khu vực giao</h3>
+
+<a asp-action="Create" class="btn btn-primary mb-3">+ Thêm khu vực</a>
+
+<table class="table table-striped table-hover">
+    <thead class="table-dark">
+        <tr>
+            <th>#</th>
+            <th>Tên khu vực</th>
+            <th>Loại</th>
+            <th>Lat</th>
+            <th>Lng</th>
+            <th>Bán kính (km)</th>
+            <th>Base fee</th>
+            <th>Trạng thái</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var item in Model)
+    {
+        <tr>
+            <td>@(stt++)</td>
+            <td>@item.Name</td>
+            <td>@item.AreaType</td>
+            <td>@item.CenterLat</td>
+            <td>@item.CenterLng</td>
+            <td>@item.RadiusKm</td>
+            <td>@item.BaseShipFee.ToString("N0")</td>
+            <td>@(item.IsActive ? "Hoạt động" : "Ngưng")</td>
+            <td>
+                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">Sửa</a>
+                <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-sm btn-danger"
+                            onclick="return confirm('Xóa khu vực này?');">
+                        Xóa
+                    </button>
+                </form>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>

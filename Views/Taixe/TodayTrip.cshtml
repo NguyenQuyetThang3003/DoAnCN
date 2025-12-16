@@ -1,0 +1,233 @@
+@model List<WedNightFury.Models.Order>
+@{
+    ViewData["Title"] = "Lộ trình hôm nay";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="fw-bold m-0">🗺 LỘ TRÌNH GIAO HÀNG HÔM NAY</h2>
+
+    @if (Model != null && Model.Any())
+    {
+        <div class="d-flex align-items-center" style="gap:10px;">
+            <button type="button" id="btnSelectAll" class="btn btn-outline-secondary btn-sm">
+                Chọn tất cả
+            </button>
+
+            <button type="button" id="btnStartBatch" class="btn btn-primary btn-sm">
+                🚀 Bắt đầu giao các đơn đã chọn
+            </button>
+
+            <button type="button" id="btnMapsBatch" class="btn btn-outline-success btn-sm">
+                🧭 Mở Google Maps tối ưu lộ trình
+            </button>
+        </div>
+    }
+</div>
+
+<div id="batchMsg" class="alert d-none" role="alert"></div>
+
+@if (Model == null || !Model.Any())
+{
+    <div class="alert alert-warning">Hôm nay bạn chưa có chuyến nào.</div>
+}
+else
+{
+    <ol class="list-group list-group-numbered" id="orderList">
+        @foreach (var order in Model)
+        {
+            <li class="list-group-item d-flex justify-content-between align-items-start">
+                <div class="d-flex align-items-start" style="gap:12px;">
+                    <!-- ✅ checkbox -->
+                    <div class="pt-1">
+                        <input class="form-check-input order-check"
+                               type="checkbox"
+                               value="@order.Id"
+                               data-code="@order.Code"
+                               aria-label="Chọn đơn @order.Code" />
+                    </div>
+
+                    <div class="ms-1 me-auto">
+                        <div class="fw-bold">
+                            @order.ReceiverName (@order.Code)
+                            @if (!string.IsNullOrWhiteSpace(order.Status))
+                            {
+                                <span class="badge bg-secondary ms-2">@order.Status</span>
+                            }
+                        </div>
+
+                        <div>
+                            <i class="fa fa-location-dot"></i>
+                            @order.ReceiverAddress
+                        </div>
+
+                        <div>
+                            <i class="fa fa-phone"></i>
+                            @order.ReceiverPhone
+                        </div>
+
+                        @if (order.CodAmount > 0)
+                        {
+                            <div class="mt-1">
+                                <span class="badge bg-warning text-dark">
+                                    COD: @order.CodAmount.ToString("N0") đ
+                                </span>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- nút đơn lẻ vẫn giữ -->
+                <div class="d-flex flex-column" style="gap:6px;">
+                    @if (order.Lat != null && order.Lng != null)
+                    {
+                        <a class="btn btn-outline-primary btn-sm"
+                           href="https://www.google.com/maps/dir/?api=1&destination=@order.Lat,@order.Lng"
+                           target="_blank">
+                            Điều hướng
+                        </a>
+                    }
+                    else
+                    {
+                        <a class="btn btn-outline-primary btn-sm"
+                           href="https://www.google.com/maps/search/?api=1&query=@Uri.EscapeDataString(order.ReceiverAddress ?? "")"
+                           target="_blank">
+                            Điều hướng
+                        </a>
+                    }
+
+                    <a asp-action="StopDetail" asp-route-id="@order.Id" class="btn btn-dark btn-sm">
+                        Chi tiết
+                    </a>
+                </div>
+            </li>
+        }
+    </ol>
+}
+
+<script>
+    function showMsg(type, text) {
+        const box = document.getElementById("batchMsg");
+        box.classList.remove("d-none", "alert-success", "alert-danger", "alert-warning", "alert-info");
+        box.classList.add("alert-" + type);
+        box.textContent = text;
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function getSelectedIds() {
+        return Array.from(document.querySelectorAll(".order-check:checked"))
+            .map(cb => parseInt(cb.value, 10))
+            .filter(x => !isNaN(x));
+    }
+
+    function setAllChecks(checked) {
+        document.querySelectorAll(".order-check").forEach(cb => cb.checked = checked);
+    }
+
+    function updateSelectAllButton() {
+        const all = Array.from(document.querySelectorAll(".order-check"));
+        const checked = all.filter(x => x.checked);
+        const btn = document.getElementById("btnSelectAll");
+        if (!btn) return;
+        btn.textContent = (all.length > 0 && checked.length === all.length) ? "Bỏ chọn" : "Chọn tất cả";
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const btnSelectAll = document.getElementById("btnSelectAll");
+        const btnStartBatch = document.getElementById("btnStartBatch");
+        const btnMapsBatch = document.getElementById("btnMapsBatch");
+
+        // checkbox change -> đổi text nút chọn tất cả
+        document.querySelectorAll(".order-check").forEach(cb => {
+            cb.addEventListener("change", updateSelectAllButton);
+        });
+        updateSelectAllButton();
+
+        // ✅ chọn tất cả / bỏ chọn
+        btnSelectAll?.addEventListener("click", () => {
+            const all = Array.from(document.querySelectorAll(".order-check"));
+            const checked = all.filter(x => x.checked);
+            const isAllChecked = (all.length > 0 && checked.length === all.length);
+            setAllChecks(!isAllChecked);
+            updateSelectAllButton();
+        });
+
+        // ✅ bắt đầu giao hàng loạt
+        btnStartBatch?.addEventListener("click", async () => {
+            const ids = getSelectedIds();
+            if (ids.length === 0) {
+                showMsg("warning", "Vui lòng chọn ít nhất 1 đơn.");
+                return;
+            }
+
+            try {
+                btnStartBatch.disabled = true;
+                btnStartBatch.textContent = "Đang cập nhật...";
+
+                const res = await fetch("/Taixe/UpdateStatusBatch", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ orderIds: ids, status: "shipping" })
+                });
+
+                const data = await res.json().catch(() => ({}));
+
+                if (!res.ok) {
+                    showMsg("danger", data.message || "Cập nhật thất bại.");
+                    return;
+                }
+
+                showMsg("success", `Đã cập nhật ${data.updated}/${data.total} đơn sang trạng thái SHIPPING.`);
+                // reload để UI phản ánh trạng thái mới
+                setTimeout(() => location.reload(), 600);
+
+            } catch (e) {
+                showMsg("danger", "Có lỗi khi cập nhật loạt: " + (e?.message || e));
+            } finally {
+                btnStartBatch.disabled = false;
+                btnStartBatch.textContent = "🚀 Bắt đầu giao các đơn đã chọn";
+            }
+        });
+
+        // ✅ mở google maps theo nhóm
+        btnMapsBatch?.addEventListener("click", async () => {
+            const ids = getSelectedIds();
+            if (ids.length === 0) {
+                showMsg("warning", "Vui lòng chọn ít nhất 1 đơn để mở Maps.");
+                return;
+            }
+
+            try {
+                btnMapsBatch.disabled = true;
+                btnMapsBatch.textContent = "Đang tạo link Maps...";
+
+                const res = await fetch("/Taixe/OpenMapsBatch", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ orderIds: ids, maxStopsPerUrl: 9 })
+                });
+
+                const data = await res.json().catch(() => ({}));
+
+                if (!res.ok) {
+                    showMsg("danger", data.message || "Không tạo được link Maps.");
+                    return;
+                }
+
+                const urls = data.mapUrls || [];
+                if (urls.length === 0) {
+                    showMsg("warning", "Không có đủ dữ liệu địa chỉ/toạ độ để mở Maps.");
+                    return;
+                }
+
+                showMsg("info", `Đang mở ${urls.length} tab Google Maps (đã tự chia nhóm điểm dừng)...`);
+                urls.forEach(u => window.open(u, "_blank"));
+
+            } catch (e) {
+                showMsg("danger", "Có lỗi khi mở Maps: " + (e?.message || e));
+            } finally {
+                btnMapsBatch.disabled = false;
+                btnMapsBatch.textContent = "🧭 Mở Google Maps tối ưu lộ trình";
+            }
+        });
+    });
+</script>

@@ -1,0 +1,119 @@
+@{
+    ViewData["Title"] = "Tạo đơn thành công";
+    var orderId = ViewBag.OrderId;
+    var orderCode = ViewBag.OrderCode as string;
+    var warning = ViewBag.Warning as string;
+}
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+
+<style>
+    body { background-color: rgba(0,0,0,0.3); }
+    .modal-content { border-radius: 15px; border: none; }
+    .btn-danger { background-color: #d32f2f; border: none; }
+    .btn-danger:hover { background-color: #b71c1c; }
+</style>
+
+<div class="modal show d-block" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content text-center p-4 shadow-lg">
+            <!-- ICON -->
+            <div class="mb-3">
+                <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
+            </div>
+
+            <!-- TITLE -->
+            <h4 class="fw-bold mb-2">Tạo đơn thành công</h4>
+            <p class="text-muted mb-3">
+                Tạo và gửi duyệt thành công đơn hàng:
+                <strong>@orderCode</strong>
+            </p>
+
+            <!-- WARNING (Lat/Lng...) -->
+            @if (!string.IsNullOrWhiteSpace(warning))
+            {
+                <div class="alert alert-warning text-start">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    @warning
+                </div>
+            }
+
+            <!-- COPIES -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Số liên cần in trên một đơn</label><br />
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="copies" id="copy1" value="1" checked>
+                    <label class="form-check-label" for="copy1">1 liên</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="copies" id="copy2" value="2">
+                    <label class="form-check-label" for="copy2">2 liên</label>
+                </div>
+            </div>
+
+            <!-- PRINT BUTTONS -->
+            <div class="d-flex justify-content-center gap-3 flex-wrap">
+                <a id="btnA5"
+                   asp-action="Print"
+                   asp-route-id="@orderId"
+                   asp-route-size="A5"
+                   asp-route-copies="1"
+                   class="btn btn-danger px-4">
+                    In A5
+                </a>
+
+                <a id="btnA6"
+                   asp-action="Print"
+                   asp-route-id="@orderId"
+                   asp-route-size="A6"
+                   asp-route-copies="1"
+                   class="btn btn-outline-danger px-4">
+                    In nhiệt A6
+                </a>
+
+                <a id="btnA7"
+                   asp-action="Print"
+                   asp-route-id="@orderId"
+                   asp-route-size="A7"
+                   asp-route-copies="1"
+                   class="btn btn-outline-secondary px-4">
+                    In A7
+                </a>
+            </div>
+
+            <!-- NEW ORDER -->
+            <div class="mt-4">
+                <a href="/Order/Create" class="btn btn-link text-decoration-none">Tạo đơn mới</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        const radios = document.querySelectorAll('input[name="copies"]');
+        const buttons = [
+            document.getElementById('btnA5'),
+            document.getElementById('btnA6'),
+            document.getElementById('btnA7'),
+        ].filter(Boolean);
+
+        function getSelectedCopies() {
+            const checked = document.querySelector('input[name="copies"]:checked');
+            return checked ? checked.value : "1";
+        }
+
+        function updateLinks() {
+            const copies = getSelectedCopies();
+            buttons.forEach(btn => {
+                const url = new URL(btn.href, window.location.origin);
+                url.searchParams.set('copies', copies);
+                btn.href = url.toString();
+            });
+        }
+
+        radios.forEach(r => r.addEventListener('change', updateLinks));
+        updateLinks();
+    })();
+</script>

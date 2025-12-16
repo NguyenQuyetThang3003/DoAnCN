@@ -1,0 +1,184 @@
+@model WedNightFury.Models.Rating
+@{
+    ViewData["Title"] = "Đánh giá đơn hàng";
+    var order = ViewBag.Order;
+}
+
+<div class="container py-5">
+    <div class="card shadow-lg border-0">
+        <div class="card-body text-center">
+            <h4 class="mb-3 text-danger fw-bold">⭐ Đánh giá dịch vụ của bạn</h4>
+            <p class="text-muted">
+                Đơn hàng: <strong>@order?.Code</strong> — Người nhận: <strong>@order?.ReceiverName</strong>
+            </p>
+
+            <form asp-action="Create" method="post" id="ratingForm">
+                <input type="hidden" asp-for="OrderId" />
+                <input type="hidden" asp-for="CustomerId" />
+
+                <!-- Chọn sao -->
+                <div class="rating mb-4" id="starContainer">
+                    <input type="radio" id="star1" name="Score" value="1" /><label for="star1" title="1 sao"></label>
+                    <input type="radio" id="star2" name="Score" value="2" /><label for="star2" title="2 sao"></label>
+                    <input type="radio" id="star3" name="Score" value="3" /><label for="star3" title="3 sao"></label>
+                    <input type="radio" id="star4" name="Score" value="4" /><label for="star4" title="4 sao"></label>
+                    <input type="radio" id="star5" name="Score" value="5" /><label for="star5" title="5 sao"></label>
+                </div>
+
+                <!-- Bình luận -->
+                <div class="mb-3">
+                    <textarea asp-for="Comment" class="form-control" rows="3" placeholder="Nhập cảm nhận của bạn..."></textarea>
+                    <span asp-validation-for="Comment" class="text-danger"></span>
+                </div>
+
+                <button type="button" class="btn btn-danger px-4" id="confirmBtn">Gửi đánh giá</button>
+                <a asp-controller="Order" asp-action="Manage" class="btn btn-outline-secondary ms-2">Quay lại</a>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal xác nhận -->
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="confirmLabel">Xác nhận đánh giá</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <i class="fas fa-star text-warning fa-3x mb-3"></i>
+                <p>Bạn có chắc chắn muốn gửi đánh giá này không?</p>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-danger" id="submitConfirm">Xác nhận</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal cảm ơn -->
+<div class="modal fade" id="thankModal" tabindex="-1" aria-labelledby="thankLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 text-center">
+            <div class="modal-body py-5">
+                <i class="fas fa-heart text-danger fa-3x mb-3"></i>
+                <h5 class="fw-bold">Cảm ơn bạn đã đánh giá dịch vụ!</h5>
+                <p class="text-muted">Chúng tôi rất trân trọng phản hồi của bạn ❤️</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const form = document.getElementById("ratingForm");
+            const stars = document.querySelectorAll(".rating input");
+            const labels = document.querySelectorAll(".rating label");
+            const confirmBtn = document.getElementById("confirmBtn");
+            const submitConfirm = document.getElementById("submitConfirm");
+
+            // Hiệu ứng chọn sao
+            labels.forEach(label => {
+                label.addEventListener("click", () => {
+                    const value = label.getAttribute("for").replace("star", "");
+                    stars.forEach(s => s.checked = false);
+                    document.getElementById(`star${value}`).checked = true;
+
+                    labels.forEach(l => l.classList.remove("selected"));
+                    for (let i = 1; i <= value; i++) {
+                        document.querySelector(`label[for='star${i}']`).classList.add("selected");
+                    }
+                });
+            });
+
+            // Khi bấm nút gửi => hiện modal xác nhận
+            confirmBtn.addEventListener("click", () => {
+                const selected = [...stars].find(r => r.checked);
+                if (!selected) {
+                    alert("⚠️ Vui lòng chọn số sao trước khi gửi đánh giá!");
+                    return;
+                }
+                const confirmModal = new bootstrap.Modal(document.getElementById("confirmModal"));
+                confirmModal.show();
+            });
+
+            // Khi xác nhận trong modal
+            submitConfirm.addEventListener("click", () => {
+                const confirmModal = bootstrap.Modal.getInstance(document.getElementById("confirmModal"));
+                confirmModal.hide();
+
+                // Gửi form
+                form.submit();
+
+                // Hiện modal cảm ơn
+                const thankModal = new bootstrap.Modal(document.getElementById("thankModal"));
+                thankModal.show();
+
+                // Tự động về danh sách sau 2.5s
+                setTimeout(() => {
+                    window.location.href = '/Order/Manage';
+                }, 2500);
+            });
+        });
+    </script>
+}
+
+<style>
+    .rating {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 15px;
+    }
+
+    .rating input {
+        display: none;
+    }
+
+    .rating label {
+        width: 40px;
+        height: 40px;
+        background: url('https://cdn-icons-png.flaticon.com/512/616/616489.png') no-repeat center;
+        background-size: 36px;
+        cursor: pointer;
+        filter: grayscale(100%) brightness(1.1);
+        transition: all 0.25s ease;
+    }
+
+    .rating label.selected {
+        filter: none;
+        transform: scale(1.15);
+    }
+
+    .rating label:hover,
+    .rating label:hover ~ label {
+        filter: none;
+        transform: scale(1.15);
+    }
+
+    .card {
+        max-width: 500px;
+        margin: auto;
+        border-radius: 16px;
+    }
+
+    textarea.form-control {
+        border-radius: 12px;
+    }
+
+    button.btn {
+        border-radius: 10px;
+        font-weight: 500;
+        transition: all 0.2s ease-in-out;
+    }
+
+    button.btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+</style>

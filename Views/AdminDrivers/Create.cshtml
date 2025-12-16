@@ -1,0 +1,180 @@
+@using WedNightFury.Models.ViewModels
+@model AdminDriverEditViewModel
+
+@{
+    ViewData["Title"] = "Thêm tài xế";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<div class="container py-3">
+    <h2 class="mb-3">Thêm tài xế mới</h2>
+
+    <form asp-action="Create" method="post" class="card" id="driverCreateForm">
+        <div class="card-body row g-3">
+            <div class="col-md-4">
+                <label asp-for="UserName" class="form-label"></label>
+                <input asp-for="UserName" class="form-control" />
+                <span asp-validation-for="UserName" class="text-danger"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Password" class="form-label">Mật khẩu</label>
+                <input asp-for="Password" class="form-control" />
+                <small class="text-muted">Có thể đặt tạm, sau này tài xế đổi.</small>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="FullName" class="form-label">Họ tên</label>
+                <input asp-for="FullName" class="form-control" />
+                <span asp-validation-for="FullName" class="text-danger"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="Email" class="form-label"></label>
+                <input asp-for="Email" class="form-control" />
+                <span asp-validation-for="Email" class="text-danger"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Phone" class="form-label"></label>
+                <input asp-for="Phone" class="form-control" />
+                <span asp-validation-for="Phone" class="text-danger"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="CitizenId" class="form-label">CMND/CCCD</label>
+                <input asp-for="CitizenId" class="form-control" />
+                <span asp-validation-for="CitizenId" class="text-danger"></span>
+            </div>
+
+            <div class="col-md-6">
+                <label asp-for="Address" class="form-label">Địa chỉ chi tiết</label>
+                <input asp-for="Address" class="form-control" />
+                <span asp-validation-for="Address" class="text-danger"></span>
+            </div>
+
+            <!-- KHU VỰC HOẠT ĐỘNG -->
+            <div class="col-md-4">
+                <label class="form-label">Tỉnh/Thành phố</label>
+                <select id="province" class="form-select"></select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Quận/Huyện</label>
+                <select id="district" class="form-select"></select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Phường/Xã</label>
+                <select id="ward" class="form-select"></select>
+            </div>
+
+            <div class="col-md-6">
+                <label asp-for="CompanyName" class="form-label">Đơn vị / Đối tác</label>
+                <input asp-for="CompanyName" class="form-control" />
+                <span asp-validation-for="CompanyName" class="text-danger"></span>
+            </div>
+        </div>
+
+        <!-- Hidden bind về model -->
+        <input type="hidden" asp-for="City"     id="ProvinceHidden" />
+        <input type="hidden" asp-for="District" id="DistrictHidden" />
+        <input type="hidden" asp-for="Ward"     id="WardHidden" />
+
+        <div class="card-footer text-end">
+            <a asp-action="Index" class="btn btn-secondary">Quay lại</a>
+            <button type="submit" class="btn btn-primary ms-2">Lưu</button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        let provincesData = [];
+
+        fetch("https://raw.githubusercontent.com/kenzouno1/DiaGioiHanhChinhVN/master/data.json")
+            .then(res => res.json())
+            .then(data => {
+                provincesData = data;
+                loadProvinces();
+            })
+            .catch(err => {
+                console.error("Không load được data địa giới hành chính:", err);
+            });
+
+        function loadProvinces() {
+            const p = document.getElementById("province");
+            p.innerHTML = `<option value="">--Chọn Tỉnh/Thành--</option>`;
+
+            provincesData.forEach(prov => {
+                const opt = document.createElement("option");
+                opt.value = prov.Id;
+                opt.textContent = prov.Name;
+                p.appendChild(opt);
+            });
+
+            const provinceHidden = document.getElementById("ProvinceHidden");
+
+            p.onchange = () => {
+                const text = p.value ? p.options[p.selectedIndex].text.trim() : "";
+                provinceHidden.value = text;
+                loadDistricts();
+            };
+        }
+
+        function loadDistricts() {
+            const pVal = document.getElementById("province").value;
+            const d = document.getElementById("district");
+            const districtHidden = document.getElementById("DistrictHidden");
+
+            d.innerHTML = `<option value="">--Chọn Quận/Huyện--</option>`;
+            districtHidden.value = "";
+
+            document.getElementById("ward").innerHTML = `<option value="">--Chọn Phường/Xã--</option>`;
+            document.getElementById("WardHidden").value = "";
+
+            if (!pVal) return;
+
+            const prov = provincesData.find(x => x.Id == pVal);
+            if (!prov) return;
+
+            prov.Districts.forEach(dist => {
+                const opt = document.createElement("option");
+                opt.value = dist.Id;
+                opt.textContent = dist.Name;
+                d.appendChild(opt);
+            });
+
+            d.onchange = () => {
+                const text = d.value ? d.options[d.selectedIndex].text.trim() : "";
+                districtHidden.value = text;
+                loadWards();
+            };
+        }
+
+        function loadWards() {
+            const pVal = document.getElementById("province").value;
+            const dVal = document.getElementById("district").value;
+            const w = document.getElementById("ward");
+            const wardHidden = document.getElementById("WardHidden");
+
+            w.innerHTML = `<option value="">--Chọn Phường/Xã--</option>`;
+            wardHidden.value = "";
+
+            if (!pVal || !dVal) return;
+
+            const prov = provincesData.find(x => x.Id == pVal);
+            if (!prov) return;
+            const dist = prov.Districts.find(x => x.Id == dVal);
+            if (!dist) return;
+
+            dist.Wards.forEach(ward => {
+                const opt = document.createElement("option");
+                opt.value = ward.Id;
+                opt.textContent = ward.Name;
+                w.appendChild(opt);
+            });
+
+            w.onchange = () => {
+                const text = w.value ? w.options[w.selectedIndex].text.trim() : "";
+                wardHidden.value = text;
+            };
+        }
+    </script>
+}

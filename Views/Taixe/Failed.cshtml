@@ -1,0 +1,37 @@
+@model WedNightFury.Models.ViewModels.FailedDeliveryViewModel
+@{
+    ViewData["Title"] = "Xác nhận giao thất bại";
+}
+
+<h2 class="fw-bold mb-3 text-danger">❌ GIAO HÀNG THẤT BẠI</h2>
+
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">@Model.Code - @Model.ReceiverName</h5>
+        <p class="card-text">
+            <i class="fa fa-location-dot"></i> @Model.ReceiverAddress
+        </p>
+
+        <form asp-action="Failed" method="post" enctype="multipart/form-data">
+            <input type="hidden" asp-for="OrderId"/>
+
+            <div class="mb-3">
+                <label asp-for="FailedReason" class="form-label">Lý do thất bại (bắt buộc)</label>
+                <textarea asp-for="FailedReason" class="form-control"></textarea>
+                <span asp-validation-for="FailedReason" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="EvidenceImage" class="form-label">Ảnh minh chứng (không bắt buộc)</label>
+                <input asp-for="EvidenceImage" class="form-control" type="file" accept="image/*"/>
+            </div>
+
+            <button type="submit" class="btn btn-danger">Xác nhận thất bại</button>
+            <a asp-action="StopDetail" asp-route-id="@Model.OrderId" class="btn btn-secondary ms-2">Quay lại</a>
+        </form>
+    </div>
+</div>
+
+@section Scripts{
+    <partial name="_ValidationScriptsPartial" />
+}

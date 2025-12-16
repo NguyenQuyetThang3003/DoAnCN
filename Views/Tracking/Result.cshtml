@@ -1,0 +1,240 @@
+@model IEnumerable<WedNightFury.Models.Order>
+@using System.Linq
+@using System.Globalization
+
+@{
+    ViewData["Title"] = "Kết quả tra cứu đơn hàng";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var orders = Model?.ToList() ?? new List<WedNightFury.Models.Order>();
+    string keyword = ViewBag.Keyword as string;
+}
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+<div class="container py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="text-primary mb-0">
+            <i class="fas fa-clipboard-check"></i> Kết quả tra cứu
+            @if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                <span class="fs-6 text-muted">(&nbsp;từ khóa: <strong>@keyword</strong>&nbsp;)</span>
+            }
+        </h4>
+
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left"></i> Tra cứu khác
+        </a>
+    </div>
+
+    @if (!orders.Any())
+    {
+        <div class="alert alert-warning shadow-sm">
+            ❌ Không tìm thấy đơn hàng phù hợp.
+            @if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                <div class="mt-1">Từ khóa: <strong>@keyword</strong></div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info shadow-sm d-flex justify-content-between align-items-center mb-3">
+            <div>✅ Tìm thấy <strong>@orders.Count</strong> đơn hàng.</div>
+            <small class="text-muted">Bấm “Theo dõi” để xem hành trình & trạng thái chi tiết.</small>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle shadow-sm mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="min-width: 150px;">Mã đơn</th>
+                        <th>Người gửi</th>
+                        <th>Người nhận</th>
+                        <th class="text-end">Giá trị</th>
+                        <th class="text-center">Trạng thái</th>
+                        <th class="text-center">COD</th>
+                        <th class="text-center">POD</th>
+                        <th class="text-center">Vị trí</th>
+                        <th class="text-center" style="width: 130px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var order in orders)
+                    {
+                        var status = (order.Status ?? "").Trim().ToLowerInvariant();
+
+                        var statusClass =
+                            status == "pending"   ? "bg-info text-white" :
+                            status == "assigned"  ? "bg-primary text-white" :
+                            status == "shipping"  ? "bg-warning text-dark" :
+                            status == "done"      ? "bg-success text-white" :
+                            status == "failed"    ? "bg-danger text-white" :
+                            status == "cancelled" ? "bg-dark text-white" :
+                                                    "bg-secondary text-white";
+
+                        var statusText =
+                            status == "pending"   ? "Chờ xử lý" :
+                            status == "assigned"  ? "Đã phân công" :
+                            status == "shipping"  ? "Đang giao" :
+                            status == "done"      ? "Hoàn tất" :
+                            status == "failed"    ? "Giao thất bại" :
+                            status == "cancelled" ? "Đã hủy" :
+                                                    (order.Status ?? "Không rõ");
+
+                        // COD label
+                        string codLabel;
+                        string codClass;
+                        if (order.CodAmount <= 0)
+                        {
+                            codLabel = "Không COD";
+                            codClass = "badge bg-secondary";
+                        }
+                        else if (order.IsCodPaid)
+                        {
+                            codLabel = "Đã thu COD";
+                            codClass = "badge bg-success";
+                        }
+                        else if (status == "done")
+                        {
+                            codLabel = "Chưa đối soát";
+                            codClass = "badge bg-warning text-dark";
+                        }
+                        else
+                        {
+                            codLabel = "Chưa thu";
+                            codClass = "badge bg-warning text-dark";
+                        }
+
+                        bool hasPod = !string.IsNullOrWhiteSpace(order.PodImagePath);
+
+                        bool hasCoord = order.Lat.HasValue && order.Lng.HasValue;
+                        string mapId = $"map_{order.Id}";
+                        string modalId = $"{mapId}_modal";
+
+                        var latStr = hasCoord ? order.Lat.Value.ToString(CultureInfo.InvariantCulture) : "";
+                        var lngStr = hasCoord ? order.Lng.Value.ToString(CultureInfo.InvariantCulture) : "";
+
+                        <tr>
+                            <td class="fw-bold">@order.Code</td>
+                            <td>@order.SenderName</td>
+                            <td>@order.ReceiverName</td>
+
+                            <td class="text-end">@order.Value.ToString("N0")</td>
+
+                            <td class="text-center">
+                                <span class="badge @statusClass px-3">@statusText</span>
+                            </td>
+
+                            <td class="text-center">
+                                <span class="@codClass">@codLabel</span>
+                            </td>
+
+                            <td class="text-center">
+                                @if (hasPod)
+                                {
+                                    <span class="text-success" title="Đã có ảnh POD"><i class="fas fa-image"></i></span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted" title="Chưa có ảnh POD"><i class="far fa-image"></i></span>
+                                }
+                            </td>
+
+                            <td class="text-center">
+                                @if (hasCoord)
+                                {
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-secondary"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#@modalId">
+                                        <i class="fas fa-map-marker-alt"></i> Map
+                                    </button>
+
+                                    <!-- Modal map -->
+                                    <div class="modal fade" id="@modalId" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog modal-lg modal-dialog-centered">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h6 class="modal-title">
+                                                        <i class="fas fa-map"></i> Vị trí giao nhận - @order.Code
+                                                    </h6>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <div class="small text-muted mb-2">
+                                                        Lat/Lng:
+                                                        <b>@latStr</b>, <b>@lngStr</b>
+                                                    </div>
+
+                                                    <!-- ✅ đưa lat/lng vào data-* để JS đọc chắc chắn -->
+                                                    <div id="@mapId"
+                                                         class="leaflet-map"
+                                                         data-lat="@latStr"
+                                                         data-lng="@lngStr"
+                                                         style="height: 360px; border-radius: 12px; border:1px solid #e6e6e6;">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                            </td>
+
+                            <td class="text-center">
+                                <a asp-controller="Tracking"
+                                   asp-action="Details"
+                                   asp-route-id="@order.Id"
+                                   class="btn btn-sm btn-primary">
+                                    <i class="fas fa-route"></i> Theo dõi
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<style>
+    .table-hover tbody tr:hover { background-color: #f8fbff; }
+</style>
+
+<script>
+    // init maps when modal shown (Leaflet needs visible container)
+    document.addEventListener("shown.bs.modal", function (ev) {
+        const modal = ev.target;
+        const mapDiv = modal.querySelector(".leaflet-map");
+        if (!mapDiv) return;
+
+        // init 1 lần / modal
+        if (mapDiv.dataset.inited === "1") return;
+
+        const lat = parseFloat(mapDiv.dataset.lat || "");
+        const lng = parseFloat(mapDiv.dataset.lng || "");
+        if (!isFinite(lat) || !isFinite(lng)) return;
+
+        const map = L.map(mapDiv.id).setView([lat, lng], 16);
+
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19,
+            attribution: "&copy; OpenStreetMap"
+        }).addTo(map);
+
+        L.marker([lat, lng]).addTo(map);
+
+        mapDiv.dataset.inited = "1";
+
+        // đảm bảo render đúng kích thước sau khi modal animate xong
+        setTimeout(() => map.invalidateSize(), 200);
+    });
+</script>

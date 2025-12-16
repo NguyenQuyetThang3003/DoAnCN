@@ -1,0 +1,228 @@
+@using WedNightFury.Controllers
+@model AdminOrderListViewModel
+
+@{
+    ViewData["Title"] = "Tất cả đơn hàng";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";   // <<< dùng layout admin
+}
+
+<div class="container-fluid py-3">
+    <h2 class="mb-3">Tất cả đơn hàng</h2>
+
+    <!-- Bộ lọc -->
+    <form method="get" asp-action="Index" asp-controller="AdminOrders" class="card mb-3">
+        <div class="card-body row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Trạng thái</label>
+                <select name="status" class="form-select">
+                    @{
+                        string currentStatus = Model.StatusFilter ?? "all";
+                    }
+                    <option value="all" selected="@(currentStatus == "all")">Tất cả</option>
+                    <option value="pending" selected="@(currentStatus == "pending")">Đang chờ xử lý</option>
+                    <option value="shipping" selected="@(currentStatus == "shipping")">Đang giao</option>
+                    <option value="done" selected="@(currentStatus == "done")">Đã giao</option>
+                    <option value="failed" selected="@(currentStatus == "failed")">Thất bại / Hoàn</option>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Từ ngày</label>
+                <input type="date" name="fromDate"
+                       value="@(Model.FromDate.HasValue ? Model.FromDate.Value.ToString("yyyy-MM-dd") : "")"
+                       class="form-control" />
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Đến ngày</label>
+                <input type="date" name="toDate"
+                       value="@(Model.ToDate.HasValue ? Model.ToDate.Value.ToString("yyyy-MM-dd") : "")"
+                       class="form-control" />
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Từ khóa</label>
+                <input type="text" name="keyword" class="form-control"
+                       value="@Model.Keyword"
+                       placeholder="Mã đơn / tên / SĐT..." />
+            </div>
+
+            <div class="col-12 d-flex justify-content-end mt-2">
+                <button type="submit" class="btn btn-primary me-2">Lọc</button>
+                <a asp-action="Index" asp-controller="AdminOrders" class="btn btn-outline-secondary">Xóa bộ lọc</a>
+            </div>
+        </div>
+    </form>
+
+    <!-- Thống kê trạng thái -->
+    <div class="row g-3 mb-3">
+        @{
+            int total = Model.StatusStats.Sum(s => s.Count);
+            Func<string, string> statusLabel = s => s switch
+            {
+                "pending" => "Đang chờ xử lý",
+                "shipping" => "Đang giao",
+                "done" => "Đã giao",
+                "failed" => "Thất bại / Hoàn",
+                _ => s
+            };
+            Func<string, string> statusBadgeClass = s => s switch
+            {
+                "pending" => "bg-warning text-dark",
+                "shipping" => "bg-info text-dark",
+                "done" => "bg-success",
+                "failed" => "bg-danger",
+                _ => "bg-secondary"
+            };
+        }
+
+        @foreach (var s in Model.StatusStats)
+        {
+            var percent = total > 0 ? (s.Count * 100.0 / total) : 0;
+            <div class="col-md-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="badge @statusBadgeClass(s.Status)">@statusLabel(s.Status)</span>
+                            <span class="fw-bold">@s.Count</span>
+                        </div>
+                        <div class="small text-muted mt-1">
+                            @(percent.ToString("0.0"))%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Bảng đơn hàng -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>
+                Danh sách đơn hàng
+                <span class="text-muted small">
+                    (Trang @Model.PageIndex / @Model.TotalPages – @Model.TotalItems đơn)
+                </span>
+            </span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Mã đơn</th>
+                        <th>Khách hàng</th>
+                        <th>Người nhận</th>
+                        <th>SĐT nhận</th>
+                        <th>Địa chỉ nhận</th>
+                        <th>Giá trị COD</th>
+                        <th>Phí ship</th>
+                        <th>Trạng thái</th>
+                        <th>Ngày tạo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @if (Model.Items != null && Model.Items.Any())
+                {
+                    int stt = (Model.PageIndex - 1) * Model.PageSize + 1;
+                    foreach (var item in Model.Items)
+                    {
+                        <tr>
+                            <td>@stt</td>
+                            <td>@item.Code</td>
+                            <td>@item.CustomerName</td>
+                            <td>@item.ReceiverName</td>
+                            <td>@item.ReceiverPhone</td>
+                            <td>@item.ReceiverAddress</td>
+                            <td>@item.CodAmount.ToString("N0") đ</td>
+                            <td>@item.ShipFee.ToString("N0") đ</td>
+                            <td>
+                                @{
+                                    string badgeClass = item.Status switch
+                                    {
+                                        "pending" => "badge bg-warning text-dark",
+                                        "shipping" => "badge bg-info text-dark",
+                                        "done" => "badge bg-success",
+                                        "failed" => "badge bg-danger",
+                                        _ => "badge bg-secondary"
+                                    };
+                                }
+                                <span class="@badgeClass">@item.Status</span>
+                            </td>
+                            <td>@(item.CreatedAt.HasValue ? item.CreatedAt.Value.ToString("dd/MM/yyyy HH:mm") : "")</td>
+                        </tr>
+                        stt++;
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="10" class="text-center text-muted">
+                            Không có đơn hàng nào phù hợp bộ lọc.
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Phân trang -->
+        @if (Model.TotalPages > 1)
+        {
+            <div class="card-footer d-flex justify-content-between align-items-center">
+                <span class="small text-muted">
+                    Hiển thị @Model.Items.Count / @Model.TotalItems đơn
+                </span>
+                <nav>
+                    <ul class="pagination mb-0">
+                        @{
+                            int current = Model.PageIndex;
+                            int last = Model.TotalPages;
+                            int prev = current - 1;
+                            int next = current + 1;
+                        }
+
+                        <li class="page-item @(current == 1 ? "disabled" : "")">
+                            <a class="page-link"
+                               asp-action="Index"
+                               asp-route-page="@(current - 1)"
+                               asp-route-status="@Model.StatusFilter"
+                               asp-route-keyword="@Model.Keyword"
+                               asp-route-fromDate="@(Model.FromDate?.ToString("yyyy-MM-dd"))"
+                               asp-route-toDate="@(Model.ToDate?.ToString("yyyy-MM-dd"))">
+                                «
+                            </a>
+                        </li>
+
+                        @for (int i = 1; i <= Model.TotalPages; i++)
+                        {
+                            <li class="page-item @(i == current ? "active" : "")">
+                                <a class="page-link"
+                                   asp-action="Index"
+                                   asp-route-page="@i"
+                                   asp-route-status="@Model.StatusFilter"
+                                   asp-route-keyword="@Model.Keyword"
+                                   asp-route-fromDate="@(Model.FromDate?.ToString("yyyy-MM-dd"))"
+                                   asp-route-toDate="@(Model.ToDate?.ToString("yyyy-MM-dd"))">
+                                    @i
+                                </a>
+                            </li>
+                        }
+
+                        <li class="page-item @(current == last ? "disabled" : "")">
+                            <a class="page-link"
+                               asp-action="Index"
+                               asp-route-page="@(current + 1)"
+                               asp-route-status="@Model.StatusFilter"
+                               asp-route-keyword="@Model.Keyword"
+                               asp-route-fromDate="@(Model.FromDate?.ToString("yyyy-MM-dd"))"
+                               asp-route-toDate="@(Model.ToDate?.ToString("yyyy-MM-dd"))">
+                                »
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        }
+    </div>
+</div>

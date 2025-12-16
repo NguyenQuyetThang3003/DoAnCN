@@ -1,0 +1,116 @@
+@{
+    Layout = "~/Views/Shared/_LayoutDriver.cshtml";
+    ViewData["Title"] = "Hỗ trợ tài xế";
+}
+
+<div class="container mt-4 mb-5" style="max-width: 760px;">
+
+    <!-- HEADER -->
+    <div class="card shadow-sm border-0 mb-4 p-4 rounded-4">
+        <div class="d-flex align-items-center">
+            <div class="rounded-circle bg-primary text-white p-3 me-3">
+                <i class="bi bi-headset fs-3"></i>
+            </div>
+            <div>
+                <h4 class="fw-bold mb-1">Hỗ trợ tài xế</h4>
+                <small class="text-muted">Chúng tôi luôn sẵn sàng giúp bạn!</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- ALERT -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+            <i class="bi bi-exclamation-circle-fill me-2"></i> @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- QUICK SUPPORT BUTTONS -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+        <label class="fw-bold mb-2">📌 Chọn nhanh vấn đề:</label>
+
+        <div class="d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-outline-primary quick-btn">
+                Mất đơn hàng
+            </button>
+
+            <button type="button" class="btn btn-outline-primary quick-btn">
+                GPS không hoạt động
+            </button>
+
+            <button type="button" class="btn btn-outline-primary quick-btn">
+                Không liên hệ được khách
+            </button>
+
+            <button type="button" class="btn btn-outline-primary quick-btn">
+                Sai địa chỉ giao hàng
+            </button>
+
+            <button type="button" class="btn btn-outline-primary quick-btn">
+                Sự cố giao hàng
+            </button>
+
+            <button type="button" class="btn btn-outline-primary quick-btn">
+                Khiếu nại phí
+            </button>
+
+            <button type="button" class="btn btn-outline-danger quick-btn fw-bold">
+                🚨 Hỗ trợ khẩn cấp
+            </button>
+        </div>
+    </div>
+
+    <!-- FORM -->
+    <div class="card border-0 shadow-sm rounded-4 p-4">
+        <h5 class="fw-bold mb-3">📩 Nội dung yêu cầu hỗ trợ</h5>
+
+        @* dùng asp-action + AntiForgeryToken *@
+        <form asp-action="Create" asp-controller="Support" method="post">
+            @Html.AntiForgeryToken()
+
+            <textarea class="form-control rounded-3 p-3"
+                      name="message"
+                      id="supportMessage"
+                      rows="5"
+                      placeholder="Nhập nội dung hỗ trợ..."
+                      style="resize:none;"></textarea>
+
+            <button class="btn btn-primary w-100 mt-3 py-3 rounded-3 fw-bold">
+                <i class="bi bi-send-fill me-2"></i> Gửi yêu cầu
+            </button>
+        </form>
+    </div>
+
+    <div class="text-center mt-3 text-muted">
+        <small>⏳ Thời gian phản hồi trung bình: 5–10 phút</small>
+    </div>
+
+    <!-- HISTORY BUTTON -->
+    <div class="card shadow-sm border-0 rounded-4 p-3 mt-4">
+        <a href="/Support/History" class="btn btn-outline-dark w-100 py-2 rounded-3 fw-bold">
+            <i class="bi bi-journal-text me-2"></i> Nhật ký hỗ trợ & phản hồi
+        </a>
+    </div>
+
+</div>
+
+<!-- JS: Auto fill -->
+<script>
+    document.querySelectorAll(".quick-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const text = btn.innerText;
+            const textarea = document.getElementById("supportMessage");
+            textarea.value = text + ": ";
+            textarea.focus();
+        });
+    });
+</script>

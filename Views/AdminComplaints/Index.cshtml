@@ -1,0 +1,98 @@
+@using WedNightFury.Models.ViewModels
+@model IEnumerable<AdminComplaintListItemViewModel>
+
+@{
+    ViewData["Title"] = "Quản lý khiếu nại";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    string currentStatus = (ViewBag.Status as string) ?? "all";
+}
+
+<div class="container py-3">
+    <h2 class="mb-3">Quản lý khiếu nại / hỗ trợ tài xế</h2>
+
+    <form method="get" class="row g-2 mb-3">
+        <div class="col-auto">
+            <select name="status" class="form-select">
+                <option value="all"     selected="@(currentStatus == "all")">Tất cả</option>
+                <option value="pending" selected="@(currentStatus == "pending")">Chờ phản hồi</option>
+                <option value="replied" selected="@(currentStatus == "replied")">Đã trả lời</option>
+            </select>
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-primary" type="submit">Lọc</button>
+        </div>
+    </form>
+
+    <table class="table table-hover align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th>#</th>
+                <th>Tài xế</th>
+                <th>Nội dung</th>
+                <th>Trạng thái</th>
+                <th>Tạo lúc</th>
+                <th>Trả lời lúc</th>
+                <th class="text-end">Thao tác</th>
+            </tr>
+        </thead>
+        <tbody>
+        @{
+            int stt = 1;
+        }
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@stt</td>
+                <td>
+                    <div class="fw-semibold">@item.DriverUserName</div>
+                    @if (!string.IsNullOrWhiteSpace(item.DriverFullName))
+                    {
+                        <div class="text-muted small">@item.DriverFullName</div>
+                    }
+                </td>
+                <td style="max-width: 320px;">
+                    <div class="text-truncate" title="@item.Message">
+                        @item.Message
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(item.Reply))
+                    {
+                        <div class="small text-success mt-1">
+                            <span class="fw-semibold">Admin:</span> @item.Reply
+                        </div>
+                    }
+                </td>
+                <td>
+                    @if (item.Status == "replied")
+                    {
+                        <span class="badge bg-success">Đã trả lời</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-warning text-dark">Chờ phản hồi</span>
+                    }
+                </td>
+                <td>@item.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                <td>
+                    @(item.RepliedAt.HasValue
+                        ? item.RepliedAt.Value.ToString("dd/MM/yyyy HH:mm")
+                        : "-")
+                </td>
+                <td class="text-end">
+                    <!-- Nút XEM HỘI THOẠI -->
+                    <a asp-action="ViewThread" asp-route-id="@item.Id"
+                       class="btn btn-sm btn-outline-secondary me-1">
+                        Xem
+                    </a>
+
+                    <!-- Nút TRẢ LỜI như cũ -->
+                    <a asp-action="Reply" asp-route-id="@item.Id"
+                       class="btn btn-sm btn-outline-primary">
+                        Trả lời
+                    </a>
+                </td>
+            </tr>
+            stt++;
+        }
+        </tbody>
+    </table>
+</div>

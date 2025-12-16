@@ -1,0 +1,55 @@
+@model WedNightFury.Models.Region
+@{
+    ViewData["Title"] = "Thêm khu vực giao";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<h3 class="mb-3 text-danger fw-bold">Thêm khu vực giao</h3>
+
+<form asp-action="Create" method="post" class="card p-3 shadow-sm">
+    <div class="mb-3">
+        <label asp-for="Name" class="form-label">Tên khu vực</label>
+        <input asp-for="Name" class="form-control" placeholder="VD: Hồ Chí Minh - Nội thành" />
+        <span asp-validation-for="Name" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="AreaType" class="form-label">Loại khu vực</label>
+        <select asp-for="AreaType" class="form-select">
+            <option value="inner">Nội thành</option>
+            <option value="outer">Ngoại thành</option>
+        </select>
+        <span asp-validation-for="AreaType" class="text-danger"></span>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <label asp-for="CenterLat" class="form-label">Vĩ độ (Lat)</label>
+            <input asp-for="CenterLat" class="form-control" placeholder="VD: 10.77653" />
+            <span asp-validation-for="CenterLat" class="text-danger"></span>
+        </div>
+        <div class="col-md-4">
+            <label asp-for="CenterLng" class="form-label">Kinh độ (Lng)</label>
+            <input asp-for="CenterLng" class="form-control" placeholder="VD: 106.70098" />
+            <span asp-validation-for="CenterLng" class="text-danger"></span>
+        </div>
+        <div class="col-md-4">
+            <label asp-for="RadiusKm" class="form-label">Bán kính khu vực (km)</label>
+            <input asp-for="RadiusKm" class="form-control" placeholder="VD: 8" />
+            <span asp-validation-for="RadiusKm" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="BaseShipFee" class="form-label">Phí ship cơ bản (VNĐ)</label>
+        <input asp-for="BaseShipFee" class="form-control" placeholder="VD: 20000" />
+        <span asp-validation-for="BaseShipFee" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Lưu</button>
+    <a asp-action="Index" class="btn btn-secondary">Quay lại</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

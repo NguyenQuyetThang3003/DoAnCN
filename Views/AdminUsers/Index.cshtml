@@ -1,0 +1,175 @@
+@model WedNightFury.Controllers.AdminUserListViewModel
+
+@{
+    ViewData["Title"] = "Quản lý người dùng";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0">Quản lý người dùng</h4>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <!-- Bộ lọc -->
+        <div class="col-lg-3">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-0">
+                    <strong>Bộ lọc</strong>
+                </div>
+                <div class="card-body">
+                    <form method="get" asp-action="Index">
+                        <div class="mb-3">
+                            <label class="form-label">Vai trò</label>
+                            @{
+                                string role = Model.RoleFilter ?? "all";
+                            }
+                            <select name="role" class="form-select">
+                                <option value="all" selected="@(role == "all")">Tất cả</option>
+                                <option value="admin" selected="@(role == "admin")">Quản trị</option>
+                                <option value="customer" selected="@(role == "customer")">Khách hàng</option>
+                                <option value="driver" selected="@(role == "driver")">Tài xế</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Từ khóa</label>
+                            <input type="text"
+                                   name="search"
+                                   value="@Model.Search"
+                                   class="form-control"
+                                   placeholder="Tên / Email / SĐT / Công ty" />
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-filter me-1"></i> Lọc
+                            </button>
+                            <a asp-action="Index" class="btn btn-light border">
+                                Xóa bộ lọc
+                            </a>
+                        </div>
+
+                        @if (Model.RoleStats.Any())
+                        {
+                            <hr />
+                            <div class="small text-muted">
+                                <div><strong>Thống kê vai trò</strong></div>
+                                @foreach (var kv in Model.RoleStats.OrderBy(k => k.Key))
+                                {
+                                    <div>@kv.Key: @kv.Value</div>
+                                }
+                            </div>
+                        }
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Danh sách người dùng -->
+        <div class="col-lg-9">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>Danh sách người dùng</strong>
+                        <span class="text-muted small ms-2">Tổng: @Model.TotalCount</span>
+                    </div>
+                    <a asp-action="CreateDriver" class="btn btn-sm btn-primary">
+                        <i class="fas fa-plus me-1"></i> Tạo tài khoản tài xế
+                    </a>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Tài khoản</th>
+                                <th>Email</th>
+                                <th>SĐT</th>
+                                <th>Vai trò</th>
+                                <th>Công ty</th>
+                                <th>Ngày tạo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @if (Model.Users != null && Model.Users.Count > 0)
+                        {
+                            int index = (Model.Page - 1) * Model.PageSize + 1;
+                            foreach (var u in Model.Users)
+                            {
+                                <tr>
+                                    <td>@index</td>
+                                    <td>@u.UserName</td>
+                                    <td>@u.Email</td>
+                                    <td>@u.Phone</td>
+                                    <td>
+                                        @{
+                                            string badgeClass = u.Role?.ToLower() switch
+                                            {
+                                                "admin"    => "danger",
+                                                "driver"   => "info",
+                                                "customer" => "success",
+                                                _          => "secondary"
+                                            };
+                                        }
+                                        <span class="badge bg-@badgeClass">@u.Role</span>
+                                    </td>
+                                    <td>@u.CompanyName</td>
+                                    <td>@u.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                </tr>
+                                index++;
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">
+                                    Không tìm thấy người dùng nào.
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Phân trang -->
+                @if (Model.TotalPages > 1)
+                {
+                    <div class="card-footer bg-white border-0">
+                        <nav>
+                            <ul class="pagination mb-0">
+                                <li class="page-item @(Model.Page <= 1 ? "disabled" : "")">
+                                    <a class="page-link"
+                                       asp-action="Index"
+                                       asp-route-page="@(Model.Page - 1)"
+                                       asp-route-role="@Model.RoleFilter"
+                                       asp-route-search="@Model.Search">Trước</a>
+                                </li>
+
+                                @for (int i = 1; i <= Model.TotalPages; i++)
+                                {
+                                    <li class="page-item @(i == Model.Page ? "active" : "")">
+                                        <a class="page-link"
+                                           asp-action="Index"
+                                           asp-route-page="@i"
+                                           asp-route-role="@Model.RoleFilter"
+                                           asp-route-search="@Model.Search">@i</a>
+                                    </li>
+                                }
+
+                                <li class="page-item @(Model.Page >= Model.TotalPages ? "disabled" : "")">
+                                    <a class="page-link"
+                                       asp-action="Index"
+                                       asp-route-page="@(Model.Page + 1)"
+                                       asp-route-role="@Model.RoleFilter"
+                                       asp-route-search="@Model.Search">Sau</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

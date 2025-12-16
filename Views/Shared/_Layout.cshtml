@@ -1,0 +1,266 @@
+﻿@using Microsoft.AspNetCore.Http
+@inject IHttpContextAccessor HttpContextAccessor
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - WedNightFury</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
+
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f8f9fa;
+            color: #212529;
+            transition: all 0.3s ease-in-out;
+        }
+
+        .sidebar {
+            width: 70px;
+            height: 100vh;
+            background-color: #fff;
+            border-right: 1px solid #dee2e6;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+            transition: all 0.3s ease-in-out;
+        }
+
+        .sidebar .logo {
+            background-color: #d9232d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 60px;
+            cursor: pointer;
+        }
+
+        .sidebar .logo img {
+            height: 36px;
+        }
+
+        .sidebar .nav-link {
+            padding: 16px 0;
+            text-align: center;
+            color: #555;
+            font-size: 18px;
+        }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            background-color: #f1f1f1;
+            color: #d9232d;
+        }
+
+        .main-content {
+            margin-left: 70px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .topbar {
+            background-color: #fff;
+            border-bottom: 1px solid #dee2e6;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease-in-out;
+        }
+
+        .search-box .input-group-text {
+            background: #fff;
+        }
+
+        footer {
+            padding: 10px 20px;
+            background: #f1f1f1;
+            font-size: 14px;
+            transition: all 0.3s ease-in-out;
+        }
+
+        /* =================== DARK MODE =================== */
+        body.dark-mode {
+            background-color: #121212;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .sidebar,
+        body.dark-mode .topbar,
+        body.dark-mode footer,
+        body.dark-mode .card,
+        body.dark-mode .table {
+            background-color: #1e1e1e !important;
+            color: #f1f1f1 !important;
+            border-color: #333 !important;
+        }
+
+        body.dark-mode .table thead {
+            background-color: #2c2c2c !important;
+        }
+
+        body.dark-mode .nav-link {
+            color: #9cdcff !important;
+        }
+
+        body.dark-mode .nav-link:hover {
+            background-color: #2a2a2a !important;
+        }
+
+        body.dark-mode .form-control,
+        body.dark-mode .form-select {
+            background-color: #222 !important;
+            color: #fff !important;
+            border-color: #444 !important;
+        }
+
+        body.dark-mode a {
+            color: #9cdcff !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="d-flex">
+        <!-- Sidebar -->
+        <div class="sidebar d-flex flex-column align-items-center">
+            <div class="logo w-100" id="logoReset">
+                <img src="~/images/logo.png" alt="Logo" />
+            </div>
+
+            <a class="nav-link" asp-controller="Order" asp-action="Create" data-bs-toggle="tooltip" title="Tạo đơn">
+                <i class="fas fa-plus-circle"></i>
+            </a>
+            <a class="nav-link" asp-controller="Order" asp-action="Manage" data-bs-toggle="tooltip" title="Quản lý vận đơn">
+                <i class="fas fa-box"></i>
+            </a>
+            <a class="nav-link" asp-controller="Tracking" asp-action="Index" data-bs-toggle="tooltip" title="Theo dõi đơn hàng">
+                <i class="fas fa-map-marker-alt"></i>
+            </a>
+            <a class="nav-link" asp-controller="Report" asp-action="Today" data-bs-toggle="tooltip" title="Báo cáo hôm nay">
+                <i class="fas fa-calendar-day"></i>
+            </a>
+            <a class="nav-link" asp-controller="Customer" asp-action="Dashboard" data-bs-toggle="tooltip" title="Thống kê cá nhân">
+                <i class="fas fa-chart-bar"></i>
+            </a>
+            <a class="nav-link" asp-controller="Receiver" asp-action="Index" data-bs-toggle="tooltip" title="Danh sách người nhận">
+                <i class="fas fa-users"></i>
+            </a>
+            <a class="nav-link" asp-controller="Faq" asp-action="Index" data-bs-toggle="tooltip" title="Câu hỏi thường gặp">
+                <i class="fas fa-question-circle"></i>
+            </a>
+            <a class="nav-link" asp-controller="Profile" asp-action="Index" data-bs-toggle="tooltip" title="Thông tin tài khoản">
+                <i class="fas fa-user-circle"></i>
+            </a>
+            <a class="nav-link mt-auto" asp-controller="Auth" asp-action="Logout" data-bs-toggle="tooltip" title="Đăng xuất">
+                <i class="fas fa-sign-out-alt text-danger"></i>
+            </a>
+        </div>
+
+        <!-- Main content -->
+        <div class="main-content flex-grow-1">
+            <!-- Topbar -->
+            <div class="topbar">
+                <div class="input-group search-box" style="max-width: 300px;">
+                    <span class="input-group-text border-end-0">
+                        <i class="fas fa-search text-muted"></i>
+                    </span>
+                    <form asp-controller="Tracking" asp-action="Index" method="post" class="d-flex">
+                        <input name="code" type="text" class="form-control border-start-0" placeholder="Nhập mã đơn hàng..." />
+                    </form>
+                </div>
+
+                <div class="d-flex align-items-center" style="gap:20px;">
+                    <!-- Nút Dark Mode -->
+                    <button id="themeToggle" class="btn btn-light border rounded-circle" title="Chuyển chế độ">
+                        <i class="fas fa-moon"></i>
+                    </button>
+
+                    <!-- Notification -->
+                    <a href="#" class="position-relative text-decoration-none text-dark">
+                        <i class="fas fa-bell fa-lg"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">5</span>
+                    </a>
+
+                    <!-- User -->
+                    <div class="dropdown">
+                        <a class="d-flex align-items-center text-dark text-decoration-none dropdown-toggle"
+                           href="#" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="me-2 fw-bold">
+                                @(!string.IsNullOrEmpty(ViewBag.CustomerName)
+                                    ? ViewBag.CustomerName
+                                    : HttpContextAccessor.HttpContext.Session.GetString("UserName"))
+                            </span>
+                            <img src="~/images/avatar.png" alt="User" class="rounded-circle" width="32" height="32">
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
+                            <li><a class="dropdown-item" asp-controller="User" asp-action="Profile">Hồ sơ</a></li>
+                            <li><a class="dropdown-item" asp-controller="Auth" asp-action="Logout">Đăng xuất</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <main class="container-fluid py-4">
+                @RenderBody()
+            </main>
+
+            <footer class="text-muted text-center mt-auto">
+                &copy; 2025 - WedNightFury - <a asp-controller="Home" asp-action="Privacy">Chính sách</a>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Tooltip
+        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+        const tooltipList = [...tooltipTriggerList].map(t => new bootstrap.Tooltip(t));
+
+        // Logo click reload
+        document.addEventListener("DOMContentLoaded", function () {
+            const logo = document.getElementById("logoReset");
+            if (logo) logo.addEventListener("click", () => location.reload());
+        });
+
+        // 🌙 Dark Mode Toggle
+        document.addEventListener("DOMContentLoaded", function () {
+            const toggle = document.getElementById("themeToggle");
+            const body = document.body;
+
+            // Load saved theme
+            if (localStorage.getItem("theme") === "dark") {
+                body.classList.add("dark-mode");
+                toggle.innerHTML = '<i class="fas fa-sun"></i>';
+                toggle.classList.replace("btn-light", "btn-dark");
+            }
+
+            toggle.addEventListener("click", function () {
+                body.classList.toggle("dark-mode");
+                const isDark = body.classList.contains("dark-mode");
+
+                if (isDark) {
+                    toggle.innerHTML = '<i class="fas fa-sun"></i>';
+                    toggle.classList.replace("btn-light", "btn-dark");
+                    localStorage.setItem("theme", "dark");
+                } else {
+                    toggle.innerHTML = '<i class="fas fa-moon"></i>';
+                    toggle.classList.replace("btn-dark", "btn-light");
+                    localStorage.setItem("theme", "light");
+                }
+            });
+        });
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,248 @@
+@model WedNightFury.Models.Order
+@using System.Globalization
+
+@{
+    // Layout dành cho tài xế
+    Layout = "_LayoutDriver";
+
+    ViewData["Title"] = $"Điểm giao - {Model.Code}";
+
+    decimal ship  = Model.ShipFee;
+    decimal cod   = Model.CodAmount;
+    string payer  = Model.ShipPayer ?? "receiver";
+
+    // Tổng tiền tài xế THU TỪ KHÁCH
+    decimal totalCollect = 0;
+    if (cod <= 0)
+    {
+        // Không COD
+        totalCollect = (payer == "receiver") ? ship : 0;
+    }
+    else
+    {
+        // Có COD
+        totalCollect = (payer == "receiver") ? ship + cod : cod;
+    }
+
+    // Tiền tài xế phải nộp (tiền hàng)
+    decimal driverDeposit = cod > 0 ? cod : 0;
+
+    string shipPayerText = payer == "sender" ? "Người gửi" : "Người nhận";
+
+    // ===========================
+    // MAP – ƯU TIÊN Lat/Lng
+    // ===========================
+    string rawAddress  = Model.ReceiverAddress ?? "";
+    string fullAddress = string.IsNullOrWhiteSpace(rawAddress)
+        ? "Việt Nam"
+        : rawAddress + ", Việt Nam";  // thêm country cho chắc
+
+    // Box Nullable<double>/decimal? -> nếu null thì object sẽ là null
+    object? latObj = (object?)Model.Lat;
+    object? lngObj = (object?)Model.Lng;
+
+    bool hasCoord = latObj != null && lngObj != null;
+
+    string destinationRaw;
+    if (hasCoord)
+    {
+        // Toạ độ phải dùng invariant culture để có dấu chấm
+        string lat = Convert.ToString(latObj, CultureInfo.InvariantCulture) ?? "";
+        string lng = Convert.ToString(lngObj, CultureInfo.InvariantCulture) ?? "";
+        destinationRaw = $"{lat},{lng}";
+    }
+    else
+    {
+        // fallback nếu chưa có toạ độ
+        destinationRaw = fullAddress;
+    }
+
+    string encodedDest = Uri.EscapeDataString(destinationRaw);
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+<style>
+    .box {
+        background:#fff;
+        padding:25px;
+        border-radius:15px;
+        box-shadow:0 4px 12px rgba(0,0,0,0.08);
+    }
+    .label { width:160px; font-weight:600; color:#555; }
+    .val { font-weight:600; }
+    .btn-big { padding:12px 25px; border-radius:12px; font-size:17px; }
+    .timeline { border-left:3px solid #d32f2f; margin-left:15px; padding-left:20px; }
+    .tl-item { margin-bottom:15px; }
+</style>
+
+<div class="box mb-4">
+    <h3 class="fw-bold text-danger mb-3">
+        📦 ĐIỂM GIAO: @Model.Code
+    </h3>
+
+    <!-- Timeline -->
+    <div class="timeline mb-4">
+        <div class="tl-item">
+            <strong>📌 Tạo đơn:</strong>
+            @Model.CreatedAt?.ToString("dd/MM/yyyy HH:mm")
+        </div>
+
+        @if (Model.AssignedAt.HasValue)
+        {
+            <div class="tl-item">
+                <strong>🚚 Đang giao lúc:</strong>
+                @Model.AssignedAt?.ToString("dd/MM/yyyy HH:mm")
+            </div>
+        }
+
+        @if (Model.Status == "done" && Model.DeliveredAt.HasValue)
+        {
+            <div class="tl-item">
+                <strong>✔ Giao thành công:</strong>
+                @Model.DeliveredAt?.ToString("dd/MM/yyyy HH:mm")
+            </div>
+        }
+
+        @if (Model.Status == "failed" && Model.FailedAt.HasValue)
+        {
+            <div class="tl-item">
+                <strong>✖ Giao thất bại:</strong>
+                @Model.FailedAt?.ToString("dd/MM/yyyy HH:mm")
+            </div>
+        }
+    </div>
+
+    <!-- Thông tin đơn -->
+    <div class="d-flex mb-2">
+        <div class="label">Người nhận:</div>
+        <div class="val">@Model.ReceiverName</div>
+    </div>
+
+    <div class="d-flex mb-2">
+        <div class="label">SĐT:</div>
+        <div class="val">@Model.ReceiverPhone</div>
+    </div>
+
+    <div class="d-flex mb-2">
+        <div class="label">Địa chỉ:</div>
+        <div class="val">@rawAddress</div>
+    </div>
+
+    <div class="d-flex mb-2">
+        <div class="label">Giá trị hàng:</div>
+        <div class="val">@Model.Value.ToString("N0") đ</div>
+    </div>
+
+    <div class="d-flex mb-2">
+        <div class="label">COD:</div>
+        <div class="val">@Model.CodAmount.ToString("N0") đ</div>
+    </div>
+
+    <div class="d-flex mb-2">
+        <div class="label">Phí ship:</div>
+        <div class="val">@Model.ShipFee.ToString("N0") đ</div>
+    </div>
+
+    <div class="d-flex mb-2">
+        <div class="label">Người trả ship:</div>
+        <div class="val">@shipPayerText</div>
+    </div>
+
+    <hr />
+
+    <div class="d-flex mb-2">
+        <div class="label">Khách phải trả:</div>
+        <div class="val text-danger">@totalCollect.ToString("N0") đ</div>
+    </div>
+
+    <div class="d-flex mb-2">
+        <div class="label">Tài xế phải nộp:</div>
+        <div class="val text-primary">@driverDeposit.ToString("N0") đ</div>
+    </div>
+
+    @* TRẠNG THÁI COD CHO TÀI XẾ *@
+    @if (cod > 0)
+    {
+        <div class="d-flex mb-2">
+            <div class="label">Trạng thái COD:</div>
+            <div class="val">
+                @if (Model.IsCodPaid)
+                {
+                    <span class="text-success fw-bold">
+                        ĐÃ THU COD
+                        @if (Model.CodPaidAt.HasValue)
+                        {
+                            @($" (lúc {Model.CodPaidAt:dd/MM/yyyy HH:mm})")
+                        }
+                    </span>
+                }
+                else
+                {
+                    <span class="text-danger fw-bold">CHƯA THU COD</span>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Bản đồ giao hàng -->
+<div class="box mb-4" style="padding:15px 15px 5px 15px;">
+    <h5 class="fw-bold mb-2">🗺 Bản đồ giao hàng</h5>
+
+    <iframe
+        width="100%"
+        height="320"
+        style="border:0; border-radius:12px;"
+        loading="lazy"
+        referrerpolicy="no-referrer-when-downgrade"
+        src="https://www.google.com/maps?q=@encodedDest&output=embed">
+    </iframe>
+</div>
+
+<!-- Nút thao tác -->
+<div class="d-flex flex-wrap gap-3 mb-4">
+
+    <!-- Gọi khách -->
+    <a href="tel:@Model.ReceiverPhone"
+       class="btn btn-outline-primary btn-big fw-bold">
+        ☎ Gọi khách
+    </a>
+
+    <!-- Nhắn Zalo -->
+    @if (!string.IsNullOrWhiteSpace(Model.ReceiverPhone))
+    {
+        <a href="https://zalo.me/@Model.ReceiverPhone"
+           target="_blank"
+           class="btn btn-outline-info btn-big fw-bold">
+            💬 Nhắn Zalo
+        </a>
+    }
+
+    <!-- Điều hướng: ƯU TIÊN toạ độ (nếu có) -->
+    <a class="btn btn-outline-dark btn-big fw-bold"
+       target="_blank"
+       href="https://www.google.com/maps/dir/?api=1&origin=My+Location&destination=@encodedDest">
+        📍 Điều hướng
+    </a>
+
+    <!-- Đã giao (POD) -->
+    <a asp-controller="Taixe"
+       asp-action="Delivered"
+       asp-route-id="@Model.Id"
+       class="btn btn-success btn-big fw-bold">
+        ✔ Đã giao (POD)
+    </a>
+
+    <!-- Giao thất bại -->
+    <a asp-controller="Taixe"
+       asp-action="Failed"
+       asp-route-id="@Model.Id"
+       class="btn btn-danger btn-big fw-bold">
+        ✖ Giao thất bại
+    </a>
+</div>
+
+@section Scripts {
+    @* Không còn checkbox COD nên không cần JS đặc biệt *@
+}

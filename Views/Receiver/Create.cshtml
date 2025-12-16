@@ -1,0 +1,30 @@
+@model WedNightFury.Models.Receiver
+@{
+    ViewData["Title"] = "Thêm người nhận";
+}
+
+<div class="container py-4">
+    <h3 class="fw-bold text-danger mb-3">➕ Thêm người nhận mới</h3>
+
+    <form method="post" class="card p-4 shadow-sm">
+        <div class="mb-3">
+            <label class="form-label">Tên người nhận</label>
+            <input asp-for="Name" class="form-control" required />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Số điện thoại</label>
+            <input asp-for="Phone" class="form-control" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Địa chỉ</label>
+            <input asp-for="Address" class="form-control" />
+        </div>
+
+        <div class="text-end">
+            <button type="submit" class="btn btn-danger px-4">💾 Lưu</button>
+            <a href="/Receiver" class="btn btn-secondary ms-2">⬅ Quay lại</a>
+        </div>
+    </form>
+</div>

@@ -1,0 +1,92 @@
+@model IEnumerable<WedNightFury.Models.Order>
+
+@{
+    ViewData["Title"] = "Lịch sử giao hàng";
+}
+
+<div class="container mt-4">
+
+    <h3 class="fw-bold text-primary mb-4">📜 LỊCH SỬ GIAO HÀNG</h3>
+
+    <form method="get" class="row g-3 mb-4">
+
+        <div class="col-md-3">
+            <label class="form-label">Ngày giao</label>
+            <input type="date" name="day" value="@ViewBag.Day" class="form-control" />
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">Trạng thái</label>
+            <select name="status" class="form-select">
+    <option value="all" selected="@(ViewBag.Status == "all")">Tất cả</option>
+    <option value="done" selected="@(ViewBag.Status == "done")">Giao thành công</option>
+    <option value="failed" selected="@(ViewBag.Status == "failed")">Giao thất bại</option>
+</select>
+        </div>
+
+        <div class="col-md-2 d-flex align-items-end">
+            <button class="btn btn-primary w-100">Lọc</button>
+        </div>
+    </form>
+
+    @if (Model.Any())
+    {
+        <table class="table table-hover table-bordered align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Mã đơn</th>
+                    <th>Người nhận</th>
+                    <th>Địa chỉ</th>
+                    <th>COD</th>
+                    <th>Thời gian giao</th>
+                    <th>Trạng thái</th>
+                    <th></th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @foreach (var o in Model)
+                {
+                    <tr>
+                        <td class="fw-bold text-primary">#@o.Code</td>
+                        <td>@o.ReceiverName</td>
+                        <td>@o.ReceiverAddress</td>
+
+                        <td>@o.CodAmount.ToString("N0") đ</td>
+
+                        <td>
+                            @if (o.DeliveredAt != null)
+                            {
+                                @o.DeliveredAt.Value.ToString("dd/MM/yyyy HH:mm")
+                            }
+                        </td>
+
+                        <td>
+                            @if (o.Status == "done")
+                            {
+                                <span class="badge bg-success">Thành công</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger">Thất bại</span>
+                            }
+                        </td>
+
+                        <td>
+                            <a asp-action="StopDetail" asp-route-id="@o.Id" class="btn btn-sm btn-outline-primary">
+                                Chi tiết
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="alert alert-info text-center">
+            Không có dữ liệu.
+        </div>
+    }
+
+</div>

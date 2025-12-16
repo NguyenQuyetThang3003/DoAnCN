@@ -1,0 +1,94 @@
+@model WedNightFury.Models.User
+
+@{
+    ViewData["Title"] = "Đăng ký khách hàng";
+    Layout = null; // form đăng ký độc lập, không dùng layout sidebar
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - NightFury</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        .register-card {
+            max-width: 600px;
+            margin: 50px auto;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        .logo-box {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .logo-box img {
+            height: 60px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="register-card">
+            <div class="logo-box">
+                <img src="~/images/logo.png" alt="NightFury Logo" />
+                <h3 class="mt-3 text-danger">Đăng ký khách hàng</h3>
+            </div>
+
+            <form asp-action="Register" asp-controller="Auth" method="post">
+                <div class="mb-3">
+                    <label asp-for="UserName" class="form-label"></label>
+                    <input asp-for="UserName" class="form-control" />
+                    <span asp-validation-for="UserName" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Password" class="form-label"></label>
+                    <input asp-for="Password" type="password" class="form-control" />
+                    <span asp-validation-for="Password" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Email" class="form-label"></label>
+                    <input asp-for="Email" type="email" class="form-control" />
+                    <span asp-validation-for="Email" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Phone" class="form-label"></label>
+                    <input asp-for="Phone" class="form-control" />
+                    <span asp-validation-for="Phone" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="CitizenId" class="form-label"></label>
+                    <input asp-for="CitizenId" class="form-control" />
+                    <span asp-validation-for="CitizenId" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="CompanyName" class="form-label"></label>
+                    <input asp-for="CompanyName" class="form-control" />
+                    <span asp-validation-for="CompanyName" class="text-danger"></span>
+                </div>
+
+                <button type="submit" class="btn btn-danger w-100">Đăng ký</button>
+            </form>
+
+            <div class="text-center mt-3">
+                <a asp-action="Login" asp-controller="Auth">Đã có tài khoản? Đăng nhập</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <partial name="_ValidationScriptsPartial" />
+</body>
+</html>

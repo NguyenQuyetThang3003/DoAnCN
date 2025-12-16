@@ -1,0 +1,161 @@
+@model WedNightFury.Models.Order
+@using System.Linq
+
+@{
+    ViewData["Title"] = "Hành trình đơn hàng";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    // ✅ Sort timeline: mới nhất lên đầu (đổi OrderBy nếu bạn muốn cũ -> mới)
+    var eventsSorted = (Model.TrackingEvents ?? Enumerable.Empty<WedNightFury.Models.OrderTrackingEvent>())
+        .OrderByDescending(x => x.CreatedAt)
+        .ToList();
+
+    string badgeClass = (Model.Status ?? "").Trim().ToLower() switch
+    {
+        "pending"   => "bg-secondary",
+        "assigned"  => "bg-info",
+        "shipping"  => "bg-primary",
+        "done"      => "bg-success",
+        "failed"    => "bg-danger",
+        "cancelled" => "bg-dark",
+        _           => "bg-primary"
+    };
+}
+
+<div class="container py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0 text-primary">
+            <i class="fas fa-route"></i> Hành trình đơn: <span class="text-dark">@Model.Code</span>
+        </h4>
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left"></i> Tra cứu khác
+        </a>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-body">
+            <div class="row g-2">
+                <div class="col-md-6"><b>Người nhận:</b> @Model.ReceiverName (@Model.ReceiverPhone)</div>
+                <div class="col-md-6"><b>Địa chỉ:</b> @Model.ReceiverAddress</div>
+                <div class="col-md-6">
+                    <b>Trạng thái hiện tại:</b>
+                    <span class="badge @badgeClass">@Model.Status</span>
+                </div>
+                <div class="col-md-6"><b>Ngày tạo:</b> @(Model.CreatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "-")</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-white fw-bold">
+            Timeline
+        </div>
+        <div class="card-body">
+            @if (!eventsSorted.Any())
+            {
+                <div class="alert alert-warning mb-0">Chưa có dữ liệu hành trình.</div>
+            }
+            else
+            {
+                <ul class="timeline mb-0">
+                    @foreach (var e in eventsSorted)
+                    {
+                        var status = (e.Status ?? "").Trim().ToLower();
+                        var dotClass = status switch
+                        {
+                            "pending"   => "dot-secondary",
+                            "assigned"  => "dot-info",
+                            "shipping"  => "dot-primary",
+                            "done"      => "dot-success",
+                            "failed"    => "dot-danger",
+                            "cancelled" => "dot-dark",
+                            _           => "dot-primary"
+                        };
+
+                        <li class="timeline-item">
+                            <div class="timeline-time text-muted">
+                                @e.CreatedAt.ToString("dd/MM HH:mm")
+                            </div>
+
+                            <div class="timeline-marker">
+                                <span class="timeline-dot @dotClass"></span>
+                            </div>
+
+                            <div class="timeline-content">
+                                <div class="fw-bold">@((e.Title ?? e.Status) ?? "Cập nhật")</div>
+
+                                @if (!string.IsNullOrWhiteSpace(e.Location))
+                                {
+                                    <div class="text-muted">
+                                        <i class="fas fa-map-marker-alt"></i> @e.Location
+                                    </div>
+                                }
+
+                                @if (!string.IsNullOrWhiteSpace(e.Note))
+                                {
+                                    <div>@e.Note</div>
+                                }
+                            </div>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Layout */
+    .timeline { list-style: none; padding: 0; margin: 0; }
+    .timeline-item {
+        display: grid;
+        grid-template-columns: 110px 28px 1fr; /* time | marker | content */
+        column-gap: 12px;
+        padding: 12px 0;
+        align-items: start;
+        position: relative;
+    }
+    .timeline-time { font-size: .9rem; line-height: 1.2; padding-top: 2px; }
+
+    /* Marker column */
+    .timeline-marker {
+        position: relative;
+        display: flex;
+        justify-content: center;
+    }
+
+    .timeline-dot {
+        width: 12px; height: 12px;
+        border-radius: 50%;
+        margin-top: 4px;
+        display: inline-block;
+        box-shadow: 0 0 0 4px rgba(13,110,253,.15);
+        background: #0d6efd;
+        position: relative;
+        z-index: 2;
+    }
+
+    /* Vertical line */
+    .timeline-item:not(:last-child) .timeline-marker::after {
+        content: "";
+        position: absolute;
+        top: 18px;
+        bottom: -12px;
+        width: 2px;
+        background: #e9ecef;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1;
+    }
+
+    .timeline-content { padding-right: 4px; }
+
+    /* Dot colors */
+    .dot-secondary { background: #6c757d; box-shadow: 0 0 0 4px rgba(108,117,125,.15); }
+    .dot-info      { background: #0dcaf0; box-shadow: 0 0 0 4px rgba(13,202,240,.15); }
+    .dot-primary   { background: #0d6efd; box-shadow: 0 0 0 4px rgba(13,110,253,.15); }
+    .dot-success   { background: #198754; box-shadow: 0 0 0 4px rgba(25,135,84,.15); }
+    .dot-danger    { background: #dc3545; box-shadow: 0 0 0 4px rgba(220,53,69,.15); }
+    .dot-dark      { background: #212529; box-shadow: 0 0 0 4px rgba(33,37,41,.15); }
+</style>

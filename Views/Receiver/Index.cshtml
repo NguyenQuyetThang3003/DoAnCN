@@ -1,0 +1,46 @@
+@model IEnumerable<WedNightFury.Models.Receiver>
+@{
+    ViewData["Title"] = "Danh sách người nhận";
+}
+
+<div class="container py-4">
+    <h3 class="fw-bold text-danger mb-3">📋 DANH SÁCH NGƯỜI NHẬN</h3>
+
+    <form method="get" class="mb-3 d-flex align-items-center">
+        <input type="text" name="keyword" class="form-control me-2" placeholder="Nhập tên hoặc số điện thoại..." />
+        <button type="submit" class="btn btn-danger px-4">🔍 Tìm kiếm</button>
+        <a href="/Receiver/Create" class="btn btn-warning ms-auto text-white fw-bold">➕ Thêm mới</a>
+    </form>
+
+    <table class="table table-bordered align-middle text-center">
+        <thead class="table-light fw-bold">
+            <tr>
+                <th>STT</th>
+                <th>TÊN NGƯỜI NHẬN</th>
+                <th>THẺ TAG</th>
+                <th>TỶ LỆ GIAO THÀNH CÔNG</th>
+                <th>ĐỊA CHỈ</th>
+                <th>THAO TÁC</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                int stt = 1;
+                foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@(stt++)</td>
+                        <td>
+                            <strong>@item.Name</strong><br />
+                            <small class="text-muted">@item.Phone</small>
+                        </td>
+                        <td><i class="bi bi-eye"></i></td>
+                        <td>@(item.SuccessRate ?? "100%")</td>
+                        <td>@item.Address</td>
+                        <td><i class="bi bi-list"></i></td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>

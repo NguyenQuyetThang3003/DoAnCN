@@ -1,0 +1,46 @@
+@model WedNightFury.Models.AuditLog
+@{
+    ViewData["Title"] = "Chi tiết nhật ký";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<h3 class="mb-3 text-danger fw-bold">Chi tiết nhật ký thao tác</h3>
+
+<div class="card shadow-sm mb-3">
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-3">Thời gian</dt>
+            <dd class="col-sm-9">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss")</dd>
+
+            <dt class="col-sm-3">Admin</dt>
+            <dd class="col-sm-9">@Model.AdminName (#@Model.AdminId)</dd>
+
+            <dt class="col-sm-3">Hành động</dt>
+            <dd class="col-sm-9">@Model.Action</dd>
+
+            <dt class="col-sm-3">Đối tượng</dt>
+            <dd class="col-sm-9">
+                @Model.EntityType
+                @(Model.EntityId.HasValue ? $" #{Model.EntityId.Value}" : "")
+            </dd>
+
+            <dt class="col-sm-3">Mô tả</dt>
+            <dd class="col-sm-9">@Model.Description</dd>
+
+            <dt class="col-sm-3">IP</dt>
+            <dd class="col-sm-9">@Model.IpAddress</dd>
+
+            <dt class="col-sm-3">Giá trị cũ</dt>
+            <dd class="col-sm-9">
+                <pre class="mb-0">@Model.OldValue</pre>
+            </dd>
+
+            <dt class="col-sm-3">Giá trị mới</dt>
+            <dd class="col-sm-9">
+                <pre class="mb-0">@Model.NewValue</pre>
+            </dd>
+        </dl>
+    </div>
+</div>
+
+<a asp-action="Index" class="btn btn-secondary">Quay lại danh sách</a>

@@ -1,0 +1,56 @@
+@using WedNightFury.Models.ViewModels
+@model AdminComplaintReplyViewModel
+
+@{
+    ViewData["Title"] = "Trả lời khiếu nại";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<div class="container py-3">
+    <h2 class="mb-3">Trả lời khiếu nại</h2>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5 class="card-title">
+                Tài xế: @Model.DriverUserName
+                @if (!string.IsNullOrWhiteSpace(Model.DriverFullName))
+                {
+                    <span class="text-muted">(@Model.DriverFullName)</span>
+                }
+            </h5>
+            <p class="mb-1 text-muted small">
+                Gửi lúc: @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+            </p>
+            <div class="border rounded p-2 bg-light">
+                @Model.Message
+            </div>
+        </div>
+    </div>
+
+    <form asp-action="Reply" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="DriverId" />
+
+        <div class="mb-3">
+            <label asp-for="Reply" class="form-label fw-semibold">Phản hồi của admin</label>
+            <textarea asp-for="Reply" class="form-control" rows="5"
+                      placeholder="Nhập nội dung phản hồi cho tài xế..."></textarea>
+            <span asp-validation-for="Reply" class="text-danger"></span>
+        </div>
+
+        @if (Model.RepliedAt.HasValue)
+        {
+            <p class="text-muted small">
+                Lần trả lời gần nhất: @Model.RepliedAt.Value.ToString("dd/MM/yyyy HH:mm")
+            </p>
+        }
+
+        <a asp-action="Index" class="btn btn-secondary">Quay lại</a>
+        <button type="submit" class="btn btn-primary ms-2">Lưu phản hồi</button>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

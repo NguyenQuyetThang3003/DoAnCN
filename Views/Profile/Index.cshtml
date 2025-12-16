@@ -1,0 +1,203 @@
+@model WedNightFury.Models.Profile
+@using System.Text.Json
+
+@{
+    // Layout do controller set theo role, mặc định dùng layout customer
+    Layout = ViewBag.Layout ?? "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Cài đặt tài khoản";
+}
+
+<div class="container py-4">
+    <h3 class="fw-bold text-danger mb-4">⚙️ CÀI ĐẶT TÀI KHOẢN</h3>
+
+    @if (ViewBag.Message != null)
+    {
+        <div class="alert alert-success">@ViewBag.Message</div>
+    }
+
+    <form asp-action="Index" method="post" class="card shadow-sm p-4">
+        @Html.AntiForgeryToken()
+
+        <h5 class="mb-3 text-primary fw-bold">Thông tin tài khoản</h5>
+
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="UserId" />
+
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label class="form-label">Tên khách hàng / Công ty</label>
+                <input asp-for="FullName" class="form-control" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Email</label>
+                <input asp-for="Email" class="form-control" />
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label class="form-label">Số điện thoại</label>
+                <input asp-for="Phone" class="form-control" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Ngày sinh</label>
+                <input asp-for="BirthDate" type="date" class="form-control" />
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Chứng minh thư / Mã số thuế</label>
+            <input asp-for="TaxCode" class="form-control" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Địa chỉ thường trú / Địa chỉ xuất hóa đơn</label>
+            <input asp-for="Address" class="form-control" />
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <label class="form-label">Tỉnh / Thành phố</label>
+                <select asp-for="City" class="form-select" id="citySelect">
+                    <option value="">-- Chọn tỉnh / thành phố --</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Quận / Huyện</label>
+                <select asp-for="District" class="form-select" id="districtSelect">
+                    <option value="">-- Chọn quận / huyện --</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Phường / Xã</label>
+                <select asp-for="Ward" class="form-select" id="wardSelect">
+                    <option value="">-- Chọn phường / xã --</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Tên công ty (nếu có)</label>
+            <input asp-for="CompanyName" class="form-control" />
+        </div>
+
+        <div class="text-end">
+            <button type="submit" class="btn btn-danger px-4">💾 Lưu thay đổi</button>
+        </div>
+    </form>
+</div>
+
+<style>
+    .form-label { font-weight: 600; }
+    .card { border-radius: 12px; }
+</style>
+
+@section Scripts {
+    <script>
+        // Giá trị đang lưu trong profile (server trả về)
+        const currentCity     = @Html.Raw(JsonSerializer.Serialize(Model?.City ?? ""));
+        const currentDistrict = @Html.Raw(JsonSerializer.Serialize(Model?.District ?? ""));
+        const currentWard     = @Html.Raw(JsonSerializer.Serialize(Model?.Ward ?? ""));
+
+        let provinces = [];
+
+        // Lấy danh sách tỉnh / huyện / xã từ GitHub
+        fetch("https://raw.githubusercontent.com/kenzouno1/DiaGioiHanhChinhVN/master/data.json")
+            .then(res => {
+                if (!res.ok) throw new Error("Network response was not ok");
+                return res.json();
+            })
+            .then(data => {
+                provinces = data;
+                initLocation();
+            })
+            .catch(err => {
+                console.error("Không tải được dữ liệu địa giới hành chính:", err);
+            });
+
+        function initLocation() {
+            const citySelect     = document.getElementById("citySelect");
+            const districtSelect = document.getElementById("districtSelect");
+            const wardSelect     = document.getElementById("wardSelect");
+
+            if (!citySelect) return;
+
+            citySelect.innerHTML = '<option value="">-- Chọn tỉnh / thành phố --</option>';
+
+            provinces.forEach(p => {
+                const opt = document.createElement("option");
+                opt.value = p.Name;
+                opt.text  = p.Name;
+                opt.dataset.id = p.Id;
+                if (p.Name === currentCity) opt.selected = true;
+                citySelect.appendChild(opt);
+            });
+
+            citySelect.addEventListener("change", loadDistricts);
+
+            if (currentCity) {
+                loadDistricts();
+            }
+
+            districtSelect.addEventListener("change", loadWards);
+        }
+
+        function loadDistricts() {
+            const citySelect     = document.getElementById("citySelect");
+            const districtSelect = document.getElementById("districtSelect");
+            const wardSelect     = document.getElementById("wardSelect");
+
+            districtSelect.innerHTML = '<option value="">-- Chọn quận / huyện --</option>';
+            wardSelect.innerHTML     = '<option value="">-- Chọn phường / xã --</option>';
+
+            const cityOpt = citySelect.selectedOptions[0];
+            if (!cityOpt) return;
+
+            const provinceId = cityOpt.dataset.id;
+            const province = provinces.find(p => p.Id == provinceId);
+            if (!province) return;
+
+            province.Districts.forEach(d => {
+                const opt = document.createElement("option");
+                opt.value = d.Name;
+                opt.text  = d.Name;
+                opt.dataset.id = d.Id;
+                if (d.Name === currentDistrict) opt.selected = true;
+                districtSelect.appendChild(opt);
+            });
+
+            if (currentDistrict) {
+                loadWards();
+            }
+        }
+
+        function loadWards() {
+            const citySelect     = document.getElementById("citySelect");
+            const districtSelect = document.getElementById("districtSelect");
+            const wardSelect     = document.getElementById("wardSelect");
+
+            wardSelect.innerHTML = '<option value="">-- Chọn phường / xã --</option>';
+
+            const cityOpt = citySelect.selectedOptions[0];
+            const distOpt = districtSelect.selectedOptions[0];
+            if (!cityOpt || !distOpt) return;
+
+            const provinceId = cityOpt.dataset.id;
+            const districtId = distOpt.dataset.id;
+
+            const province = provinces.find(p => p.Id == provinceId);
+            if (!province) return;
+            const district = province.Districts.find(d => d.Id == districtId);
+            if (!district) return;
+
+            district.Wards.forEach(w => {
+                const opt = document.createElement("option");
+                opt.value = w.Name;
+                opt.text  = w.Name;
+                if (w.Name === currentWard) opt.selected = true;
+                wardSelect.appendChild(opt);
+            });
+        }
+    </script>
+}
+

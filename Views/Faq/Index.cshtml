@@ -1,0 +1,59 @@
+@model IEnumerable<WedNightFury.Models.Faq>
+@{
+    ViewData["Title"] = "Câu hỏi thường gặp - FAQs";
+}
+
+<div class="container py-4">
+    <h3 class="fw-bold mb-4 text-danger">❓ Câu hỏi thường gặp FAQs</h3>
+
+    <div class="row">
+        <!-- Cột trái -->
+        <div class="col-md-4">
+            <div class="list-group shadow-sm">
+                @foreach (var cat in ViewBag.Categories)
+                {
+                    var isActive = (ViewBag.CurrentCategory == cat) ? "active" : "";
+                    <a href="@Url.Action("Index", "Faq", new { category = cat })"
+                       class="list-group-item list-group-item-action @isActive">
+                        <i class="bi bi-info-circle me-2 text-danger"></i> @cat
+                    </a>
+                }
+            </div>
+        </div>
+
+        <!-- Cột phải -->
+        <div class="col-md-8">
+            @if (!Model.Any())
+            {
+                <div class="alert alert-warning">Không có câu hỏi nào trong mục này.</div>
+            }
+            else
+            {
+                <div class="accordion" id="faqAccordion">
+                    @{
+                        var i = 0;
+                    }
+                    @foreach (var item in Model)
+                    {
+                        string collapseId = $"collapse{i++}";
+                        <div class="accordion-item mb-2 border">
+                            <h2 class="accordion-header" id="heading@i">
+                                <button class="accordion-button collapsed fw-bold text-primary"
+                                        type="button"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#@collapseId">
+                                    @i. @item.Question
+                                </button>
+                            </h2>
+                            <div id="@collapseId" class="accordion-collapse collapse">
+                                <div class="accordion-body">
+                                    @Html.Raw(item.Answer)
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>

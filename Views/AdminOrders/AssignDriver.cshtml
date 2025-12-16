@@ -1,0 +1,77 @@
+@model IEnumerable<WedNightFury.Models.User>
+
+@{
+    var order = ViewBag.Order as WedNightFury.Models.Order;
+    ViewData["Title"] = "Gán tài xế";
+    Layout = "_LayoutAdmin";
+}
+
+<h3 class="fw-bold text-primary mb-4">
+    GÁN TÀI XẾ CHO ĐƠN @order?.Code
+</h3>
+
+@if (order == null)
+{
+    <div class="alert alert-danger">
+        Không tìm thấy thông tin đơn hàng.
+    </div>
+}
+else
+{
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title mb-3">Thông tin đơn hàng</h5>
+            <div class="row">
+                <div class="col-md-4">
+                    <p><strong>Khách hàng:</strong> @(order.User?.UserName ?? "(Khách lẻ)")</p>
+                    <p><strong>Người gửi:</strong> @order.SenderName (@order.SenderPhone)</p>
+                </div>
+                <div class="col-md-4">
+                    <p><strong>Người nhận:</strong> @order.ReceiverName (@order.ReceiverPhone)</p>
+                    <p><strong>Địa chỉ nhận:</strong> @order.ReceiverAddress</p>
+                </div>
+                <div class="col-md-4">
+                    <p><strong>Khu vực:</strong> @order.AreaType</p>
+                    <p><strong>Ngày tạo:</strong> @order.CreatedAt?.ToString("dd/MM/yyyy HH:mm")</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form asp-controller="AdminOrders" asp-action="AssignDriver" method="post" class="card shadow-sm">
+        <input type="hidden" name="orderId" value="@order.Id" />
+
+        <div class="card-body">
+            <h5 class="card-title mb-3">Chọn tài xế</h5>
+
+            @if (Model == null || !Model.Any())
+            {
+                <div class="alert alert-warning">
+                    Hiện chưa có tài xế nào trong hệ thống.
+                </div>
+            }
+            else
+            {
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Tài xế:</label>
+                    <select name="driverId" class="form-select" required>
+                        <option value="">-- Chọn tài xế --</option>
+                        @foreach (var d in Model)
+                        {
+                            <option value="@d.Id">@d.UserName (@d.Phone)</option>
+                        }
+                    </select>
+                </div>
+            }
+        </div>
+
+        <div class="card-footer d-flex justify-content-between">
+            <a asp-controller="AdminOrders" asp-action="NewOrders" class="btn btn-secondary">
+                Quay lại
+            </a>
+            <button type="submit" class="btn btn-success">
+                <i class="fas fa-check"></i> Xác nhận gán
+            </button>
+        </div>
+    </form>
+}

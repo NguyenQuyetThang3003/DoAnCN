@@ -1,0 +1,287 @@
+@model WedNightFury.Models.Order
+
+@{
+    ViewData["Title"] = "Chi tiết đơn hàng";
+
+    // Tính toán tiền cho tài xế thu
+    decimal ship = Model.ShipFee;
+    decimal cod  = Model.CodAmount;
+    string payer = Model.ShipPayer ?? "receiver";
+
+    // Tổng tiền cần thu khách
+    decimal totalCollect = 0;
+
+    if (cod <= 0)
+    {
+        // KHÔNG COD
+        totalCollect = (payer == "receiver") ? ship : 0;
+    }
+    else
+    {
+        // CÓ COD
+        totalCollect = (payer == "receiver") ? ship + cod : cod;
+    }
+
+    string shipPayerText = payer == "sender" ? "Người gửi" : "Người nhận";
+}
+
+<div class="container py-4">
+    <h3 class="mb-4 text-danger fw-bold">📦 Thông tin đơn hàng #@Model.Id</h3>
+
+    <div class="row">
+        <!-- ====== Cột trái ====== -->
+        <div class="col-md-6">
+            <!-- Thông tin đơn -->
+            <div class="card mb-3 shadow-sm">
+                <div class="card-header bg-light fw-bold">Thông tin đơn</div>
+                <div class="card-body">
+                    <p>
+                        <strong>Mã đơn hàng:</strong>
+                        12300@Model.Id
+                    </p>
+                    <p>
+                        <strong>Ngày tạo:</strong>
+                        @(Model.CreatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa có")
+                    </p>
+                    <p>
+                        <strong>Trạng thái:</strong>
+                        @switch (Model.Status)
+                        {
+                            case "pending":
+                                @:<span class="badge bg-info">Chờ xử lý</span>
+                                break;
+                            case "shipping":
+                                @:<span class="badge bg-warning text-dark">Đang vận chuyển</span>
+                                break;
+                            case "done":
+                                @:<span class="badge bg-success">Hoàn tất</span>
+                                break;
+                            case "failed":
+                                @:<span class="badge bg-danger">Giao thất bại</span>
+                                break;
+                            case "cancelled":
+                                @:<span class="badge bg-danger">Đã hủy</span>
+                                break;
+                            default:
+                                @:<span class="badge bg-secondary">Không xác định</span>
+                                break;
+                        }
+                    </p>
+
+                    <!-- Trạng thái COD -->
+                    <p>
+                        <strong>Trạng thái thanh toán COD:</strong>
+                        @if (Model.CodAmount <= 0)
+                        {
+                            <span class="text-muted">Đơn không có COD</span>
+                        }
+                        else
+                        {
+                            if (Model.Status != "done")
+                            {
+                                <span class="text-danger fw-bold">
+                                    Chưa giao &ndash; chưa thu COD
+                                </span>
+                            }
+                            else if (!Model.IsCodPaid)
+                            {
+                                <span class="text-warning fw-bold">
+                                    Đã giao &ndash; tài xế chưa đối soát COD
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="text-success fw-bold">
+                                    Đã đối soát COD
+                                    @if (Model.CodPaidAt.HasValue)
+                                    {
+                                        @($" lúc {Model.CodPaidAt:dd/MM/yyyy HH:mm}")
+                                    }
+                                </span>
+                            }
+                        }
+                    </p>
+
+                    <p>
+                        <strong>Ghi chú:</strong>
+                        @(!string.IsNullOrEmpty(Model.Note) ? Model.Note : "Không có")
+                    </p>
+                </div>
+            </div>
+
+            <!-- Người gửi -->
+            <div class="card mb-3 shadow-sm">
+                <div class="card-header bg-light fw-bold">Người gửi</div>
+                <div class="card-body">
+                    <p><strong>Họ tên:</strong> @Model.SenderName</p>
+                    <p><strong>Số điện thoại:</strong> @Model.SenderPhone</p>
+                    <p><strong>Địa chỉ:</strong> @Model.SenderAddress</p>
+                </div>
+            </div>
+
+            <!-- Người nhận -->
+            <div class="card mb-3 shadow-sm">
+                <div class="card-header bg-light fw-bold">Người nhận</div>
+                <div class="card-body">
+                    <p><strong>Họ tên:</strong> @Model.ReceiverName</p>
+                    <p><strong>Số điện thoại:</strong> @Model.ReceiverPhone</p>
+                    <p><strong>Địa chỉ:</strong> @Model.ReceiverAddress</p>
+                    <p><strong>Tỉnh/Thành phố:</strong> @Model.Province</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ====== Cột phải ====== -->
+        <div class="col-md-6">
+            <!-- Thông tin hàng hóa + thanh toán -->
+            <div class="card mb-3 shadow-sm">
+                <div class="card-header bg-light fw-bold">Thông tin hàng hóa & thanh toán</div>
+                <div class="card-body">
+                    <p><strong>Tên hàng:</strong> @Model.ProductName</p>
+                    <p><strong>Trọng lượng:</strong> @Model.Weight kg</p>
+                    <p>
+                        <strong>Giá trị khai báo:</strong>
+                        @String.Format("{0:N0}", Model.Value) VNĐ
+                    </p>
+                    <p>
+                        <strong>Ghi chú thêm:</strong>
+                        @(!string.IsNullOrEmpty(Model.Note) ? Model.Note : "Không có")
+                    </p>
+                    <hr />
+
+                    <p>
+                        <strong>COD (tiền hàng cần thu hộ):</strong>
+                        @String.Format("{0:N0}", Model.CodAmount) đ
+                    </p>
+                    <p>
+                        <strong>Phí vận chuyển:</strong>
+                        <span class="text-danger fw-bold">
+                            @String.Format("{0:N0}", Model.ShipFee) đ
+                        </span>
+                    </p>
+                    <p>
+                        <strong>Người trả phí vận chuyển:</strong>
+                        @shipPayerText
+                    </p>
+
+                    <hr />
+                    <p class="mb-1">
+                        <strong>TỔNG TIỀN TÀI XẾ CẦN THU KHÁCH:</strong>
+                    </p>
+                    <h4 class="text-danger fw-bold">
+                        @totalCollect.ToString("N0") đ
+                    </h4>
+                    <small class="text-muted">
+                        - Nếu không COD và người gửi trả ship: tài xế không thu tiền khách.<br />
+                        - Nếu có COD và người nhận trả ship: thu tiền hàng + phí ship.<br />
+                        - Nếu có COD và người gửi trả ship: chỉ thu tiền hàng.
+                    </small>
+                </div>
+            </div>
+
+            <!-- Chứng từ giao hàng (POD) -->
+            <div class="card mb-3 shadow-sm">
+                <div class="card-header bg-light fw-bold">
+                    Chứng từ giao hàng (POD)
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrWhiteSpace(Model.PodImagePath))
+                    {
+                        <div class="text-center">
+                            <img src="@Model.PodImagePath"
+                                 alt="Ảnh POD đơn hàng @Model.Code"
+                                 class="img-fluid rounded border mb-2"
+                                 style="max-height:350px; object-fit:contain;" />
+
+                            <div>
+                                <a href="@Model.PodImagePath"
+                                   target="_blank"
+                                   class="btn btn-sm btn-outline-primary">
+                                    Xem ảnh kích thước lớn
+                                </a>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <span class="text-muted">
+                            Chưa có ảnh POD do tài xế tải lên.
+                        </span>
+                    }
+                </div>
+            </div>
+
+            <!-- Hành trình đơn -->
+            <div class="card mb-3 shadow-sm">
+                <div class="card-header bg-light fw-bold">Hành trình đơn</div>
+                <div class="card-body">
+                    <ul class="timeline list-unstyled">
+                        <li>
+                            <i class="bi bi-circle-fill text-success me-2"></i>
+                            Đã tạo đơn hàng lúc @Model.CreatedAt?.ToString("dd/MM/yyyy HH:mm")
+                        </li>
+
+                        @if (Model.Status == "shipping")
+                        {
+                            <li>
+                                <i class="bi bi-truck text-primary me-2"></i>
+                                Đang giao hàng
+                            </li>
+                        }
+                        else if (Model.Status == "done")
+                        {
+                            <li>
+                                <i class="bi bi-check-circle text-success me-2"></i>
+                                Đã giao thành công
+                            </li>
+                        }
+                        else if (Model.Status == "failed")
+                        {
+                            <li>
+                                <i class="bi bi-exclamation-triangle text-danger me-2"></i>
+                                Giao thất bại
+                            </li>
+                        }
+                        else if (Model.Status == "cancelled")
+                        {
+                            <li>
+                                <i class="bi bi-x-circle text-danger me-2"></i>
+                                Đơn hàng đã bị hủy
+                            </li>
+                        }
+                        else
+                        {
+                            <li>
+                                <i class="bi bi-hourglass-split text-warning me-2"></i>
+                                Đang chờ xử lý
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Nút thao tác -->
+            <div class="d-flex gap-2 mt-3">
+                <a asp-action="Manage" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Quay lại
+                </a>
+                <a asp-action="Print" asp-route-id="@Model.Id" class="btn btn-success">
+                    <i class="bi bi-printer"></i> In đơn
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .timeline li {
+        margin-bottom: 8px;
+        font-size: 0.95rem;
+    }
+    .card {
+        border-radius: 10px;
+    }
+    .card-header {
+        font-size: 1rem;
+    }
+</style>

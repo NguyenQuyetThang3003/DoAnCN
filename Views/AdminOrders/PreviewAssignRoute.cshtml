@@ -1,0 +1,411 @@
+@using WedNightFury.Controllers
+@model WedNightFury.Controllers.AdminRoutePreviewViewModel
+
+@{
+    ViewData["Title"] = "Xem tuyến tối ưu & phân công";
+    Layout = "_LayoutAdmin";
+
+    var orders = (Model.Orders ?? new List<AdminRouteOrderItemViewModel>())
+        .OrderBy(o => o.Sequence)
+        .ToList();
+
+    var hasHub = Model.HubId.HasValue && Model.HubId.Value > 0;
+    var hubText = hasHub
+        ? (string.IsNullOrWhiteSpace(Model.HubAddress) ? (Model.HubName ?? "Hub") : $"{Model.HubName} - {Model.HubAddress}")
+        : "";
+
+    var hasManualOrigin = !string.IsNullOrWhiteSpace(Model.DriverOriginAddress);
+    var originQuery = (Model.DriverOriginQuery ?? "").Trim();
+    var hasOriginQuery = !string.IsNullOrWhiteSpace(originQuery);
+
+    bool MissingCoord(AdminRouteOrderItemViewModel o) => !o.Lat.HasValue || !o.Lng.HasValue;
+    var missingCount = orders.Count(MissingCoord);
+}
+
+<h3 class="fw-bold text-primary mb-3">
+    XEM TUYẾN TỐI ƯU &amp; PHÂN CÔNG
+    <small class="text-muted">
+        – @Model.DriverName (@Model.DeliveryDate.ToString("dd/MM/yyyy"))
+    </small>
+</h3>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Warning"] != null)
+{
+    <div class="alert alert-warning">@TempData["Warning"]</div>
+}
+
+@if (!orders.Any())
+{
+    <div class="alert alert-warning">
+        Không có đơn nào trong tuyến để phân công.
+    </div>
+}
+else
+{
+    <div class="row">
+        <!-- LEFT: LIST + CONFIRM -->
+        <div class="col-md-6">
+            <div class="card shadow-sm mb-3">
+                <div class="card-header fw-bold d-flex justify-content-between align-items-center">
+                    <span>Danh sách điểm giao (có thể chỉnh thứ tự)</span>
+                    @if (missingCount > 0)
+                    {
+                        <span class="badge bg-warning text-dark">
+                            @missingCount đơn thiếu Lat/Lng
+                        </span>
+                    }
+                </div>
+
+                <div class="card-body">
+                    <div class="mb-2">
+                        <div class="small text-muted">Điểm xuất phát</div>
+
+                        <div class="fw-semibold">
+                            @if (hasHub)
+                            {
+                                <span class="badge bg-primary me-2">Hub</span>
+                                @hubText
+                            }
+                            else if (hasManualOrigin)
+                            {
+                                <span class="badge bg-secondary me-2">Nhập tay</span>
+                                @Model.DriverOriginAddress
+                            }
+                            else
+                            {
+                                <span class="text-muted">
+                                    (Không chọn Hub / không nhập – Google Maps sẽ dùng điểm giao đầu tiên làm điểm xuất phát)
+                                </span>
+                            }
+                        </div>
+
+                        @if (hasOriginQuery)
+                        {
+                            <div class="small text-muted mt-1">
+                                Query dùng để tạo Google Maps: <code>@originQuery</code>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="small text-muted">
+                        Tip: Nếu tuyến tối ưu “lạ” thường do thiếu Lat/Lng hoặc Lat/Lng sai.
+                        Bạn có thể chỉnh Sequence thủ công rồi bấm Xác nhận.
+                    </div>
+                </div>
+
+                <div class="card-body p-0">
+                    <table class="table table-striped table-hover mb-0 align-middle" id="routeTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 90px;">Seq</th>
+                                <th style="width: 160px;">Mã đơn</th>
+                                <th>Địa chỉ nhận</th>
+                                <th style="width: 170px;">Lat/Lng</th>
+                                <th style="width: 70px;">↑↓</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (int i = 0; i < orders.Count; i++)
+                            {
+                                var o = orders[i];
+                                var missing = MissingCoord(o);
+
+                                <tr data-row="@i">
+                                    <td>
+                                        <!-- ✅ cho sửa sequence trực tiếp -->
+                                        <input type="number"
+                                               class="form-control form-control-sm seq-input"
+                                               min="1"
+                                               value="@o.Sequence"
+                                               data-orderid="@o.OrderId" />
+                                    </td>
+
+                                    <td class="fw-semibold">@o.Code</td>
+
+                                    <td>
+                                        @o.ReceiverAddress
+                                        @if (missing)
+                                        {
+                                            <span class="badge bg-warning text-dark ms-2">Thiếu Lat/Lng</span>
+                                        }
+                                    </td>
+
+                                    <td class="small text-muted">
+                                        @if (!missing)
+                                        {
+                                            <span>@o.Lat.Value.ToString("0.######"), @o.Lng.Value.ToString("0.######")</span>
+                                        }
+                                        else
+                                        {
+                                            <span>-</span>
+                                        }
+                                    </td>
+
+                                    <td>
+                                        <div class="d-flex gap-1">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="moveRowUp(this)">↑</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="moveRowDown(this)">↓</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="card-body">
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="normalizeSequence()">
+                            Chuẩn hoá Seq (1..n)
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="rebuildMapsLinkHint()">
+                            Nhắc cập nhật Google Maps
+                        </button>
+                    </div>
+                    <small class="text-muted d-block mt-2">
+                        Khi bạn chỉnh thứ tự, link Google Maps đang hiển thị có thể chưa khớp 100%.
+                        Bạn nên bấm “Mở tuyến” lại sau khi Xác nhận, hoặc quay lại Preview lần nữa.
+                    </small>
+                </div>
+            </div>
+
+            <!-- CONFIRM FORM -->
+            <form asp-action="ConfirmAssignRoute"
+                  asp-controller="AdminOrders"
+                  method="post"
+                  id="confirmForm">
+                @Html.AntiForgeryToken()
+
+                <input type="hidden" name="DriverId" value="@Model.DriverId" />
+                <input type="hidden" name="DeliveryDate" value="@Model.DeliveryDate.ToString("yyyy-MM-dd")" />
+
+                <!-- Hub -->
+                <input type="hidden" name="HubId" value="@(Model.HubId ?? 0)" />
+                <input type="hidden" name="DriverOriginAddress" value="@(Model.DriverOriginAddress ?? "")" />
+                <input type="hidden" name="DriverOriginQuery" value="@(Model.DriverOriginQuery ?? "")" />
+
+                <!-- ✅ container hidden Orders[i] sẽ được build từ JS theo bảng hiện tại -->
+                <div id="ordersHiddenContainer"></div>
+
+                <div class="d-flex justify-content-between mt-2">
+                    <a asp-action="NewOrders" class="btn btn-secondary">
+                        Quay lại danh sách đơn
+                    </a>
+                    <button type="submit" class="btn btn-success">
+                        ✔ Xác nhận phân công &amp; lưu tuyến
+                    </button>
+                </div>
+
+                <small class="text-muted d-block mt-2">
+                    Khi xác nhận, hệ thống sẽ lưu <strong>DriverId</strong> + <strong>DeliveryDate</strong> + <strong>Sequence</strong> cho từng đơn.
+                </small>
+            </form>
+        </div>
+
+        <!-- RIGHT: GOOGLE MAPS -->
+        <div class="col-md-6">
+            <div class="card shadow-sm mb-3">
+                <div class="card-header fw-bold d-flex justify-content-between align-items-center">
+                    <span>Tuyến đường trên Google Maps</span>
+                    @if (!string.IsNullOrWhiteSpace(Model.GoogleMapsUrl))
+                    {
+                        <span class="badge bg-info text-dark">Theo Seq hiện tại (từ server)</span>
+                    }
+                </div>
+
+                <div class="card-body">
+                    @if (string.IsNullOrWhiteSpace(Model.GoogleMapsUrl))
+                    {
+                        <div class="alert alert-info mb-0">
+                            Chưa tạo được tuyến trên Google Maps vì thiếu địa chỉ/tọa độ hợp lệ.<br />
+                            Vui lòng kiểm tra lại <strong>địa chỉ người nhận</strong> hoặc <strong>Lat/Lng</strong>.
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="mb-2">
+                            Tuyến được tạo theo <strong>Sequence</strong> ở bảng bên trái (từ server).
+                            Nếu bạn vừa chỉnh Seq thủ công, hãy <strong>Xác nhận</strong> trước rồi mở lại tuyến.
+                        </p>
+
+                        <div class="d-flex gap-2 flex-wrap">
+                            <a class="btn btn-primary"
+                               href="@Model.GoogleMapsUrl"
+                               target="_blank"
+                               rel="noopener">
+                                🗺 Mở tuyến trên Google Maps
+                            </a>
+
+                            <button type="button" class="btn btn-outline-secondary" onclick="copyMapsUrl()">
+                                📋 Copy link
+                            </button>
+                        </div>
+
+                        <small class="text-muted d-block mt-2">
+                            Trên Google Maps:
+                            điểm <strong>A</strong> = điểm xuất phát (Hub hoặc nhập tay nếu có),
+                            điểm <strong>B</strong> = điểm cuối,
+                            các điểm ở giữa = các điểm giao còn lại.
+                        </small>
+
+                        <textarea id="mapsUrlBox" class="form-control mt-2" rows="4" readonly>@Model.GoogleMapsUrl</textarea>
+
+                        <div class="alert alert-warning mt-3 mb-0 d-none" id="mapsHint">
+                            Bạn vừa thay đổi thứ tự Seq. Link Google Maps hiện tại có thể chưa khớp.
+                            Hãy bấm <strong>Xác nhận</strong> để lưu Seq mới, rồi mở lại tuyến.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function copyMapsUrl() {
+            const box = document.getElementById('mapsUrlBox');
+            if (!box) return;
+
+            const text = box.value || box.textContent || "";
+            if (!text) return;
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text)
+                    .then(() => alert("Đã copy link Google Maps!"))
+                    .catch(() => fallbackCopy(text));
+            } else {
+                fallbackCopy(text);
+            }
+        }
+
+        function fallbackCopy(text) {
+            const temp = document.createElement("textarea");
+            temp.value = text;
+            document.body.appendChild(temp);
+            temp.select();
+            try { document.execCommand("copy"); } catch (e) { }
+            document.body.removeChild(temp);
+            alert("Đã copy link Google Maps!");
+        }
+
+        function rebuildHiddenOrders() {
+            const container = document.getElementById("ordersHiddenContainer");
+            const rows = Array.from(document.querySelectorAll("#routeTable tbody tr"));
+
+            // lấy seq từ input, sort theo seq tăng dần để submit chuẩn
+            const items = rows.map(r => {
+                const seqInput = r.querySelector(".seq-input");
+                const orderId = seqInput.getAttribute("data-orderid");
+                const seq = parseInt(seqInput.value || "0", 10) || 0;
+                return { orderId, seq };
+            }).sort((a, b) => a.seq - b.seq);
+
+            container.innerHTML = "";
+
+            for (let i = 0; i < items.length; i++) {
+                const it = items[i];
+
+                const hidId = document.createElement("input");
+                hidId.type = "hidden";
+                hidId.name = `Orders[${i}].OrderId`;
+                hidId.value = it.orderId;
+
+                const hidSeq = document.createElement("input");
+                hidSeq.type = "hidden";
+                hidSeq.name = `Orders[${i}].Sequence`;
+                hidSeq.value = it.seq.toString();
+
+                container.appendChild(hidId);
+                container.appendChild(hidSeq);
+            }
+        }
+
+        function normalizeSequence() {
+            const rows = Array.from(document.querySelectorAll("#routeTable tbody tr"));
+            // sort theo seq hiện tại rồi gán lại 1..n
+            const sorted = rows.slice().sort((a, b) => {
+                const sa = parseInt(a.querySelector(".seq-input").value || "0", 10) || 0;
+                const sb = parseInt(b.querySelector(".seq-input").value || "0", 10) || 0;
+                return sa - sb;
+            });
+
+            for (let i = 0; i < sorted.length; i++) {
+                sorted[i].querySelector(".seq-input").value = (i + 1).toString();
+            }
+
+            showMapsHint();
+        }
+
+        function showMapsHint() {
+            const hint = document.getElementById("mapsHint");
+            if (hint) hint.classList.remove("d-none");
+        }
+
+        function rebuildMapsLinkHint() {
+            showMapsHint();
+        }
+
+        function moveRowUp(btn) {
+            const row = btn.closest("tr");
+            const prev = row.previousElementSibling;
+            if (!prev) return;
+
+            row.parentNode.insertBefore(row, prev);
+            // sau khi đổi vị trí, gán lại seq theo vị trí
+            normalizeSequence();
+        }
+
+        function moveRowDown(btn) {
+            const row = btn.closest("tr");
+            const next = row.nextElementSibling;
+            if (!next) return;
+
+            row.parentNode.insertBefore(next, row);
+            normalizeSequence();
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            // khi user sửa seq => nhắc maps
+            document.querySelectorAll(".seq-input").forEach(inp => {
+                inp.addEventListener("input", function () {
+                    showMapsHint();
+                });
+            });
+
+            // trước khi submit confirm => build hidden Orders theo seq
+            const confirmForm = document.getElementById("confirmForm");
+            if (confirmForm) {
+                confirmForm.addEventListener("submit", function (e) {
+                    rebuildHiddenOrders();
+
+                    // validate đơn giản: seq phải >=1 và không trùng
+                    const seqs = Array.from(document.querySelectorAll(".seq-input"))
+                        .map(x => parseInt(x.value || "0", 10) || 0);
+
+                    if (seqs.some(x => x < 1)) {
+                        e.preventDefault();
+                        alert("Sequence phải >= 1. Bạn bấm 'Chuẩn hoá Seq (1..n)' để tự sửa nhanh.");
+                        return;
+                    }
+
+                    const set = new Set(seqs);
+                    if (set.size !== seqs.length) {
+                        e.preventDefault();
+                        alert("Sequence đang bị trùng. Bạn bấm 'Chuẩn hoá Seq (1..n)' để tự sửa nhanh.");
+                        return;
+                    }
+                });
+            }
+
+            // build hidden lần đầu (cho chắc)
+            rebuildHiddenOrders();
+        });
+    </script>
+}

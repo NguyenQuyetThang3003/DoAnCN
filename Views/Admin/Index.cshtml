@@ -1,0 +1,196 @@
+@model WedNightFury.Controllers.AdminDashboardViewModel
+
+@{
+    ViewData["Title"] = "Dashboard";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<div class="container-fluid">
+    <!-- Hàng 4 ô thống kê -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-muted small">Tổng đơn</div>
+                            <h3 class="mb-0">@Model.TotalOrders</h3>
+                        </div>
+                        <div class="rounded-circle bg-primary bg-opacity-10 p-3">
+                            <i class="fas fa-boxes-stacked text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-muted small">Giao thành công</div>
+                            <h3 class="mb-0 text-success">@Model.SuccessOrders</h3>
+                        </div>
+                        <div class="rounded-circle bg-success bg-opacity-10 p-3">
+                            <i class="fas fa-circle-check text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-muted small">Thất bại / Hoàn</div>
+                            <h3 class="mb-0 text-danger">@Model.FailedOrders</h3>
+                        </div>
+                        <div class="rounded-circle bg-danger bg-opacity-10 p-3">
+                            <i class="fas fa-circle-xmark text-danger"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-muted small">Khiếu nại chờ xử lý</div>
+                            <h3 class="mb-0 text-warning">@Model.PendingComplaints</h3>
+                        </div>
+                        <div class="rounded-circle bg-warning bg-opacity-10 p-3">
+                            <i class="fas fa-triangle-exclamation text-warning"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hàng dưới: Đơn theo trạng thái + Đơn có nguy cơ trễ (sau này có thể thêm chart) -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white border-0">
+                    <strong>Đơn hàng theo trạng thái</strong>
+                    <span class="text-muted small d-block">
+                        Sau này bạn có thể gắn biểu đồ (Chart.js) theo pending / delivering / delivered / failed.
+                    </span>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Trạng thái</th>
+                                <th class="text-end">Số đơn</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Đang chờ xử lý</td>
+                                <td class="text-end">
+                                    @(@Model.TotalOrders - @Model.SuccessOrders - @Model.FailedOrders)
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Đang giao</td>
+                                <td class="text-end">
+                                    <!-- Nếu có cột Status cụ thể 'delivering' thì sau này query đúng -->
+                                    -
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Đã giao</td>
+                                <td class="text-end">@Model.SuccessOrders</td>
+                            </tr>
+                            <tr>
+                                <td>Hoàn / Thất bại</td>
+                                <td class="text-end">@Model.FailedOrders</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white border-0">
+                    <strong>Đơn có nguy cơ trễ</strong>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-0">
+                        Placeholder: Sau này bạn có thể query các đơn đang giao quá X giờ so với SLA để hiển thị ở đây.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bảng Đơn mới nhất -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+            <strong>Đơn mới nhất</strong>
+            <a asp-controller="AdminOrders" asp-action="Index" class="btn btn-link btn-sm">
+                Xem tất cả
+            </a>
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Mã đơn</th>
+                        <th>Khách hàng</th>
+                        <th>Tài xế</th>
+                        <th class="text-end">Giá trị COD</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @if (Model.LatestOrders != null && Model.LatestOrders.Any())
+                {
+                    foreach (var o in Model.LatestOrders)
+                    {
+                        var badgeClass = o.Status?.ToLower() switch
+                        {
+                            "delivered" => "success",
+                            "completed" => "success",
+                            "failed"    => "danger",
+                            "returned"  => "danger",
+                            "pending"   => "warning",
+                            "shipping"  => "info",
+                            _           => "secondary"
+                        };
+
+                        <tr>
+                            <td>@o.Code</td>
+                            <td>@o.CustomerName</td>
+                            <td>@o.DriverName</td>
+                            <td class="text-end">@o.Amount.ToString("#,0") đ</td>
+                            <td>
+                                <span class="badge bg-@badgeClass">
+                                    @o.Status
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="5" class="text-center text-muted small py-4">
+                            Chưa có đơn hàng nào.
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
