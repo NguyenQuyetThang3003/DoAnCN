@@ -1,0 +1,61 @@
+@model WedNightFury.Models.Receiver
+@{
+    ViewData["Title"] = "Xóa người nhận";
+}
+
+<div class="container py-4">
+    <div class="del-card">
+        <div class="del-head">
+            <div class="del-ic">🗑️</div>
+            <div>
+                <h3 class="m-0 del-title">Xác nhận xóa người nhận</h3>
+                <div class="text-muted">Thao tác này không thể hoàn tác</div>
+            </div>
+        </div>
+
+        <div class="del-body mt-3">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="info-box">
+                        <div class="info-label">Tên</div>
+                        <div class="info-val">@Model.Name</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="info-box">
+                        <div class="info-label">Số điện thoại</div>
+                        <div class="info-val">@Model.Phone</div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="info-box">
+                        <div class="info-label">Địa chỉ</div>
+                        <div class="info-val">@Model.Address</div>
+                    </div>
+                </div>
+            </div>
+
+            <form method="post" class="mt-4">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Id" />
+
+                <div class="d-flex flex-wrap gap-2 justify-content-end">
+                    <a href="/Receiver" class="btn btn-outline-secondary px-4">⬅ Hủy</a>
+                    <button type="submit" formaction="/Receiver/DeleteConfirmed/@Model.Id" class="btn btn-danger px-4">
+                        🗑️ Xóa
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .del-card{border-radius:18px;border:1px solid rgba(17,24,39,.12);box-shadow:0 10px 30px rgba(17,24,39,.08);background:#fff;padding:18px;font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;}
+    .del-head{display:flex;gap:12px;align-items:center;padding:12px 14px;border-radius:16px;border:1px solid rgba(17,24,39,.10);background:linear-gradient(180deg, rgba(220,53,69,.10), rgba(220,53,69,.02));}
+    .del-ic{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:#fff;border:1px solid rgba(17,24,39,.10);box-shadow:0 8px 24px rgba(17,24,39,.08);font-size:20px;}
+    .del-title{font-weight:950;letter-spacing:-0.2px;color:#dc3545;}
+    .info-box{border:1px solid rgba(17,24,39,.10);border-radius:14px;padding:12px 14px;background:rgba(17,24,39,.02);}
+    .info-label{font-size:.82rem;color:#6b7280;font-weight:900;text-transform:uppercase;letter-spacing:.3px;}
+    .info-val{margin-top:4px;font-weight:800;color:#111827;}
+</style>

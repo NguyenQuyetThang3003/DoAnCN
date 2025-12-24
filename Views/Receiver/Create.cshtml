@@ -3,28 +3,169 @@
     ViewData["Title"] = "Thêm người nhận";
 }
 
-<div class="container py-4">
-    <h3 class="fw-bold text-danger mb-3">➕ Thêm người nhận mới</h3>
+<div class="receiver-create container py-4">
 
-    <form method="post" class="card p-4 shadow-sm">
-        <div class="mb-3">
-            <label class="form-label">Tên người nhận</label>
-            <input asp-for="Name" class="form-control" required />
+    <!-- Header -->
+    <div class="create-head mb-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="head-icon">➕</div>
+            <div>
+                <h3 class="m-0 head-title">Thêm người nhận mới</h3>
+                <div class="head-sub text-muted">
+                    Nhập thông tin người nhận để quản lý và theo dõi giao hàng
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Card -->
+    <form method="post" class="form-card">
+        <div class="row g-3">
+
+            <!-- Name -->
+            <div class="col-md-6">
+                <label class="form-label fw-bold">Tên người nhận</label>
+                <div class="input-wrap">
+                    <span class="input-ic">👤</span>
+                    <input asp-for="Name" class="form-control input-control" placeholder="Ví dụ: Nguyễn Văn A" required />
+                </div>
+            </div>
+
+            <!-- Phone -->
+            <div class="col-md-6">
+                <label class="form-label fw-bold">Số điện thoại</label>
+                <div class="input-wrap">
+                    <span class="input-ic">📞</span>
+                    <input asp-for="Phone" class="form-control input-control" placeholder="090xxxxxxx" />
+                </div>
+            </div>
+
+            <!-- Address -->
+            <div class="col-12">
+                <label class="form-label fw-bold">Địa chỉ</label>
+                <div class="input-wrap">
+                    <span class="input-ic">📍</span>
+                    <input asp-for="Address" class="form-control input-control"
+                           placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành" />
+                </div>
+            </div>
         </div>
 
-        <div class="mb-3">
-            <label class="form-label">Số điện thoại</label>
-            <input asp-for="Phone" class="form-control" />
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Địa chỉ</label>
-            <input asp-for="Address" class="form-control" />
-        </div>
-
-        <div class="text-end">
-            <button type="submit" class="btn btn-danger px-4">💾 Lưu</button>
-            <a href="/Receiver" class="btn btn-secondary ms-2">⬅ Quay lại</a>
+        <!-- Actions -->
+        <div class="form-actions mt-4">
+            <div class="text-muted small">
+                * Vui lòng kiểm tra kỹ thông tin trước khi lưu
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-danger px-4">
+                    💾 Lưu
+                </button>
+                <a href="/Receiver" class="btn btn-outline-secondary px-4">
+                    ⬅ Quay lại
+                </a>
+            </div>
         </div>
     </form>
 </div>
+
+<style>
+    .receiver-create {
+        --border: rgba(17, 24, 39, 0.12);
+        --shadow: 0 10px 30px rgba(17, 24, 39, 0.08);
+        --shadow2: 0 14px 40px rgba(17, 24, 39, 0.10);
+        font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    }
+
+    /* Header */
+    .create-head {
+        display: flex;
+        align-items: center;
+        padding: 14px 16px;
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        background: linear-gradient(180deg, rgba(220, 53, 69, 0.10), rgba(220, 53, 69, 0.02));
+        box-shadow: var(--shadow);
+    }
+
+    .head-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        background: #fff;
+        border: 1px solid var(--border);
+        box-shadow: 0 8px 24px rgba(17, 24, 39, 0.08);
+        font-size: 20px;
+        flex: 0 0 auto;
+    }
+
+    .head-title {
+        font-weight: 900;
+        letter-spacing: -0.2px;
+        color: #dc3545;
+    }
+
+    .head-sub {
+        margin-top: 4px;
+        font-size: 0.95rem;
+    }
+
+    /* Form Card */
+    .form-card {
+        margin-top: 12px;
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background: #fff;
+        box-shadow: var(--shadow);
+        padding: 18px;
+    }
+
+    /* Input */
+    .input-wrap {
+        position: relative;
+    }
+
+    .input-ic {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        opacity: 0.6;
+        font-size: 15px;
+    }
+
+    .input-control {
+        padding-left: 38px;
+        border-radius: 12px;
+        border: 1px solid rgba(17,24,39,0.15);
+        box-shadow: 0 6px 18px rgba(17,24,39,0.06);
+        transition: all .15s ease;
+    }
+
+    .input-control:focus {
+        border-color: #dc3545;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.18);
+    }
+
+    /* Actions */
+    .form-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding-top: 14px;
+        border-top: 1px dashed rgba(17,24,39,0.12);
+        flex-wrap: wrap;
+    }
+
+    @@media (max-width: 576px) {
+        .form-actions {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .form-actions .btn {
+            width: 100%;
+        }
+    }
+</style>

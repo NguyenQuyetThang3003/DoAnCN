@@ -4,222 +4,475 @@
     var status = (string)(ViewBag.Status ?? "all");
 }
 
-<div class="container-fluid">
-    <h3 class="mb-4">📦 Quản lý vận đơn</h3>
+<div class="manage-page container-fluid py-4">
 
-    <!-- Bộ lọc + Xuất Excel -->
-    <form method="get" asp-action="Manage" asp-controller="Order" class="row g-2 mb-4 align-items-end">
-        <div class="col-md-3">
-            <input type="date"
-                   name="startDate"
-                   class="form-control"
-                   value="@((string)ViewBag.StartDate ?? "")" />
+    <!-- Header -->
+    <div class="manage-hero mb-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="hero-ic">📦</div>
+            <div class="min-w-0">
+                <h3 class="m-0 hero-title">Quản lý vận đơn</h3>
+                <div class="hero-sub text-muted">
+                    Lọc theo thời gian, trạng thái và xuất dữ liệu Excel phục vụ vận hành.
+                </div>
+            </div>
         </div>
-        <div class="col-md-3">
-            <input type="date"
-                   name="endDate"
-                   class="form-control"
-                   value="@((string)ViewBag.EndDate ?? "")" />
-        </div>
-        <div class="col-md-3">
-            <select name="status" class="form-select">
-                <option value="all"
-                        selected="@(status == "all" ? "selected" : null)">
-                    Tất cả trạng thái
-                </option>
-                <option value="pending"
-                        selected="@(status == "pending" ? "selected" : null)">
-                    Chờ xử lý
-                </option>
-                <option value="shipping"
-                        selected="@(status == "shipping" ? "selected" : null)">
-                    Đang vận chuyển
-                </option>
-                <option value="done"
-                        selected="@(status == "done" ? "selected" : null)">
-                    Hoàn tất
-                </option>
-                <option value="cancelled"
-                        selected="@(status == "cancelled" ? "selected" : null)">
-                    Đã hủy
-                </option>
-            </select>
-        </div>
-        <div class="col-md-3 d-flex gap-2">
-            <button type="submit" class="btn btn-primary flex-fill">
-                🔍 Lọc
-            </button>
-            <button type="submit"
-                    formaction="@Url.Action("ExportExcel", "Order")"
-                    class="btn btn-outline-success flex-fill">
-                ⬇ Xuất Excel
-            </button>
-        </div>
-    </form>
 
-    <!-- Nút hành động khác -->
-    <div class="mb-3 d-flex gap-2">
-        <a href="#" class="btn btn-success">🖨 In đơn</a>
-        <a href="#" class="btn btn-outline-secondary">⬆ Nhập Excel</a>
+        <div class="hero-pill">
+            <span class="pill-dot"></span>
+            <span>OPERATIONS</span>
+        </div>
     </div>
 
-    <!-- Thông báo -->
+    <!-- Filter + Actions -->
+    <div class="cardx mb-3">
+        <div class="cardx-head">
+            <div class="fw-bold">
+                <i class="bi bi-funnel me-2"></i> Bộ lọc & Xuất dữ liệu
+            </div>
+            <div class="text-muted small">
+                Chọn khoảng ngày và trạng thái để lọc nhanh
+            </div>
+        </div>
+
+        <div class="cardx-body">
+            <form method="get" asp-action="Manage" asp-controller="Order" class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">Từ ngày</label>
+                    <input type="date"
+                           name="startDate"
+                           class="form-control"
+                           value="@((string)ViewBag.StartDate ?? "")" />
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Đến ngày</label>
+                    <input type="date"
+                           name="endDate"
+                           class="form-control"
+                           value="@((string)ViewBag.EndDate ?? "")" />
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Trạng thái</label>
+                    <select name="status" class="form-select">
+                        <option value="all" selected="@(status == "all" ? "selected" : null)">Tất cả trạng thái</option>
+                        <option value="pending" selected="@(status == "pending" ? "selected" : null)">Chờ xử lý</option>
+                        <option value="shipping" selected="@(status == "shipping" ? "selected" : null)">Đang vận chuyển</option>
+                        <option value="done" selected="@(status == "done" ? "selected" : null)">Hoàn tất</option>
+                        <option value="cancelled" selected="@(status == "cancelled" ? "selected" : null)">Đã hủy</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-fill btn-soft">
+                        <i class="bi bi-search me-1"></i> Lọc
+                    </button>
+
+                    <button type="submit"
+                            formaction="@Url.Action("ExportExcel", "Order")"
+                            class="btn btn-outline-success flex-fill btn-soft">
+                        <i class="bi bi-download me-1"></i> Xuất Excel
+                    </button>
+                </div>
+            </form>
+
+            <div class="d-flex gap-2 mt-3 flex-wrap">
+                <a href="#" class="btn btn-success btn-soft">
+                    <i class="bi bi-printer me-1"></i> In đơn
+                </a>
+                <a href="#" class="btn btn-outline-secondary btn-soft">
+                    <i class="bi bi-upload me-1"></i> Nhập Excel
+                </a>
+
+                <div class="ms-auto text-muted small d-flex align-items-center gap-2">
+                    <span class="dot-live"></span>
+                    <span>Cập nhật theo bộ lọc hiện tại</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Message -->
     @if (TempData["Message"] != null)
     {
-        <div class="alert alert-success">@TempData["Message"]</div>
+        <div class="alert alert-success rounded-4 shadow-sm border-0">
+            <i class="bi bi-check-circle me-2"></i> @TempData["Message"]
+        </div>
     }
 
-    <!-- Thống kê -->
-    <div class="row text-center mb-4">
-        <div class="col-md-2">
-            <div class="card bg-light p-2">
-                <h6>Tổng số đơn</h6>
-                <h4>@ViewBag.TotalOrders</h4>
+    <!-- Stats -->
+    <div class="row g-3 mb-3">
+        <div class="col-6 col-md-2">
+            <div class="stat-card">
+                <div class="stat-top">
+                    <div class="stat-ic ic-dark"><i class="bi bi-inboxes"></i></div>
+                    <div class="stat-label">Tổng số đơn</div>
+                </div>
+                <div class="stat-value">@ViewBag.TotalOrders</div>
             </div>
         </div>
-        <div class="col-md-2">
-            <div class="card p-2 bg-info text-white">
-                <h6>Chờ xử lý</h6>
-                <h4>@ViewBag.PendingOrders</h4>
+
+        <div class="col-6 col-md-2">
+            <div class="stat-card stat-info">
+                <div class="stat-top">
+                    <div class="stat-ic ic-info"><i class="bi bi-hourglass-split"></i></div>
+                    <div class="stat-label">Chờ xử lý</div>
+                </div>
+                <div class="stat-value">@ViewBag.PendingOrders</div>
             </div>
         </div>
-        <div class="col-md-2">
-            <div class="card p-2 bg-warning text-dark">
-                <h6>Đang vận chuyển</h6>
-                <h4>@ViewBag.ShippingOrders</h4>
+
+        <div class="col-6 col-md-2">
+            <div class="stat-card stat-warn">
+                <div class="stat-top">
+                    <div class="stat-ic ic-warn"><i class="bi bi-truck"></i></div>
+                    <div class="stat-label">Đang vận chuyển</div>
+                </div>
+                <div class="stat-value">@ViewBag.ShippingOrders</div>
             </div>
         </div>
-        <div class="col-md-2">
-            <div class="card p-2 bg-success text-white">
-                <h6>Hoàn tất</h6>
-                <h4>@ViewBag.DoneOrders</h4>
+
+        <div class="col-6 col-md-2">
+            <div class="stat-card stat-ok">
+                <div class="stat-top">
+                    <div class="stat-ic ic-ok"><i class="bi bi-check2-circle"></i></div>
+                    <div class="stat-label">Hoàn tất</div>
+                </div>
+                <div class="stat-value">@ViewBag.DoneOrders</div>
             </div>
         </div>
-        <div class="col-md-2">
-            <div class="card p-2 bg-danger text-white">
-                <h6>Đã hủy</h6>
-                <h4>@ViewBag.CancelledOrders</h4>
+
+        <div class="col-6 col-md-2">
+            <div class="stat-card stat-bad">
+                <div class="stat-top">
+                    <div class="stat-ic ic-bad"><i class="bi bi-x-circle"></i></div>
+                    <div class="stat-label">Đã hủy</div>
+                </div>
+                <div class="stat-value">@ViewBag.CancelledOrders</div>
             </div>
         </div>
     </div>
 
-    <!-- Bảng danh sách -->
-    <div class="table-responsive">
-        <table class="table table-bordered table-hover align-middle">
-            <thead class="table-light">
-                <tr>
-                    <th>#</th>
-                    <th>Mã đơn</th>
-                    <th>Người gửi</th>
-                    <th>Người nhận</th>
-                    <th>Giá trị (VNĐ)</th>
-                    <th>Trạng thái</th>
-                    <th>Ngày tạo</th>
-                    <th>Đánh giá</th>
-                    <th>Thao tác</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (!Model.Any())
-                {
-                    <tr><td colspan="9" class="text-center text-muted">Không có đơn hàng nào</td></tr>
-                }
-                else
-                {
-                    foreach (var o in Model)
-                    {
+    <!-- Table -->
+    <div class="cardx">
+        <div class="cardx-head">
+            <div class="fw-bold">
+                <i class="bi bi-table me-2"></i> Danh sách vận đơn
+            </div>
+            <div class="text-muted small">
+                Click “Sao chép” để lấy mã đơn nhanh
+            </div>
+        </div>
+
+        <div class="cardx-body p-0">
+            <div class="table-responsive table-wrap">
+                <table class="table table-hover align-middle m-0">
+                    <thead class="table-head sticky-top">
                         <tr>
-                            <td><b>@o.Id</b></td>
-                            <td>
-                                @if (!string.IsNullOrEmpty(o.Code))
-                                {
-                                    <div class="d-flex align-items-center justify-content-between" style="gap:5px;">
-                                        <span class="text-primary fw-bold">@o.Code</span>
-                                        <button type="button" class="btn btn-sm btn-light border"
-                                                onclick="copyCode('@o.Code')" title="Sao chép mã">
-                                            <i class="fas fa-copy"></i>
-                                        </button>
-                                    </div>
-                                }
-                                else
-                                {
-                                    <span class="text-muted fst-italic">Chưa có</span>
-                                }
-                            </td>
-                            <td>@o.SenderName</td>
-                            <td>@o.ReceiverName</td>
-                            <td>@String.Format("{0:N0}", o.Value)</td>
-                            <td>
-                                @switch (o.Status)
-                                {
-                                    case "pending":
-                                        <span class="badge bg-info">Chờ xử lý</span>; break;
-                                    case "shipping":
-                                        <span class="badge bg-warning text-dark">Đang giao</span>; break;
-                                    case "done":
-                                        <span class="badge bg-success">Hoàn tất</span>; break;
-                                    case "cancelled":
-                                        <span class="badge bg-danger">Đã hủy</span>; break;
-                                }
-                            </td>
-                            <td>@(o.CreatedAt?.ToString("dd/MM/yyyy HH:mm"))</td>
-
-                            <!-- Cột đánh giá -->
-                            <td>
-                                @if (o.Status == "done")
-                                {
-                                    <a asp-controller="Rating" asp-action="Create" asp-route-orderId="@o.Id"
-                                       class="btn btn-sm btn-outline-warning">
-                                        ⭐ Đánh giá
-                                    </a>
-                                }
-                                else
-                                {
-                                    <span class="text-muted">—</span>
-                                }
-                            </td>
-
-                            <!-- Cột thao tác -->
-                            <td>
-                                <div class="btn-group" role="group">
-                                    <a asp-action="Details" asp-route-id="@o.Id" class="btn btn-sm btn-outline-primary">Xem</a>
-                                    <a asp-action="Print" asp-route-id="@o.Id" class="btn btn-sm btn-outline-success">In</a>
-                                </div>
-                            </td>
+                            <th style="width:70px;">#</th>
+                            <th style="min-width:180px;">Mã đơn</th>
+                            <th style="min-width:170px;">Người gửi</th>
+                            <th style="min-width:170px;">Người nhận</th>
+                            <th style="min-width:140px;">Giá trị (VNĐ)</th>
+                            <th style="min-width:140px;">Trạng thái</th>
+                            <th style="min-width:170px;">Ngày tạo</th>
+                            <th style="min-width:140px;">Đánh giá</th>
+                            <th style="min-width:170px;">Thao tác</th>
                         </tr>
-                    }
-                }
-            </tbody>
-        </table>
+                    </thead>
+
+                    <tbody>
+                        @if (Model == null || !Model.Any())
+                        {
+                            <tr>
+                                <td colspan="9" class="text-center text-muted py-5">
+                                    <div class="empty">
+                                        <div class="empty-ic">📭</div>
+                                        <div class="fw-bold">Không có đơn hàng nào</div>
+                                        <div class="text-muted">Hãy thay đổi bộ lọc hoặc khoảng thời gian.</div>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            foreach (var o in Model)
+                            {
+                                <tr>
+                                    <td><b>@o.Id</b></td>
+
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(o.Code))
+                                        {
+                                            <div class="d-flex align-items-center justify-content-between gap-2">
+                                                <span class="text-primary fw-bold">@o.Code</span>
+                                                <button type="button"
+                                                        class="btn btn-sm btn-light border btn-copy"
+                                                        onclick="copyCode('@o.Code')"
+                                                        title="Sao chép mã">
+                                                    <i class="bi bi-copy"></i>
+                                                </button>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted fst-italic">Chưa có</span>
+                                        }
+                                    </td>
+
+                                    <td>@o.SenderName</td>
+                                    <td>@o.ReceiverName</td>
+                                    <td class="fw-bold">@String.Format("{0:N0}", o.Value)</td>
+
+                                    <td>
+                                        @switch (o.Status)
+                                        {
+                                            case "pending":
+                                                <span class="badge badge-soft badge-info">Chờ xử lý</span>; break;
+                                            case "shipping":
+                                                <span class="badge badge-soft badge-warn">Đang giao</span>; break;
+                                            case "done":
+                                                <span class="badge badge-soft badge-ok">Hoàn tất</span>; break;
+                                            case "cancelled":
+                                                <span class="badge badge-soft badge-bad">Đã hủy</span>; break;
+                                            default:
+                                                <span class="badge badge-soft badge-dark">@o.Status</span>; break;
+                                        }
+                                    </td>
+
+                                    <td>@(o.CreatedAt?.ToString("dd/MM/yyyy HH:mm"))</td>
+
+                                    <td>
+                                        @if (o.Status == "done")
+                                        {
+                                            <a asp-controller="Rating"
+                                               asp-action="Create"
+                                               asp-route-orderId="@o.Id"
+                                               class="btn btn-sm btn-outline-warning btn-soft">
+                                                <i class="bi bi-star me-1"></i> Đánh giá
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                    </td>
+
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a asp-action="Details" asp-route-id="@o.Id"
+                                               class="btn btn-sm btn-outline-primary btn-soft">
+                                                Xem
+                                            </a>
+                                            <a asp-action="Print" asp-route-id="@o.Id"
+                                               class="btn btn-sm btn-outline-success btn-soft">
+                                                In
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 
-<!-- ====== STYLE ====== -->
 <style>
-    .badge {
-        font-size: 0.9rem;
+    .manage-page{
+        --border: rgba(17,24,39,.12);
+        --shadow: 0 10px 30px rgba(17,24,39,.08);
+        --shadow2: 0 14px 40px rgba(17,24,39,.10);
+        font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    }
+
+    /* Hero */
+    .manage-hero{
+        padding: 16px 18px;
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background: linear-gradient(180deg, rgba(13,110,253,.10), rgba(13,110,253,.02));
+        box-shadow: var(--shadow);
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap: 14px;
+        flex-wrap: wrap;
+    }
+    .hero-ic{
+        width: 46px; height: 46px;
+        border-radius: 16px;
+        display:grid; place-items:center;
+        background:#fff;
+        border:1px solid var(--border);
+        box-shadow: 0 8px 24px rgba(17,24,39,.08);
+        font-size: 20px;
+    }
+    .hero-title{
+        font-weight: 950;
+        letter-spacing: -0.2px;
+        color:#0d6efd;
+        text-transform: uppercase;
+        font-size: 1.2rem;
+    }
+    .hero-sub{ margin-top: 4px; font-size: .95rem; line-height: 1.35; }
+    .hero-pill{
+        display:inline-flex; align-items:center; gap:10px;
+        padding: 10px 12px;
+        border-radius: 999px;
+        border:1px solid var(--border);
+        background:#fff;
+        box-shadow: 0 8px 18px rgba(17,24,39,.06);
+        color:#6b7280;
+        font-weight: 900;
+        font-size: .85rem;
+        letter-spacing: .6px;
+        user-select:none;
+    }
+    .pill-dot{
+        width:10px;height:10px;border-radius:99px;
+        background:#22c55e;
+        box-shadow: 0 0 0 4px rgba(34,197,94,.18);
+    }
+
+    /* CardX */
+    .cardx{
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background:#fff;
+        box-shadow: var(--shadow);
+        overflow:hidden;
+    }
+    .cardx-head{
+        padding: 14px 16px;
+        border-bottom: 1px solid rgba(17,24,39,.08);
+        background: linear-gradient(180deg, rgba(17,24,39,.03), rgba(17,24,39,.01));
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    .cardx-body{ padding: 16px; }
+
+    /* Form */
+    .form-label{ font-weight: 800; color:#111827; }
+    .form-control, .form-select{
+        border-radius: 12px;
+        border: 1px solid rgba(17,24,39,.15);
+        box-shadow: 0 6px 18px rgba(17,24,39,.05);
+        transition: all .15s ease;
+    }
+    .form-control:focus, .form-select:focus{
+        box-shadow: 0 0 0 .2rem rgba(13,110,253,.18);
+    }
+    .btn-soft{
+        border-radius: 12px;
+        font-weight: 800;
+    }
+    .dot-live{
+        width:10px;height:10px;border-radius:99px;
+        background:#22c55e;
+        box-shadow: 0 0 0 4px rgba(34,197,94,.18);
+        display:inline-block;
+    }
+
+    /* Stats */
+    .stat-card{
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background:#fff;
+        box-shadow: var(--shadow);
+        padding: 12px 14px;
+        height: 100%;
+    }
+    .stat-top{
+        display:flex;
+        align-items:center;
+        gap: 10px;
+    }
+    .stat-ic{
+        width: 40px; height: 40px;
+        border-radius: 16px;
+        display:grid; place-items:center;
+        background:#fff;
+        border:1px solid rgba(17,24,39,.10);
+        box-shadow: 0 8px 18px rgba(17,24,39,.06);
+        font-size: 18px;
+        flex: 0 0 auto;
+    }
+    .stat-label{ font-weight: 850; color:#111827; font-size: .92rem; }
+    .stat-value{
+        font-weight: 950;
+        font-size: 1.35rem;
+        margin-top: 8px;
+        letter-spacing: -0.2px;
+        color:#111827;
+    }
+
+    .stat-info{ background: linear-gradient(180deg, rgba(13,202,240,.14), rgba(13,202,240,.03)); }
+    .stat-warn{ background: linear-gradient(180deg, rgba(255,193,7,.18), rgba(255,193,7,.03)); }
+    .stat-ok{   background: linear-gradient(180deg, rgba(25,135,84,.16), rgba(25,135,84,.03)); }
+    .stat-bad{  background: linear-gradient(180deg, rgba(220,53,69,.14), rgba(220,53,69,.03)); }
+
+    .ic-dark{ color:#111827; }
+    .ic-info{ color:#0dcaf0; }
+    .ic-warn{ color:#ffb703; }
+    .ic-ok{ color:#198754; }
+    .ic-bad{ color:#dc3545; }
+
+    /* Table */
+    .table-wrap{ max-height: 70vh; }
+    .table-head th{
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: #f8fafc !important;
+        border-bottom: 1px solid rgba(17,24,39,.10);
+        font-weight: 900;
+        color:#111827;
+        white-space: nowrap;
+    }
+    .table td, .table th{ vertical-align: middle; }
+    .table tbody tr:hover{ background: rgba(13,110,253,.04); }
+
+    .btn-copy{
+        border-radius: 10px;
         padding: 6px 10px;
     }
 
-    select.form-select-sm {
-        font-size: 0.85rem;
-        height: 30px;
-        padding: 0 4px;
+    /* Badges */
+    .badge-soft{
+        font-size: .88rem;
+        padding: 7px 10px;
+        border-radius: 999px;
+        font-weight: 900;
+        border: 1px solid rgba(17,24,39,.10);
     }
+    .badge-info{ background: rgba(13,202,240,.16); color:#055160; }
+    .badge-warn{ background: rgba(255,193,7,.18); color:#664d03; }
+    .badge-ok{ background: rgba(25,135,84,.16); color:#0f5132; }
+    .badge-bad{ background: rgba(220,53,69,.14); color:#842029; }
+    .badge-dark{ background: rgba(17,24,39,.06); color:#111827; }
 
-    .btn-group .btn {
-        margin-right: 3px;
+    /* Empty */
+    .empty{
+        padding: 18px 10px;
+        border-radius: 16px;
+        border: 1px dashed rgba(17,24,39,.14);
+        background: rgba(17,24,39,.01);
+        display:inline-block;
+        min-width: 320px;
     }
+    .empty-ic{ font-size: 34px; margin-bottom: 6px; }
 
-    .table td, .table th {
-        vertical-align: middle;
-    }
-
-    /* Toast copy animation */
-    .alert {
+    /* Copy toast animation */
+    .toastx{
         animation: fadeInOut 2.5s ease forwards;
     }
-
     @@keyframes fadeInOut {
         0% { opacity: 0; transform: translateY(10px); }
         10% { opacity: 1; transform: translateY(0); }
@@ -228,14 +481,15 @@
     }
 </style>
 
-<!-- ====== SCRIPT ====== -->
 <script>
     function copyCode(code) {
         navigator.clipboard.writeText(code);
+
         const toast = document.createElement("div");
-        toast.className = "position-fixed bottom-0 end-0 m-3 alert alert-success py-2 px-3 shadow";
-        toast.textContent = "📋 Đã sao chép mã: " + code;
+        toast.className = "position-fixed bottom-0 end-0 m-3 alert alert-success py-2 px-3 shadow border-0 rounded-4 toastx";
+        toast.innerHTML = `<i class="bi bi-clipboard-check me-2"></i> Đã sao chép mã: <b>${code}</b>`;
         document.body.appendChild(toast);
+
         setTimeout(() => toast.remove(), 2500);
     }
 </script>

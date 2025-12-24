@@ -1,0 +1,68 @@
+@model WedNightFury.Models.GiamGia
+
+@{
+    ViewData["Title"] = "Sửa mã giảm giá";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">Sửa mã giảm giá</h3>
+    <a class="btn btn-outline-secondary" asp-action="Index">Quay lại</a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <form method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Magiamgia" />
+
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Mã (Code)</label>
+                    <input asp-for="Code" class="form-control" />
+                    <span asp-validation-for="Code" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">% Giảm</label>
+                    <input asp-for="Giatriphantram" class="form-control" type="number" min="1" max="100" />
+                    <span asp-validation-for="Giatriphantram" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Trạng thái</label>
+                    <select asp-for="Trangthai" class="form-select">
+                        <option value="true">Hoạt động</option>
+                        <option value="false">Khóa</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Ngày bắt đầu</label>
+                    <input asp-for="Ngaybatdau" class="form-control" type="date" />
+                    <span asp-validation-for="Ngaybatdau" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Ngày kết thúc</label>
+                    <input asp-for="Ngayketthuc" class="form-control" type="date" />
+                    <span asp-validation-for="Ngayketthuc" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="mt-4 d-flex gap-2">
+                <button class="btn btn-danger" type="submit">
+                    <i class="fas fa-save me-1"></i> Cập nhật
+                </button>
+                <a class="btn btn-outline-secondary" asp-action="Index">Hủy</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

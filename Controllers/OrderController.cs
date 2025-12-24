@@ -5,7 +5,6 @@ using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -14,7 +13,6 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using WedNightFury.Models;
 using WedNightFury.Services;
 
@@ -25,10 +23,6 @@ namespace WedNightFury.Controllers
         private readonly AppDbContext _context;
         private readonly HttpClient _nominatim;
         private readonly IOrderTrackingService _tracking;
-
-        // MoMo
-        private readonly IHttpClientFactory _httpClientFactory;
-        private readonly IConfiguration _config;
 
         // ===== GEO CONFIG =====
         private const string GeoEmail = "hoainam1872004@gmail.com";
@@ -59,21 +53,17 @@ namespace WedNightFury.Controllers
         public OrderController(
             AppDbContext context,
             IHttpClientFactory httpClientFactory,
-            IConfiguration config,
             IOrderTrackingService tracking)
         {
             _context = context;
             _tracking = tracking;
-
-            _httpClientFactory = httpClientFactory;
-            _config = config;
 
             _nominatim = httpClientFactory.CreateClient("nominatim");
             _nominatim.Timeout = Timeout.InfiniteTimeSpan;
         }
 
         // =========================================================
-        // ✅ FORM HELPERS (FIX CHÍNH CHO MOMO)
+        // FORM HELPERS
         // =========================================================
         private string GetFirstFormValue(params string[] keys)
         {
@@ -127,6 +117,73 @@ namespace WedNightFury.Controllers
         {
             var hubs = await GetActiveHubsCachedAsync(ct);
             ViewBag.Hubs = hubs.Select(h => new { h.Id, h.Name, h.Address }).ToList();
+        }
+
+        // =========================================================
+        // PROMO (DB: giamgia)
+        // - Giảm theo % phí ship
+        // - CAP: tạm hardcode theo Code vì bảng giamgia của bạn không có cột cap
+        // =========================================================
+        private static decimal? GetPromoCapVnd(string? code)
+        {
+            if (string.IsNullOrWhiteSpace(code)) return null;
+
+            if (string.Equals(code.Trim(), "FREESHIP10K", StringComparison.OrdinalIgnoreCase))
+                return 10000m;
+
+            return null;
+        }
+
+        private async Task<(GiamGia? promo, string? err)> ValidatePromoFromDbAsync(string? code, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(code))
+                return (null, null);
+
+            code = code.Trim();
+            var now = DateTime.Now;
+
+            var promo = await _context.Set<GiamGia>()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x =>
+                    x.Trangthai == true &&
+                    x.Ngaybatdau <= now &&
+                    x.Ngayketthuc >= now &&
+                    x.Code != null &&
+                    x.Code.ToLower() == code.ToLower(), ct);
+
+            if (promo == null)
+                return (null, "Mã giảm giá không tồn tại hoặc đã hết hạn.");
+
+            if (promo.Giatriphantram <= 0 || promo.Giatriphantram > 100)
+                return (null, "Mã giảm giá cấu hình không hợp lệ.");
+
+            return (promo, null);
+        }
+
+        // GET /Order/ValidatePromo?code=FREESHIP10K
+        // Trả: { ok, id, code, percent, cap, message }
+        [HttpGet]
+        public async Task<IActionResult> ValidatePromo(string code, CancellationToken ct)
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null) return Unauthorized(new { ok = false, message = "Chưa đăng nhập." });
+
+            code = (code ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(code))
+                return Ok(new { ok = false, message = "Vui lòng nhập mã." });
+
+            var (promo, err) = await ValidatePromoFromDbAsync(code, ct);
+            if (promo == null)
+                return Ok(new { ok = false, message = err ?? "Mã không hợp lệ." });
+
+            return Ok(new
+            {
+                ok = true,
+                id = promo.Magiamgia,
+                code = promo.Code,
+                percent = promo.Giatriphantram,
+                cap = GetPromoCapVnd(promo.Code)
+            });
         }
 
         // =========================================================
@@ -222,7 +279,7 @@ namespace WedNightFury.Controllers
                 .ToListAsync();
 
             var sb = new StringBuilder();
-            sb.AppendLine("OrderId,Code,SenderName,ReceiverName,Value,Status,CreatedAt");
+            sb.AppendLine("OrderId,Code,SenderName,ReceiverName,Value,ShipFee,DiscountCode,DiscountAmount,Status,CreatedAt");
 
             foreach (var o in orders)
             {
@@ -235,6 +292,9 @@ namespace WedNightFury.Controllers
                     EscapeCsv(o.SenderName),
                     EscapeCsv(o.ReceiverName),
                     FormatMoneyAsText(o.Value),
+                    FormatMoneyAsText(o.ShipFee),
+                    EscapeCsv(o.DiscountCode),
+                    FormatMoneyAsText(o.DiscountAmount),
                     EscapeCsv(o.Status),
                     createdAtText
                 }));
@@ -315,7 +375,7 @@ namespace WedNightFury.Controllers
         }
 
         // =========================================================
-        // ✅ TÍNH PHÍ SHIP SERVER-SIDE (GIỐNG JS CLIENT)
+        // TÍNH PHÍ SHIP SERVER-SIDE (GIỐNG JS CLIENT)
         // =========================================================
         private decimal CalculateShipFeeSameAsClient(string? areaType, string? pickupMethod, string? serviceLevel, decimal weightKg)
         {
@@ -361,32 +421,21 @@ namespace WedNightFury.Controllers
             model.AreaType = GetFirstFormValue("AreaType");
             model.PickupMethod = GetFirstFormValue("PickupMethod");
             model.ServiceLevel = GetFirstFormValue("ServiceLevel");
-            model.ShipPayer = GetFirstFormValue("ShipPayer"); // keep original
-            var shipPayerNorm = NormLower(model.ShipPayer);
+            model.ShipPayer = GetFirstFormValue("ShipPayer"); // sender/receiver
 
-            // ✅ FIX: lấy payment method theo "key đầu tiên không rỗng"
-            // (view có thể dùng hidden SenderPayMethod, hoặc radio SenderPayMethodUi...)
-            var shipPaymentMethod = NormLower(GetFirstFormValue(
-                "ShipPaymentMethod",
-                "SenderPayMethod",
-                "senderPayMethod",
-                "SenderPayMethodUi",
-                "senderPayMethodUi",
-                "PayMethod",
-                "PaymentMethod"
-            ));
-
-            // parse money
+            // parse money (Hidden input gửi "Value" và "CodAmount")
             model.Value = ParseDecimal(GetFirstFormValue("Value"));
             model.CodAmount = ParseDecimal(GetFirstFormValue("CodAmount"));
 
             // weight
             if (model.Weight < 0) model.Weight = 0;
 
-            // ❌ không tin shipfee client
+            // không tin shipfee client (server tự tính)
             ModelState.Remove(nameof(Order.Value));
             ModelState.Remove(nameof(Order.CodAmount));
             ModelState.Remove(nameof(Order.ShipFee));
+            ModelState.Remove(nameof(Order.DiscountAmount));
+            ModelState.Remove(nameof(Order.DiscountCode));
 
             string province = (GetFirstFormValue("Province") ?? "").Trim();
             string district = (GetFirstFormValue("District") ?? "").Trim();
@@ -510,15 +559,66 @@ namespace WedNightFury.Controllers
                 return View(model);
             }
 
-            // ✅ ShipFee server tính giống JS -> MoMo đúng số tiền
-            model.ShipFee = CalculateShipFeeSameAsClient(
+            // ===== ShipFee base (server)
+            var shipFeeBase = CalculateShipFeeSameAsClient(
                 areaType: model.AreaType,
                 pickupMethod: model.PickupMethod,
                 serviceLevel: model.ServiceLevel,
                 weightKg: model.Weight
             );
 
-            // SAVE ORDER
+            // ===== Promo: validate + compute discount (server, DB)
+            var promoCode = GetFirstFormValue("PromoCode"); // input UI
+
+            GiamGia? promo = null;
+            string? promoErr = null;
+
+            if (!string.IsNullOrWhiteSpace(promoCode))
+            {
+                (promo, promoErr) = await ValidatePromoFromDbAsync(promoCode, ct);
+                if (promo == null)
+                {
+                    ModelState.AddModelError("", promoErr ?? "Mã giảm giá không hợp lệ.");
+                    return View(model);
+                }
+            }
+
+            decimal discountAmount = 0m;
+            decimal shipFeeFinal = shipFeeBase;
+
+            if (promo != null && shipFeeBase > 0)
+            {
+                int percent = promo.Giatriphantram;
+                decimal? cap = GetPromoCapVnd(promo.Code);
+
+                discountAmount = Math.Round(shipFeeBase * percent / 100m, 0, MidpointRounding.AwayFromZero);
+
+                if (cap.HasValue && discountAmount > cap.Value)
+                    discountAmount = cap.Value;
+
+                if (discountAmount < 0) discountAmount = 0;
+                if (discountAmount > shipFeeBase) discountAmount = shipFeeBase;
+
+                shipFeeFinal = shipFeeBase - discountAmount;
+                if (shipFeeFinal < 0) shipFeeFinal = 0;
+
+                model.DiscountCode = promo.Code?.Trim();
+                model.DiscountAmount = discountAmount;
+
+                // Nếu Order có cột này thì bật:
+                // model.GiamgiaId = promo.Magiamgia;
+            }
+            else
+            {
+                model.DiscountCode = null;
+                model.DiscountAmount = 0m;
+
+                // model.GiamgiaId = null;
+            }
+
+            model.ShipFee = shipFeeFinal;
+
+            // ===== SAVE ORDER
             model.Code = $"NF-{DateTime.Now:yyyyMMddHHmmss}-{Random.Shared.Next(100, 999)}";
             model.Status = "pending";
             model.CreatedAt = DateTime.Now;
@@ -535,33 +635,6 @@ namespace WedNightFury.Controllers
                 location: string.IsNullOrWhiteSpace(model.Province) ? model.ReceiverAddress : model.Province,
                 ct: ct);
 
-            // ✅ Redirect MoMo nếu: người gửi trả ship + chọn momo
-            if (shipPayerNorm == "sender" && shipPaymentMethod == "momo")
-            {
-                if (model.ShipFee <= 0)
-                {
-                    TempData["Warning"] = "ShipFee = 0 nên không tạo thanh toán MoMo. Kiểm tra Weight/Area/Pickup/ServiceLevel.";
-                }
-                else
-                {
-                    long amount = Convert.ToInt64(model.ShipFee);
-
-                    // ✅ MoMo thường yêu cầu amount >= 1000
-                    if (amount < 1000)
-                    {
-                        TempData["Warning"] = $"ShipFee = {amount} (<1000) nên MoMo có thể từ chối. Hãy tăng Weight/đơn giá.";
-                    }
-                    else
-                    {
-                        var (payUrl, err) = await CreateMomoPayUrlAsync(localOrderId: model.Id, amount: amount, ct: ct);
-                        if (!string.IsNullOrWhiteSpace(payUrl))
-                            return Redirect(payUrl);
-
-                        TempData["Warning"] = "Không tạo được link MoMo: " + (err ?? "unknown");
-                    }
-                }
-            }
-
             TempData["OrderId"] = model.Id;
             TempData["OrderCode"] = model.Code;
 
@@ -577,177 +650,7 @@ namespace WedNightFury.Controllers
         }
 
         // =========================================================
-        // ✅ TẠO PAYURL MOMO
-        // =========================================================
-        private async Task<(string? payUrl, string? err)> CreateMomoPayUrlAsync(int localOrderId, long amount, CancellationToken ct)
-        {
-            if (amount <= 0) return (null, "Số tiền không hợp lệ.");
-
-            var partnerCode = _config["MoMo:PartnerCode"];
-            var accessKey = _config["MoMo:AccessKey"];
-            var secretKey = _config["MoMo:SecretKey"];
-            var endpoint = _config["MoMo:Endpoint"];
-            var returnUrl = _config["MoMo:ReturnUrl"];
-            var notifyUrl = _config["MoMo:NotifyUrl"];
-
-            if (string.IsNullOrWhiteSpace(partnerCode) ||
-                string.IsNullOrWhiteSpace(accessKey) ||
-                string.IsNullOrWhiteSpace(secretKey) ||
-                string.IsNullOrWhiteSpace(endpoint))
-            {
-                return (null, "Chưa cấu hình MoMo đầy đủ trong appsettings.json.");
-            }
-
-            if (string.IsNullOrWhiteSpace(returnUrl))
-                returnUrl = $"{Request.Scheme}://{Request.Host}/Order/MomoReturn";
-            if (string.IsNullOrWhiteSpace(notifyUrl))
-                notifyUrl = $"{Request.Scheme}://{Request.Host}/Order/MomoNotify";
-
-            var momoOrderId = $"SHIP_{DateTime.UtcNow:yyyyMMddHHmmssfff}";
-            var requestId = Guid.NewGuid().ToString("N");
-            var orderInfo = $"Thanh toán phí ship đơn #{localOrderId}";
-            var requestType = "captureWallet";
-
-            var extraObj = new ExtraDataModel { LocalOrderId = localOrderId };
-            var extraJson = JsonSerializer.Serialize(extraObj);
-            var extraData = Convert.ToBase64String(Encoding.UTF8.GetBytes(extraJson));
-
-            string rawHash =
-                $"accessKey={accessKey}" +
-                $"&amount={amount}" +
-                $"&extraData={extraData}" +
-                $"&ipnUrl={notifyUrl}" +
-                $"&orderId={momoOrderId}" +
-                $"&orderInfo={orderInfo}" +
-                $"&partnerCode={partnerCode}" +
-                $"&redirectUrl={returnUrl}" +
-                $"&requestId={requestId}" +
-                $"&requestType={requestType}";
-
-            string signature = HmacSHA256(rawHash, secretKey);
-
-            var body = new
-            {
-                partnerCode,
-                partnerName = "NightFury",
-                storeId = "NightFuryStore",
-                requestId,
-                amount,
-                orderId = momoOrderId,
-                orderInfo,
-                redirectUrl = returnUrl,
-                ipnUrl = notifyUrl,
-                lang = "vi",
-                requestType,
-                autoCapture = true,
-                extraData,
-                signature
-            };
-
-            var json = JsonSerializer.Serialize(body);
-            using var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            try
-            {
-                var client = _httpClientFactory.CreateClient();
-                using var res = await client.PostAsync(endpoint, content, ct);
-                var text = await res.Content.ReadAsStringAsync(ct);
-
-                if (!res.IsSuccessStatusCode)
-                    return (null, $"HTTP {(int)res.StatusCode}: {Trim160(text)}");
-
-                using var doc = JsonDocument.Parse(text);
-                var root = doc.RootElement;
-
-                var resultCode = root.TryGetProperty("resultCode", out var rc) && rc.ValueKind == JsonValueKind.Number
-                    ? rc.GetInt32()
-                    : -1;
-
-                var payUrl = root.TryGetProperty("payUrl", out var pu) ? pu.GetString() : null;
-                var msg = root.TryGetProperty("message", out var ms) ? ms.GetString() : text;
-
-                if (resultCode != 0 || string.IsNullOrWhiteSpace(payUrl))
-                    return (null, $"MoMo lỗi (code {resultCode}): {msg}");
-
-                return (payUrl, null);
-            }
-            catch (Exception ex)
-            {
-                return (null, "Lỗi khi gọi MoMo: " + ex.Message);
-            }
-        }
-
-        [HttpGet]
-        public IActionResult MomoReturn()
-        {
-            var query = Request.Query.ToDictionary(x => x.Key, x => x.Value.ToString());
-
-            var model = new MomoResultModel
-            {
-                OrderId = query.TryGetValue("orderId", out var orderId) ? orderId : null,
-                TransId = query.TryGetValue("transId", out var transId) ? transId : null,
-                Message = query.TryGetValue("message", out var message) ? message : null,
-                ResultCode = query.TryGetValue("resultCode", out var code) && int.TryParse(code, out var rc) ? rc : -1,
-                Amount = query.TryGetValue("amount", out var amountStr) && long.TryParse(amountStr, out var amt) ? amt : 0
-            };
-
-            model.Success = model.ResultCode == 0;
-            ViewBag.Message = model.Success ? "Thanh toán MoMo thành công." : "Thanh toán MoMo thất bại.";
-            return View("MomoResult", model);
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> MomoNotify([FromBody] JsonElement body)
-        {
-            try
-            {
-                var data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                foreach (var prop in body.EnumerateObject())
-                {
-                    var val = prop.Value.ValueKind == JsonValueKind.String
-                        ? prop.Value.GetString()
-                        : prop.Value.GetRawText();
-
-                    data[prop.Name] = val ?? "";
-                }
-
-                data.TryGetValue("resultCode", out var resultCodeStr);
-                data.TryGetValue("extraData", out var extraData);
-
-                int.TryParse(resultCodeStr, out var resultCode);
-
-                int? localOrderId = null;
-                if (!string.IsNullOrWhiteSpace(extraData))
-                {
-                    try
-                    {
-                        var extraJson = Encoding.UTF8.GetString(Convert.FromBase64String(extraData));
-                        var extraObj = JsonSerializer.Deserialize<ExtraDataModel>(extraJson);
-                        if (extraObj != null) localOrderId = extraObj.LocalOrderId;
-                    }
-                    catch { }
-                }
-
-                if (resultCode == 0 && localOrderId.HasValue)
-                {
-                    var order = await _context.Orders.FirstOrDefaultAsync(o => o.Id == localOrderId.Value);
-                    if (order != null)
-                    {
-                        order.Status = "paid_momo";
-                        await _context.SaveChangesAsync();
-                    }
-                }
-
-                return Ok(new { message = "success" });
-            }
-            catch
-            {
-                return Ok(new { message = "error but acknowledged" });
-            }
-        }
-
-        // =========================================================
-        // Reverse geocode
+        // Reverse geocode (via nominatim client)
         // =========================================================
         private async Task<(string? displayName, string? err)> ReverseGeocodeAsync(double lat, double lng, CancellationToken ct)
         {
@@ -1187,33 +1090,6 @@ namespace WedNightFury.Controllers
                 return parsed.ToString(format, CultureInfo.InvariantCulture);
 
             return value.ToString() ?? "";
-        }
-
-        // =========================================================
-        // MoMo helpers + models
-        // =========================================================
-        private static string HmacSHA256(string text, string key)
-        {
-            var keyBytes = Encoding.UTF8.GetBytes(key);
-            var messageBytes = Encoding.UTF8.GetBytes(text);
-            using var hmac = new HMACSHA256(keyBytes);
-            var hash = hmac.ComputeHash(messageBytes);
-            return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
-        }
-
-        public class MomoResultModel
-        {
-            public bool Success { get; set; }
-            public string? Message { get; set; }
-            public string? OrderId { get; set; }
-            public string? TransId { get; set; }
-            public long Amount { get; set; }
-            public int ResultCode { get; set; }
-        }
-
-        private class ExtraDataModel
-        {
-            public int LocalOrderId { get; set; }
         }
     }
 }

@@ -3,57 +3,347 @@
     ViewData["Title"] = "Câu hỏi thường gặp - FAQs";
 }
 
-<div class="container py-4">
-    <h3 class="fw-bold mb-4 text-danger">❓ Câu hỏi thường gặp FAQs</h3>
+<div class="faq-page container py-4">
 
-    <div class="row">
-        <!-- Cột trái -->
-        <div class="col-md-4">
-            <div class="list-group shadow-sm">
-                @foreach (var cat in ViewBag.Categories)
-                {
-                    var isActive = (ViewBag.CurrentCategory == cat) ? "active" : "";
-                    <a href="@Url.Action("Index", "Faq", new { category = cat })"
-                       class="list-group-item list-group-item-action @isActive">
-                        <i class="bi bi-info-circle me-2 text-danger"></i> @cat
-                    </a>
-                }
+    <!-- Header -->
+    <div class="faq-head mb-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="faq-ic">❓</div>
+            <div>
+                <h3 class="m-0 faq-title">Câu hỏi thường gặp</h3>
+                <div class="faq-sub text-muted">Chọn danh mục để xem câu hỏi và hướng dẫn chi tiết</div>
             </div>
         </div>
 
-        <!-- Cột phải -->
-        <div class="col-md-8">
-            @if (!Model.Any())
-            {
-                <div class="alert alert-warning">Không có câu hỏi nào trong mục này.</div>
-            }
-            else
-            {
-                <div class="accordion" id="faqAccordion">
-                    @{
-                        var i = 0;
-                    }
-                    @foreach (var item in Model)
+        <div class="faq-pill">
+            <span class="pill-dot"></span>
+            <span>FAQs</span>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <!-- Left: Categories -->
+        <div class="col-lg-4">
+            <div class="faq-card sticky-top" style="top: 16px;">
+                <div class="faq-card-head">
+                    <div class="fw-bold">
+                        <i class="bi bi-grid-3x3-gap me-2"></i> Danh mục
+                    </div>
+                    <div class="text-muted small">Chọn mục để lọc câu hỏi</div>
+                </div>
+
+                <!-- Search (UI only - không đổi chức năng) -->
+                <div class="faq-search">
+                    <span class="search-ic">🔎</span>
+                    <input type="text" class="form-control search-input" id="faqSearchInput"
+                           placeholder="Tìm nhanh trong danh sách..." />
+                    <div class="text-muted small mt-2">
+                        Mẹo: gõ để lọc danh mục (UI).
+                    </div>
+                </div>
+
+                <div class="list-group faq-list" id="faqCategoryList">
+                    @foreach (var cat in ViewBag.Categories)
                     {
-                        string collapseId = $"collapse{i++}";
-                        <div class="accordion-item mb-2 border">
-                            <h2 class="accordion-header" id="heading@i">
-                                <button class="accordion-button collapsed fw-bold text-primary"
-                                        type="button"
-                                        data-bs-toggle="collapse"
-                                        data-bs-target="#@collapseId">
-                                    @i. @item.Question
-                                </button>
-                            </h2>
-                            <div id="@collapseId" class="accordion-collapse collapse">
-                                <div class="accordion-body">
-                                    @Html.Raw(item.Answer)
+                        var isActive = (ViewBag.CurrentCategory == cat) ? "active" : "";
+                        <a href="@Url.Action("Index", "Faq", new { category = cat })"
+                           class="list-group-item list-group-item-action @isActive">
+                            <span class="cat-dot"></span>
+                            <span class="cat-text">@cat</span>
+                            <i class="bi bi-chevron-right ms-auto"></i>
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: FAQs -->
+        <div class="col-lg-8">
+            <div class="faq-card">
+                <div class="faq-card-head">
+                    <div>
+                        <div class="fw-bold">
+                            <i class="bi bi-info-circle me-2"></i> Nội dung câu hỏi
+                        </div>
+                        <div class="text-muted small">
+                            Danh mục hiện tại:
+                            <b>@(ViewBag.CurrentCategory ?? "Tất cả")</b>
+                        </div>
+                    </div>
+
+                    <div class="text-muted small">
+                        Tổng: <b>@(Model?.Count() ?? 0)</b> câu hỏi
+                    </div>
+                </div>
+
+                <div class="faq-card-body">
+                    @if (Model == null || !Model.Any())
+                    {
+                        <div class="empty">
+                            <div class="empty-ic">📭</div>
+                            <div class="fw-bold">Không có câu hỏi nào trong mục này</div>
+                            <div class="text-muted">Hãy chọn danh mục khác hoặc quay lại sau.</div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="accordion faq-accordion" id="faqAccordion">
+                            @{
+                                var i = 0;
+                            }
+                            @foreach (var item in Model)
+                            {
+                                var index = i + 1;
+                                string collapseId = $"collapse{i}";
+                                string headingId = $"heading{i}";
+                                i++;
+
+                                <div class="accordion-item faq-item">
+                                    <h2 class="accordion-header" id="@headingId">
+                                        <button class="accordion-button collapsed faq-btn"
+                                                type="button"
+                                                data-bs-toggle="collapse"
+                                                data-bs-target="#@collapseId"
+                                                aria-expanded="false"
+                                                aria-controls="@collapseId">
+                                            <span class="q-index">@index</span>
+                                            <span class="q-text">@item.Question</span>
+                                        </button>
+                                    </h2>
+
+                                    <div id="@collapseId" class="accordion-collapse collapse"
+                                         aria-labelledby="@headingId"
+                                         data-bs-parent="#faqAccordion">
+                                        <div class="accordion-body faq-body">
+                                            @Html.Raw(item.Answer)
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
+                            }
                         </div>
                     }
                 </div>
-            }
+            </div>
+
+            <div class="text-muted small mt-2">
+                Gợi ý: Nếu không tìm thấy, bạn có thể tạo thêm câu hỏi trong Admin để người dùng tra cứu.
+            </div>
         </div>
     </div>
 </div>
+
+<style>
+    .faq-page {
+        --border: rgba(17, 24, 39, 0.10);
+        --shadow: 0 10px 30px rgba(17, 24, 39, 0.08);
+        --shadow2: 0 14px 40px rgba(17, 24, 39, 0.10);
+        font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    }
+
+    /* Header */
+    .faq-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 14px 16px;
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        background: linear-gradient(180deg, rgba(220, 53, 69, 0.10), rgba(220, 53, 69, 0.02));
+        box-shadow: var(--shadow);
+        flex-wrap: wrap;
+    }
+
+    .faq-ic {
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        background: #fff;
+        border: 1px solid var(--border);
+        box-shadow: 0 8px 24px rgba(17, 24, 39, 0.08);
+        font-size: 20px;
+        flex: 0 0 auto;
+    }
+
+    .faq-title {
+        font-weight: 900;
+        letter-spacing: -0.2px;
+        color: #dc3545;
+        text-transform: uppercase;
+        font-size: 1.15rem;
+    }
+
+    .faq-sub { margin-top: 4px; font-size: 0.95rem; }
+
+    .faq-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: #fff;
+        box-shadow: 0 8px 18px rgba(17, 24, 39, 0.06);
+        color: #6b7280;
+        font-weight: 800;
+        font-size: 0.9rem;
+        user-select: none;
+    }
+
+    .pill-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 99px;
+        background: #22c55e;
+        box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.18);
+    }
+
+    /* Cards */
+    .faq-card {
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background: #fff;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+
+    .faq-card-head {
+        padding: 14px 16px;
+        border-bottom: 1px solid rgba(17, 24, 39, 0.08);
+        background: linear-gradient(180deg, rgba(17, 24, 39, 0.03), rgba(17, 24, 39, 0.01));
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .faq-card-body { padding: 14px 16px 16px 16px; }
+
+    /* Search */
+    .faq-search { padding: 12px 16px; border-bottom: 1px dashed rgba(17,24,39,0.12); }
+    .search-input {
+        border-radius: 12px;
+        border: 1px solid rgba(17,24,39,0.15);
+        padding-left: 34px;
+        box-shadow: 0 6px 18px rgba(17,24,39,0.06);
+    }
+    .search-ic {
+        position: absolute;
+        margin-left: 12px;
+        margin-top: 10px;
+        opacity: 0.65;
+        font-size: 14px;
+        pointer-events: none;
+    }
+    .faq-search { position: relative; }
+
+    /* Categories list */
+    .faq-list .list-group-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 14px;
+        border: 0;
+        border-top: 1px solid rgba(17,24,39,0.06);
+        font-weight: 800;
+        color: #111827;
+        transition: all .15s ease;
+    }
+
+    .faq-list .list-group-item:hover {
+        background: rgba(13, 110, 253, 0.06);
+    }
+
+    .faq-list .list-group-item.active {
+        background: rgba(220, 53, 69, 0.10);
+        color: #dc3545;
+    }
+
+    .cat-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 99px;
+        background: rgba(220, 53, 69, 0.65);
+        box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.14);
+        flex: 0 0 auto;
+    }
+
+    .faq-list .list-group-item.active .cat-dot {
+        background: #dc3545;
+        box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.22);
+    }
+
+    .cat-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* Accordion */
+    .faq-item {
+        border: 1px solid rgba(17,24,39,0.10);
+        border-radius: 16px;
+        overflow: hidden;
+        margin-bottom: 10px;
+        box-shadow: 0 10px 24px rgba(17,24,39,0.06);
+    }
+
+    .faq-btn {
+        font-weight: 900;
+        color: #0d6efd;
+        background: #fff;
+        padding: 14px 14px;
+        gap: 10px;
+    }
+
+    .faq-btn:focus { box-shadow: 0 0 0 .2rem rgba(13,110,253,0.18); }
+
+    .q-index {
+        width: 28px;
+        height: 28px;
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        background: rgba(13, 110, 253, 0.10);
+        border: 1px solid rgba(13, 110, 253, 0.18);
+        color: #0d6efd;
+        font-weight: 950;
+        flex: 0 0 auto;
+    }
+
+    .q-text { min-width: 0; }
+
+    .faq-body {
+        background: rgba(17,24,39,0.01);
+        border-top: 1px dashed rgba(17,24,39,0.12);
+    }
+
+    /* Empty */
+    .empty {
+        padding: 26px 10px;
+        text-align: center;
+        border-radius: 16px;
+        border: 1px dashed rgba(17,24,39,0.14);
+        background: rgba(17,24,39,0.01);
+    }
+    .empty-ic { font-size: 34px; margin-bottom: 8px; }
+</style>
+
+@section Scripts {
+    <script>
+        // UI-only: lọc danh mục theo input, không đổi backend
+        const input = document.getElementById("faqSearchInput");
+        const list = document.getElementById("faqCategoryList");
+
+        if (input && list) {
+            input.addEventListener("input", () => {
+                const key = (input.value || "").toLowerCase().trim();
+                const items = list.querySelectorAll("a.list-group-item");
+
+                items.forEach(a => {
+                    const text = (a.innerText || "").toLowerCase();
+                    a.style.display = text.includes(key) ? "" : "none";
+                });
+            });
+        }
+    </script>
+}

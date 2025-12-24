@@ -171,14 +171,19 @@ namespace WedNightFury.Models
 
         public DateTime? CodPaidAt { get; set; }
 
-        // ============================
-        // 🎫 KHUYẾN MÃI
-        // ============================
-        [StringLength(50)]
-        public string? DiscountCode { get; set; }
+       // ============================
+// 🎫 KHUYẾN MÃI
+// ============================
+[StringLength(50)]
+public string? DiscountCode { get; set; }   // mã nhập
 
-        [Column(TypeName = "decimal(15,2)")]
-        public decimal DiscountAmount { get; set; } = 0;
+public int? GiamgiaId { get; set; }         // FK tới bảng GiamGia (giamgia)
+
+public int? DiscountPercent { get; set; }   // % giảm
+
+[Column(TypeName = "decimal(15,2)")]
+public decimal DiscountAmount { get; set; } = 0; // số tiền giảm
+
 
         // ============================
         // ✅ TIMELINE / TRACKING EVENTS

@@ -3,44 +3,312 @@
     ViewData["Title"] = "Danh sách người nhận";
 }
 
-<div class="container py-4">
-    <h3 class="fw-bold text-danger mb-3">📋 DANH SÁCH NGƯỜI NHẬN</h3>
+<div class="receiver-page container py-4">
+    <!-- Header -->
+    <div class="page-head mb-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="page-icon">📋</div>
+            <div>
+                <h3 class="m-0 page-title">Danh sách người nhận</h3>
+                <div class="page-sub text-muted">Quản lý thông tin người nhận, theo dõi tỉ lệ giao thành công</div>
+            </div>
+        </div>
 
-    <form method="get" class="mb-3 d-flex align-items-center">
-        <input type="text" name="keyword" class="form-control me-2" placeholder="Nhập tên hoặc số điện thoại..." />
-        <button type="submit" class="btn btn-danger px-4">🔍 Tìm kiếm</button>
-        <a href="/Receiver/Create" class="btn btn-warning ms-auto text-white fw-bold">➕ Thêm mới</a>
-    </form>
+        <a href="/Receiver/Create" class="btn btn-warning text-white fw-bold px-3 btn-add">
+            <span class="me-1">➕</span> Thêm mới
+        </a>
+    </div>
 
-    <table class="table table-bordered align-middle text-center">
-        <thead class="table-light fw-bold">
-            <tr>
-                <th>STT</th>
-                <th>TÊN NGƯỜI NHẬN</th>
-                <th>THẺ TAG</th>
-                <th>TỶ LỆ GIAO THÀNH CÔNG</th>
-                <th>ĐỊA CHỈ</th>
-                <th>THAO TÁC</th>
-            </tr>
-        </thead>
-        <tbody>
-            @{
-                int stt = 1;
-                foreach (var item in Model)
-                {
+    <!-- Toolbar -->
+    <div class="toolbar card-lite mb-3">
+        <form method="get" class="d-flex flex-wrap gap-2 align-items-center w-100">
+            <div class="search-wrap flex-grow-1">
+                <span class="search-ic">🔎</span>
+                <input type="text" name="keyword" class="form-control search-input"
+                       placeholder="Nhập tên hoặc số điện thoại..." />
+            </div>
+
+            <button type="submit" class="btn btn-danger px-4">
+                Tìm kiếm
+            </button>
+
+            <div class="ms-auto text-muted small d-none d-md-block">
+                Tổng: <b>@(Model?.Count() ?? 0)</b> người nhận
+            </div>
+        </form>
+    </div>
+
+    <!-- Table -->
+    <div class="table-card">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
                     <tr>
-                        <td>@(stt++)</td>
-                        <td>
-                            <strong>@item.Name</strong><br />
-                            <small class="text-muted">@item.Phone</small>
-                        </td>
-                        <td><i class="bi bi-eye"></i></td>
-                        <td>@(item.SuccessRate ?? "100%")</td>
-                        <td>@item.Address</td>
-                        <td><i class="bi bi-list"></i></td>
+                        <th style="width:70px;" class="text-center">STT</th>
+                        <th>Người nhận</th>
+                        <th style="width:140px;" class="text-center">Thẻ tag</th>
+                        <th style="width:220px;">Tỷ lệ giao thành công</th>
+                        <th>Địa chỉ</th>
+                        <th style="width:140px;" class="text-center">Thao tác</th>
                     </tr>
-                }
-            }
-        </tbody>
-    </table>
+                </thead>
+                <tbody>
+                    @{
+                        int stt = 1;
+                        foreach (var item in Model)
+                        {
+                            // Parse SuccessRate "90%" -> 90
+                            var rateText = item.SuccessRate ?? "100%";
+                            int rateNum = 100;
+                            try
+                            {
+                                rateNum = int.Parse((rateText ?? "100%").Replace("%", "").Trim());
+                                if (rateNum < 0) rateNum = 0;
+                                if (rateNum > 100) rateNum = 100;
+                            }
+                            catch { rateNum = 100; }
+
+                            <tr>
+                                <td class="text-center fw-bold text-muted">@(stt++)</td>
+
+                                <td>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="avatar">
+                                            @((item.Name ?? "N").Trim().Length > 0 ? (item.Name.Trim()[0].ToString().ToUpper()) : "N")
+                                        </div>
+                                        <div class="min-w-0">
+                                            <div class="fw-bold text-dark text-truncate">@item.Name</div>
+                                            <div class="small text-muted">@item.Phone</div>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td class="text-center">
+                                    <span class="tag-badge">
+                                        <i class="bi bi-tag me-1"></i> Tag
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <span class="small text-muted">Tỉ lệ</span>
+                                        <span class="rate-pill">@rateNum%</span>
+                                    </div>
+                                    <div class="progress" style="height: 10px;">
+                                        <div class="progress-bar" role="progressbar"
+                                             style="width:@rateNum%"
+                                             aria-valuenow="@rateNum" aria-valuemin="0" aria-valuemax="100">
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td class="text-muted">
+                                    <span class="addr">
+                                        <i class="bi bi-geo-alt me-1"></i>@item.Address
+                                    </span>
+                                </td>
+
+                                <td class="text-center">
+                                    <div class="btn-group" role="group">
+                                        <a class="btn btn-sm btn-outline-primary" href="/Receiver/Details/@item.Id" title="Xem">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a class="btn btn-sm btn-outline-secondary" href="/Receiver/Edit/@item.Id" title="Sửa">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </a>
+                                        <a class="btn btn-sm btn-outline-danger" href="/Receiver/Delete/@item.Id" title="Xóa">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (Model == null || !Model.Any())
+        {
+            <div class="empty-state">
+                <div class="empty-ic">📭</div>
+                <div class="fw-bold">Chưa có người nhận</div>
+                <div class="text-muted">Hãy thêm mới người nhận để bắt đầu quản lý.</div>
+                <a href="/Receiver/Create" class="btn btn-warning text-white fw-bold mt-2">➕ Thêm mới</a>
+            </div>
+        }
+    </div>
 </div>
+
+<style>
+    .receiver-page {
+        --border: rgba(17, 24, 39, 0.10);
+        --shadow: 0 10px 30px rgba(17, 24, 39, 0.08);
+        --shadow2: 0 14px 40px rgba(17, 24, 39, 0.10);
+        font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    }
+
+    /* Header */
+    .page-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 16px;
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        background: linear-gradient(180deg, rgba(220, 53, 69, 0.10), rgba(220, 53, 69, 0.02));
+        box-shadow: var(--shadow);
+    }
+
+    .page-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        background: #fff;
+        border: 1px solid var(--border);
+        box-shadow: 0 8px 24px rgba(17, 24, 39, 0.08);
+        font-size: 20px;
+    }
+
+    .page-title {
+        font-weight: 900;
+        letter-spacing: -0.2px;
+        color: #dc3545;
+        text-transform: uppercase;
+        font-size: 1.15rem;
+    }
+
+    .page-sub { font-size: 0.95rem; margin-top: 4px; }
+
+    .btn-add { border-radius: 12px; box-shadow: 0 10px 20px rgba(17, 24, 39, 0.12); }
+
+    /* Toolbar */
+    .card-lite {
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow);
+        padding: 12px 14px;
+        background: #fff;
+    }
+
+    .search-wrap {
+        position: relative;
+        min-width: 260px;
+    }
+
+    .search-ic {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        opacity: 0.7;
+        font-size: 14px;
+    }
+
+    .search-input {
+        padding-left: 34px;
+        border-radius: 12px;
+        border: 1px solid rgba(17,24,39,0.12);
+        box-shadow: 0 6px 18px rgba(17,24,39,0.06);
+    }
+
+    /* Table Card */
+    .table-card {
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background: #fff;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+
+    .table thead th {
+        background: linear-gradient(180deg, rgba(17, 24, 39, 0.04), rgba(17, 24, 39, 0.02));
+        border-bottom: 1px solid rgba(17,24,39,0.08);
+        color: #111827;
+        font-weight: 900;
+        text-transform: uppercase;
+        font-size: 0.82rem;
+        letter-spacing: 0.4px;
+        padding: 12px 14px;
+        white-space: nowrap;
+    }
+
+    .table tbody td {
+        padding: 12px 14px;
+        border-top: 1px solid rgba(17,24,39,0.06);
+        vertical-align: middle;
+    }
+
+    /* Avatar */
+    .avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        background: rgba(220, 53, 69, 0.10);
+        border: 1px solid rgba(220, 53, 69, 0.20);
+        font-weight: 900;
+        color: #dc3545;
+        flex: 0 0 auto;
+    }
+
+    .min-w-0 { min-width: 0; }
+
+    /* Tag badge */
+    .tag-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(17,24,39,0.12);
+        background: rgba(17,24,39,0.03);
+        font-weight: 800;
+        font-size: 0.85rem;
+        color: #374151;
+    }
+
+    /* Rate */
+    .rate-pill {
+        padding: 4px 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(40, 167, 69, 0.25);
+        background: rgba(40, 167, 69, 0.10);
+        color: #198754;
+        font-weight: 900;
+        font-size: 0.85rem;
+    }
+
+    .progress {
+        border-radius: 999px;
+        background: rgba(17,24,39,0.06);
+        overflow: hidden;
+    }
+
+    .progress-bar {
+        background: linear-gradient(90deg, rgba(25,135,84,0.95), rgba(34,197,94,0.85));
+    }
+
+    .addr { color: #6b7280; }
+
+    /* Empty state */
+    .empty-state {
+        padding: 28px 16px;
+        text-align: center;
+        border-top: 1px solid rgba(17,24,39,0.06);
+        background: rgba(17,24,39,0.01);
+    }
+
+    .empty-ic { font-size: 34px; margin-bottom: 8px; }
+
+    @@media (max-width: 576px) {
+        .page-title { font-size: 1rem; }
+        .btn-add { width: 100%; }
+        .page-head { flex-direction: column; align-items: stretch; }
+        .dash-spacer { display:none; }
+    }
+</style>

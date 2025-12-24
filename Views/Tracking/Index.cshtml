@@ -3,32 +3,232 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="container text-center py-5">
-    <h4 class="text-primary mb-4">
-        <i class="fas fa-location-dot"></i> Theo dõi đơn hàng
-    </h4>
+<div class="track-page container py-5">
 
-    <form asp-action="Find" method="post" class="d-flex justify-content-center">
-        @Html.AntiForgeryToken()
-
-        <div class="input-group" style="max-width:600px;">
-            <input type="text"
-                   name="keyword"
-                   class="form-control form-control-lg"
-                   placeholder="Nhập mã đơn (NF-...) hoặc SĐT người gửi/nhận"
-                   autocomplete="off"
-                   required />
-
-            <button type="submit" class="btn btn-danger btn-lg">
-                <i class="fas fa-search"></i> Tra cứu
-            </button>
+    <!-- Hero / Header -->
+    <div class="track-hero mx-auto">
+        <div class="hero-left">
+            <div class="hero-ic">📍</div>
+            <div>
+                <h3 class="m-0 hero-title">Theo dõi đơn hàng</h3>
+                <div class="hero-sub text-muted">
+                    Nhập mã đơn (NF-...) hoặc số điện thoại người gửi/nhận để tra cứu trạng thái
+                </div>
+            </div>
         </div>
-    </form>
+
+        <div class="hero-pill">
+            <span class="pill-dot"></span>
+            <span>Tracking</span>
+        </div>
+    </div>
+
+    <!-- Search box -->
+    <div class="track-card mx-auto mt-3">
+        <form asp-action="Find" method="post" class="w-100">
+            @Html.AntiForgeryToken()
+
+            <div class="input-group input-group-lg track-group">
+                <span class="input-group-text track-prefix" title="Tìm kiếm">
+                    <i class="fas fa-search"></i>
+                </span>
+
+                <input type="text"
+                       name="keyword"
+                       class="form-control track-input"
+                       placeholder="Nhập mã đơn (NF-...) hoặc SĐT người gửi/nhận"
+                       autocomplete="off"
+                       required />
+
+                <button type="submit" class="btn btn-danger track-btn">
+                    <i class="fas fa-search me-1"></i> Tra cứu
+                </button>
+            </div>
+
+            <div class="track-hints mt-3">
+                <div class="hint-item">
+                    <span class="hint-dot"></span>
+                    Ví dụ mã đơn: <b>NF-2025-000123</b>
+                </div>
+                <div class="hint-item">
+                    <span class="hint-dot"></span>
+                    Ví dụ SĐT: <b>090xxxxxxx</b>
+                </div>
+            </div>
+        </form>
+    </div>
 
     @if (ViewBag.Message != null)
     {
-        <div class="alert alert-warning mt-4 text-center" style="max-width:600px; margin: 0 auto;">
-            <i class="fas fa-exclamation-triangle text-danger me-2"></i> @ViewBag.Message
+        <div class="track-alert alert alert-warning mx-auto mt-3" role="alert">
+            <div class="d-flex align-items-start gap-2">
+                <i class="fas fa-exclamation-triangle text-danger mt-1"></i>
+                <div>
+                    <div class="fw-bold">Không tìm thấy kết quả</div>
+                    <div>@ViewBag.Message</div>
+                </div>
+            </div>
         </div>
     }
 </div>
+
+<style>
+    .track-page {
+        --border: rgba(17, 24, 39, 0.12);
+        --shadow: 0 10px 30px rgba(17, 24, 39, 0.08);
+        --shadow2: 0 14px 40px rgba(17, 24, 39, 0.10);
+        font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    }
+
+    /* Hero */
+    .track-hero {
+        max-width: 820px;
+        padding: 16px 18px;
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background: linear-gradient(180deg, rgba(13, 110, 253, 0.10), rgba(13, 110, 253, 0.02));
+        box-shadow: var(--shadow);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        flex-wrap: wrap;
+    }
+
+    .hero-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+    }
+
+    .hero-ic {
+        width: 46px;
+        height: 46px;
+        border-radius: 16px;
+        display: grid;
+        place-items: center;
+        background: #fff;
+        border: 1px solid var(--border);
+        box-shadow: 0 8px 24px rgba(17, 24, 39, 0.08);
+        font-size: 20px;
+        flex: 0 0 auto;
+    }
+
+    .hero-title {
+        font-weight: 950;
+        letter-spacing: -0.2px;
+        color: #0d6efd;
+        text-transform: uppercase;
+    }
+
+    .hero-sub {
+        margin-top: 4px;
+        font-size: 0.95rem;
+        line-height: 1.35;
+    }
+
+    .hero-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: #fff;
+        box-shadow: 0 8px 18px rgba(17, 24, 39, 0.06);
+        color: #6b7280;
+        font-weight: 800;
+        font-size: 0.9rem;
+        user-select: none;
+        flex: 0 0 auto;
+    }
+
+    .pill-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 99px;
+        background: #22c55e;
+        box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.18);
+    }
+
+    /* Card */
+    .track-card {
+        max-width: 820px;
+        padding: 16px 18px;
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background: #fff;
+        box-shadow: var(--shadow);
+    }
+
+    .track-group {
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 10px 24px rgba(17, 24, 39, 0.10);
+    }
+
+    .track-prefix {
+        background: rgba(13, 110, 253, 0.08);
+        border: 0;
+        padding: 0 16px;
+    }
+
+    .track-input {
+        border: 0;
+        outline: none;
+    }
+
+    .track-input:focus {
+        box-shadow: none;
+    }
+
+    .track-btn {
+        font-weight: 900;
+        padding-left: 20px;
+        padding-right: 20px;
+        border: 0;
+    }
+
+    /* Hints */
+    .track-hints {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .hint-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(17, 24, 39, 0.10);
+        background: rgba(17, 24, 39, 0.02);
+        color: #6b7280;
+        font-weight: 650;
+        font-size: 0.92rem;
+    }
+
+    .hint-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 99px;
+        background: rgba(13, 110, 253, 0.75);
+        box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.14);
+    }
+
+    /* Alert */
+    .track-alert {
+        max-width: 820px;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 193, 7, 0.35);
+        box-shadow: 0 10px 24px rgba(17, 24, 39, 0.08);
+    }
+
+    @@media (max-width: 576px) {
+        .track-btn { width: 100%; }
+        .track-group { flex-direction: column; }
+        .track-prefix { display: none; }
+    }
+</style>

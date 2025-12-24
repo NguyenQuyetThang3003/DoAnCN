@@ -195,6 +195,12 @@
                data-bs-toggle="tooltip" title="Báo cáo & thống kê">
                 <i class="fas fa-chart-line"></i>
             </a>
+            <a class="nav-link @(currentController == "AdminPromotions" ? "active" : "")"
+   asp-controller="AdminPromotions" asp-action="Index"
+   data-bs-toggle="tooltip" title="Quản lý khuyến mãi">
+    <i class="fas fa-tags"></i>
+</a>
+
 
             <!-- Nhật ký thao tác -->
             <a class="nav-link @(currentController == "AdminAuditLogs" ? "active" : "")"

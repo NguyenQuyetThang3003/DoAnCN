@@ -23,250 +23,403 @@
     }
 
     string shipPayerText = payer == "sender" ? "Người gửi" : "Người nhận";
+
+    string statusText = Model.Status switch
+    {
+        "pending"   => "Chờ xử lý",
+        "shipping"  => "Đang vận chuyển",
+        "done"      => "Hoàn tất",
+        "failed"    => "Giao thất bại",
+        "cancelled" => "Đã hủy",
+        _           => "Không xác định"
+    };
 }
 
-<div class="container py-4">
-    <h3 class="mb-4 text-danger fw-bold">📦 Thông tin đơn hàng #@Model.Id</h3>
+<div class="order-detail container py-4">
 
-    <div class="row">
-        <!-- ====== Cột trái ====== -->
-        <div class="col-md-6">
-            <!-- Thông tin đơn -->
-            <div class="card mb-3 shadow-sm">
-                <div class="card-header bg-light fw-bold">Thông tin đơn</div>
-                <div class="card-body">
-                    <p>
-                        <strong>Mã đơn hàng:</strong>
-                        12300@Model.Id
-                    </p>
-                    <p>
-                        <strong>Ngày tạo:</strong>
-                        @(Model.CreatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa có")
-                    </p>
-                    <p>
-                        <strong>Trạng thái:</strong>
-                        @switch (Model.Status)
-                        {
-                            case "pending":
-                                @:<span class="badge bg-info">Chờ xử lý</span>
-                                break;
-                            case "shipping":
-                                @:<span class="badge bg-warning text-dark">Đang vận chuyển</span>
-                                break;
-                            case "done":
-                                @:<span class="badge bg-success">Hoàn tất</span>
-                                break;
-                            case "failed":
-                                @:<span class="badge bg-danger">Giao thất bại</span>
-                                break;
-                            case "cancelled":
-                                @:<span class="badge bg-danger">Đã hủy</span>
-                                break;
-                            default:
-                                @:<span class="badge bg-secondary">Không xác định</span>
-                                break;
-                        }
-                    </p>
-
-                    <!-- Trạng thái COD -->
-                    <p>
-                        <strong>Trạng thái thanh toán COD:</strong>
-                        @if (Model.CodAmount <= 0)
-                        {
-                            <span class="text-muted">Đơn không có COD</span>
-                        }
-                        else
-                        {
-                            if (Model.Status != "done")
-                            {
-                                <span class="text-danger fw-bold">
-                                    Chưa giao &ndash; chưa thu COD
-                                </span>
-                            }
-                            else if (!Model.IsCodPaid)
-                            {
-                                <span class="text-warning fw-bold">
-                                    Đã giao &ndash; tài xế chưa đối soát COD
-                                </span>
-                            }
-                            else
-                            {
-                                <span class="text-success fw-bold">
-                                    Đã đối soát COD
-                                    @if (Model.CodPaidAt.HasValue)
-                                    {
-                                        @($" lúc {Model.CodPaidAt:dd/MM/yyyy HH:mm}")
-                                    }
-                                </span>
-                            }
-                        }
-                    </p>
-
-                    <p>
-                        <strong>Ghi chú:</strong>
-                        @(!string.IsNullOrEmpty(Model.Note) ? Model.Note : "Không có")
-                    </p>
-                </div>
-            </div>
-
-            <!-- Người gửi -->
-            <div class="card mb-3 shadow-sm">
-                <div class="card-header bg-light fw-bold">Người gửi</div>
-                <div class="card-body">
-                    <p><strong>Họ tên:</strong> @Model.SenderName</p>
-                    <p><strong>Số điện thoại:</strong> @Model.SenderPhone</p>
-                    <p><strong>Địa chỉ:</strong> @Model.SenderAddress</p>
-                </div>
-            </div>
-
-            <!-- Người nhận -->
-            <div class="card mb-3 shadow-sm">
-                <div class="card-header bg-light fw-bold">Người nhận</div>
-                <div class="card-body">
-                    <p><strong>Họ tên:</strong> @Model.ReceiverName</p>
-                    <p><strong>Số điện thoại:</strong> @Model.ReceiverPhone</p>
-                    <p><strong>Địa chỉ:</strong> @Model.ReceiverAddress</p>
-                    <p><strong>Tỉnh/Thành phố:</strong> @Model.Province</p>
+    <!-- HERO -->
+    <div class="detail-hero mb-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="hero-ic"><i class="bi bi-box-seam"></i></div>
+            <div class="min-w-0">
+                <h3 class="m-0 hero-title">Chi tiết đơn hàng #@Model.Id</h3>
+                <div class="hero-sub text-muted">
+                    Theo dõi trạng thái, COD, phí ship và chứng từ giao hàng (POD).
                 </div>
             </div>
         </div>
 
-        <!-- ====== Cột phải ====== -->
-        <div class="col-md-6">
-            <!-- Thông tin hàng hóa + thanh toán -->
-            <div class="card mb-3 shadow-sm">
-                <div class="card-header bg-light fw-bold">Thông tin hàng hóa & thanh toán</div>
-                <div class="card-body">
-                    <p><strong>Tên hàng:</strong> @Model.ProductName</p>
-                    <p><strong>Trọng lượng:</strong> @Model.Weight kg</p>
-                    <p>
-                        <strong>Giá trị khai báo:</strong>
-                        @String.Format("{0:N0}", Model.Value) VNĐ
-                    </p>
-                    <p>
-                        <strong>Ghi chú thêm:</strong>
-                        @(!string.IsNullOrEmpty(Model.Note) ? Model.Note : "Không có")
-                    </p>
-                    <hr />
+        <div class="hero-right">
+            <div class="code-pill">
+                <span class="text-muted">Mã:</span>
+                <span class="fw-bold text-primary ms-1">12300@Model.Id</span>
+            </div>
 
-                    <p>
-                        <strong>COD (tiền hàng cần thu hộ):</strong>
-                        @String.Format("{0:N0}", Model.CodAmount) đ
-                    </p>
-                    <p>
-                        <strong>Phí vận chuyển:</strong>
-                        <span class="text-danger fw-bold">
-                            @String.Format("{0:N0}", Model.ShipFee) đ
-                        </span>
-                    </p>
-                    <p>
-                        <strong>Người trả phí vận chuyển:</strong>
-                        @shipPayerText
-                    </p>
+            <div class="status-pill">
+                @switch (Model.Status)
+                {
+                    case "pending":
+                        @:<span class="badge badge-soft badge-info">Chờ xử lý</span>
+                        break;
+                    case "shipping":
+                        @:<span class="badge badge-soft badge-warn">Đang vận chuyển</span>
+                        break;
+                    case "done":
+                        @:<span class="badge badge-soft badge-ok">Hoàn tất</span>
+                        break;
+                    case "failed":
+                        @:<span class="badge badge-soft badge-bad">Giao thất bại</span>
+                        break;
+                    case "cancelled":
+                        @:<span class="badge badge-soft badge-bad">Đã hủy</span>
+                        break;
+                    default:
+                        @:<span class="badge badge-soft badge-dark">Không xác định</span>
+                        break;
+                }
+            </div>
+        </div>
+    </div>
 
-                    <hr />
-                    <p class="mb-1">
-                        <strong>TỔNG TIỀN TÀI XẾ CẦN THU KHÁCH:</strong>
-                    </p>
-                    <h4 class="text-danger fw-bold">
-                        @totalCollect.ToString("N0") đ
-                    </h4>
-                    <small class="text-muted">
-                        - Nếu không COD và người gửi trả ship: tài xế không thu tiền khách.<br />
-                        - Nếu có COD và người nhận trả ship: thu tiền hàng + phí ship.<br />
-                        - Nếu có COD và người gửi trả ship: chỉ thu tiền hàng.
-                    </small>
+    <!-- QUICK STATS -->
+    <div class="row g-3 mb-3">
+        <div class="col-12 col-md-4">
+            <div class="stat-card">
+                <div class="stat-top">
+                    <div class="stat-ic ic-ok"><i class="bi bi-cash-coin"></i></div>
+                    <div class="stat-label">Tổng tiền tài xế cần thu</div>
+                </div>
+                <div class="stat-value text-danger">@totalCollect.ToString("N0") đ</div>
+                <div class="stat-sub text-muted">Tính theo COD và người trả phí ship</div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-4">
+            <div class="stat-card">
+                <div class="stat-top">
+                    <div class="stat-ic ic-info"><i class="bi bi-truck"></i></div>
+                    <div class="stat-label">Phí vận chuyển</div>
+                </div>
+                <div class="stat-value">@Model.ShipFee.ToString("N0") đ</div>
+                <div class="stat-sub text-muted">Người trả: <b>@shipPayerText</b></div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-4">
+            <div class="stat-card">
+                <div class="stat-top">
+                    <div class="stat-ic ic-warn"><i class="bi bi-receipt"></i></div>
+                    <div class="stat-label">COD</div>
+                </div>
+                <div class="stat-value">@Model.CodAmount.ToString("N0") đ</div>
+                <div class="stat-sub text-muted">
+                    @if (Model.CodAmount <= 0)
+                    {
+                        <span>Không COD</span>
+                    }
+                    else
+                    {
+                        if (Model.Status != "done")
+                        {
+                            <span class="text-danger fw-bold">Chưa giao – chưa thu COD</span>
+                        }
+                        else if (!Model.IsCodPaid)
+                        {
+                            <span class="text-warning fw-bold">Đã giao – chưa đối soát</span>
+                        }
+                        else
+                        {
+                            <span class="text-success fw-bold">
+                                Đã đối soát
+                                @if (Model.CodPaidAt.HasValue)
+                                {
+                                    @($" lúc {Model.CodPaidAt:dd/MM/yyyy HH:mm}")
+                                }
+                            </span>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <!-- LEFT -->
+        <div class="col-lg-6">
+            <!-- Thông tin đơn -->
+            <div class="cardx mb-3">
+                <div class="cardx-head">
+                    <div class="fw-bold"><i class="bi bi-info-circle me-2"></i> Thông tin đơn</div>
+                    <div class="text-muted small">
+                        @(Model.CreatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa có thời gian tạo")
+                    </div>
+                </div>
+                <div class="cardx-body">
+                    <div class="kv">
+                        <div class="k">Mã đơn hàng</div>
+                        <div class="v">
+                            <span class="fw-bold text-primary">12300@Model.Id</span>
+                        </div>
+
+                        <div class="k">Ngày tạo</div>
+                        <div class="v">@(Model.CreatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa có")</div>
+
+                        <div class="k">Trạng thái</div>
+                        <div class="v">
+                            @switch (Model.Status)
+                            {
+                                case "pending":
+                                    @:<span class="badge badge-soft badge-info">Chờ xử lý</span>
+                                    break;
+                                case "shipping":
+                                    @:<span class="badge badge-soft badge-warn">Đang vận chuyển</span>
+                                    break;
+                                case "done":
+                                    @:<span class="badge badge-soft badge-ok">Hoàn tất</span>
+                                    break;
+                                case "failed":
+                                    @:<span class="badge badge-soft badge-bad">Giao thất bại</span>
+                                    break;
+                                case "cancelled":
+                                    @:<span class="badge badge-soft badge-bad">Đã hủy</span>
+                                    break;
+                                default:
+                                    @:<span class="badge badge-soft badge-dark">Không xác định</span>
+                                    break;
+                            }
+                        </div>
+
+                        <div class="k">Trạng thái COD</div>
+                        <div class="v">
+                            @if (Model.CodAmount <= 0)
+                            {
+                                <span class="text-muted">Đơn không có COD</span>
+                            }
+                            else
+                            {
+                                if (Model.Status != "done")
+                                {
+                                    <span class="text-danger fw-bold">Chưa giao – chưa thu COD</span>
+                                }
+                                else if (!Model.IsCodPaid)
+                                {
+                                    <span class="text-warning fw-bold">Đã giao – tài xế chưa đối soát COD</span>
+                                }
+                                else
+                                {
+                                    <span class="text-success fw-bold">
+                                        Đã đối soát COD
+                                        @if (Model.CodPaidAt.HasValue)
+                                        {
+                                            @($" lúc {Model.CodPaidAt:dd/MM/yyyy HH:mm}")
+                                        }
+                                    </span>
+                                }
+                            }
+                        </div>
+
+                        <div class="k">Ghi chú</div>
+                        <div class="v">@(!string.IsNullOrEmpty(Model.Note) ? Model.Note : "Không có")</div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Chứng từ giao hàng (POD) -->
-            <div class="card mb-3 shadow-sm">
-                <div class="card-header bg-light fw-bold">
-                    Chứng từ giao hàng (POD)
+            <!-- Người gửi -->
+            <div class="cardx mb-3">
+                <div class="cardx-head">
+                    <div class="fw-bold"><i class="bi bi-person-circle me-2"></i> Người gửi</div>
+                    <div class="text-muted small">Thông tin người tạo đơn</div>
                 </div>
-                <div class="card-body">
+                <div class="cardx-body">
+                    <div class="kv">
+                        <div class="k">Họ tên</div>
+                        <div class="v">@Model.SenderName</div>
+
+                        <div class="k">Số điện thoại</div>
+                        <div class="v">@Model.SenderPhone</div>
+
+                        <div class="k">Địa chỉ</div>
+                        <div class="v">@Model.SenderAddress</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Người nhận -->
+            <div class="cardx mb-3">
+                <div class="cardx-head">
+                    <div class="fw-bold"><i class="bi bi-person-check me-2"></i> Người nhận</div>
+                    <div class="text-muted small">Thông tin giao hàng</div>
+                </div>
+                <div class="cardx-body">
+                    <div class="kv">
+                        <div class="k">Họ tên</div>
+                        <div class="v">@Model.ReceiverName</div>
+
+                        <div class="k">Số điện thoại</div>
+                        <div class="v">@Model.ReceiverPhone</div>
+
+                        <div class="k">Địa chỉ</div>
+                        <div class="v">@Model.ReceiverAddress</div>
+
+                        <div class="k">Tỉnh/Thành phố</div>
+                        <div class="v">@Model.Province</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT -->
+        <div class="col-lg-6">
+            <!-- Hàng hóa + Thanh toán -->
+            <div class="cardx mb-3">
+                <div class="cardx-head">
+                    <div class="fw-bold"><i class="bi bi-box2-heart me-2"></i> Hàng hóa & thanh toán</div>
+                    <div class="text-muted small">Tổng thu hiển thị ở khối trên</div>
+                </div>
+                <div class="cardx-body">
+                    <div class="kv">
+                        <div class="k">Tên hàng</div>
+                        <div class="v">@Model.ProductName</div>
+
+                        <div class="k">Trọng lượng</div>
+                        <div class="v">@Model.Weight kg</div>
+
+                        <div class="k">Giá trị khai báo</div>
+                        <div class="v fw-bold">@String.Format("{0:N0}", Model.Value) VNĐ</div>
+
+                        <div class="k">COD (thu hộ)</div>
+                        <div class="v">@String.Format("{0:N0}", Model.CodAmount) đ</div>
+
+                        <div class="k">Phí vận chuyển</div>
+                        <div class="v text-danger fw-bold">@String.Format("{0:N0}", Model.ShipFee) đ</div>
+
+                        <div class="k">Người trả phí ship</div>
+                        <div class="v">@shipPayerText</div>
+                    </div>
+
+                    <hr />
+
+                    <div class="collect-box">
+                        <div class="mb-1 fw-bold">TỔNG TIỀN TÀI XẾ CẦN THU KHÁCH</div>
+                        <div class="collect-amount">@totalCollect.ToString("N0") đ</div>
+                        <div class="collect-note text-muted">
+                            - Nếu không COD và người gửi trả ship: tài xế không thu tiền khách.<br />
+                            - Nếu có COD và người nhận trả ship: thu tiền hàng + phí ship.<br />
+                            - Nếu có COD và người gửi trả ship: chỉ thu tiền hàng.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- POD -->
+            <div class="cardx mb-3">
+                <div class="cardx-head">
+                    <div class="fw-bold"><i class="bi bi-image me-2"></i> Chứng từ giao hàng (POD)</div>
+                    <div class="text-muted small">Ảnh do tài xế tải lên</div>
+                </div>
+                <div class="cardx-body">
                     @if (!string.IsNullOrWhiteSpace(Model.PodImagePath))
                     {
-                        <div class="text-center">
+                        <div class="pod-wrap">
                             <img src="@Model.PodImagePath"
                                  alt="Ảnh POD đơn hàng @Model.Code"
-                                 class="img-fluid rounded border mb-2"
-                                 style="max-height:350px; object-fit:contain;" />
+                                 class="pod-img" />
 
-                            <div>
+                            <div class="mt-2 d-flex justify-content-center">
                                 <a href="@Model.PodImagePath"
                                    target="_blank"
-                                   class="btn btn-sm btn-outline-primary">
-                                    Xem ảnh kích thước lớn
+                                   class="btn btn-sm btn-outline-primary btn-soft">
+                                    <i class="bi bi-arrows-angle-expand me-1"></i> Xem ảnh kích thước lớn
                                 </a>
                             </div>
                         </div>
                     }
                     else
                     {
-                        <span class="text-muted">
+                        <div class="text-muted">
                             Chưa có ảnh POD do tài xế tải lên.
-                        </span>
+                        </div>
                     }
                 </div>
             </div>
 
-            <!-- Hành trình đơn -->
-            <div class="card mb-3 shadow-sm">
-                <div class="card-header bg-light fw-bold">Hành trình đơn</div>
-                <div class="card-body">
-                    <ul class="timeline list-unstyled">
-                        <li>
-                            <i class="bi bi-circle-fill text-success me-2"></i>
-                            Đã tạo đơn hàng lúc @Model.CreatedAt?.ToString("dd/MM/yyyy HH:mm")
+            <!-- Timeline -->
+            <div class="cardx mb-3">
+                <div class="cardx-head">
+                    <div class="fw-bold"><i class="bi bi-geo-alt me-2"></i> Hành trình đơn</div>
+                    <div class="text-muted small">Theo trạng thái hiện tại</div>
+                </div>
+                <div class="cardx-body">
+                    <ul class="timeline list-unstyled m-0">
+                        <li class="tl-item">
+                            <span class="tl-dot ok"></span>
+                            <div class="tl-content">
+                                <div class="fw-bold">Đã tạo đơn</div>
+                                <div class="text-muted small">@Model.CreatedAt?.ToString("dd/MM/yyyy HH:mm")</div>
+                            </div>
                         </li>
 
                         @if (Model.Status == "shipping")
                         {
-                            <li>
-                                <i class="bi bi-truck text-primary me-2"></i>
-                                Đang giao hàng
+                            <li class="tl-item">
+                                <span class="tl-dot info"></span>
+                                <div class="tl-content">
+                                    <div class="fw-bold">Đang giao hàng</div>
+                                    <div class="text-muted small">Tài xế đang vận chuyển</div>
+                                </div>
                             </li>
                         }
                         else if (Model.Status == "done")
                         {
-                            <li>
-                                <i class="bi bi-check-circle text-success me-2"></i>
-                                Đã giao thành công
+                            <li class="tl-item">
+                                <span class="tl-dot ok"></span>
+                                <div class="tl-content">
+                                    <div class="fw-bold">Đã giao thành công</div>
+                                    <div class="text-muted small">Hoàn tất</div>
+                                </div>
                             </li>
                         }
                         else if (Model.Status == "failed")
                         {
-                            <li>
-                                <i class="bi bi-exclamation-triangle text-danger me-2"></i>
-                                Giao thất bại
+                            <li class="tl-item">
+                                <span class="tl-dot bad"></span>
+                                <div class="tl-content">
+                                    <div class="fw-bold">Giao thất bại</div>
+                                    <div class="text-muted small">Cần xử lý lại</div>
+                                </div>
                             </li>
                         }
                         else if (Model.Status == "cancelled")
                         {
-                            <li>
-                                <i class="bi bi-x-circle text-danger me-2"></i>
-                                Đơn hàng đã bị hủy
+                            <li class="tl-item">
+                                <span class="tl-dot bad"></span>
+                                <div class="tl-content">
+                                    <div class="fw-bold">Đơn hàng đã bị hủy</div>
+                                    <div class="text-muted small">Đã kết thúc</div>
+                                </div>
                             </li>
                         }
                         else
                         {
-                            <li>
-                                <i class="bi bi-hourglass-split text-warning me-2"></i>
-                                Đang chờ xử lý
+                            <li class="tl-item">
+                                <span class="tl-dot warn"></span>
+                                <div class="tl-content">
+                                    <div class="fw-bold">Đang chờ xử lý</div>
+                                    <div class="text-muted small">Chuẩn bị phân công giao</div>
+                                </div>
                             </li>
                         }
                     </ul>
                 </div>
             </div>
 
-            <!-- Nút thao tác -->
-            <div class="d-flex gap-2 mt-3">
-                <a asp-action="Manage" class="btn btn-secondary">
-                    <i class="bi bi-arrow-left"></i> Quay lại
+            <!-- Actions -->
+            <div class="action-bar">
+                <a asp-action="Manage" class="btn btn-secondary btn-soft">
+                    <i class="bi bi-arrow-left me-1"></i> Quay lại
                 </a>
-                <a asp-action="Print" asp-route-id="@Model.Id" class="btn btn-success">
-                    <i class="bi bi-printer"></i> In đơn
+                <a asp-action="Print" asp-route-id="@Model.Id" class="btn btn-success btn-soft">
+                    <i class="bi bi-printer me-1"></i> In đơn
                 </a>
             </div>
         </div>
@@ -274,14 +427,219 @@
 </div>
 
 <style>
-    .timeline li {
-        margin-bottom: 8px;
-        font-size: 0.95rem;
+    .order-detail{
+        --border: rgba(17,24,39,.12);
+        --shadow: 0 10px 30px rgba(17,24,39,.08);
+        font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
     }
-    .card {
-        border-radius: 10px;
+
+    /* HERO */
+    .detail-hero{
+        padding: 16px 18px;
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background: linear-gradient(180deg, rgba(220,53,69,.10), rgba(220,53,69,.02));
+        box-shadow: var(--shadow);
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap: 14px;
+        flex-wrap: wrap;
     }
-    .card-header {
-        font-size: 1rem;
+    .hero-ic{
+        width: 46px; height: 46px;
+        border-radius: 16px;
+        display:grid; place-items:center;
+        background:#fff;
+        border:1px solid var(--border);
+        box-shadow: 0 8px 24px rgba(17,24,39,.08);
+        font-size: 20px;
+        color:#dc3545;
+        flex: 0 0 auto;
     }
+    .hero-title{
+        font-weight: 950;
+        letter-spacing: -0.2px;
+        color:#dc3545;
+        text-transform: uppercase;
+        font-size: 1.2rem;
+    }
+    .hero-sub{ margin-top: 4px; font-size: .95rem; line-height: 1.35; }
+    .hero-right{
+        display:flex;
+        align-items:center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    .code-pill{
+        padding: 10px 12px;
+        border-radius: 999px;
+        background:#fff;
+        border:1px solid var(--border);
+        box-shadow: 0 8px 18px rgba(17,24,39,.06);
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    /* STATS */
+    .stat-card{
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background:#fff;
+        box-shadow: var(--shadow);
+        padding: 12px 14px;
+        height: 100%;
+    }
+    .stat-top{
+        display:flex;
+        align-items:center;
+        gap: 10px;
+    }
+    .stat-ic{
+        width: 40px; height: 40px;
+        border-radius: 16px;
+        display:grid; place-items:center;
+        background:#fff;
+        border:1px solid rgba(17,24,39,.10);
+        box-shadow: 0 8px 18px rgba(17,24,39,.06);
+        font-size: 18px;
+        flex: 0 0 auto;
+    }
+    .ic-ok{ color:#198754; }
+    .ic-info{ color:#0dcaf0; }
+    .ic-warn{ color:#ffb703; }
+
+    .stat-label{ font-weight: 850; color:#111827; font-size: .92rem; }
+    .stat-value{
+        font-weight: 950;
+        font-size: 1.35rem;
+        margin-top: 8px;
+        letter-spacing: -0.2px;
+        color:#111827;
+    }
+    .stat-sub{ margin-top: 4px; font-size: .9rem; }
+
+    /* CARDX */
+    .cardx{
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background:#fff;
+        box-shadow: var(--shadow);
+        overflow:hidden;
+    }
+    .cardx-head{
+        padding: 14px 16px;
+        border-bottom: 1px solid rgba(17,24,39,.08);
+        background: linear-gradient(180deg, rgba(17,24,39,.03), rgba(17,24,39,.01));
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    .cardx-body{ padding: 16px; }
+
+    /* Key-Value grid */
+    .kv{
+        display:grid;
+        grid-template-columns: 180px 1fr;
+        gap: 10px 14px;
+    }
+    .kv .k{ color:#6b7280; font-weight: 800; }
+    .kv .v{ color:#111827; font-weight: 700; }
+    @@media (max-width: 576px){
+        .kv{ grid-template-columns: 1fr; }
+        .kv .k{ margin-top: 6px; }
+    }
+
+    /* Badges */
+    .badge-soft{
+        font-size: .88rem;
+        padding: 7px 10px;
+        border-radius: 999px;
+        font-weight: 900;
+        border: 1px solid rgba(17,24,39,.10);
+        display:inline-block;
+        white-space: nowrap;
+    }
+    .badge-info{ background: rgba(13,202,240,.16); color:#055160; }
+    .badge-warn{ background: rgba(255,193,7,.18); color:#664d03; }
+    .badge-ok{ background: rgba(25,135,84,.16); color:#0f5132; }
+    .badge-bad{ background: rgba(220,53,69,.14); color:#842029; }
+    .badge-dark{ background: rgba(17,24,39,.06); color:#111827; }
+
+    /* Collect box */
+    .collect-box{
+        border-radius: 16px;
+        border: 1px dashed rgba(17,24,39,.14);
+        background: rgba(220,53,69,.03);
+        padding: 14px;
+    }
+    .collect-amount{
+        font-size: 1.55rem;
+        font-weight: 950;
+        color:#dc3545;
+        margin-top: 2px;
+        margin-bottom: 6px;
+    }
+    .collect-note{ font-size: .92rem; line-height: 1.4; }
+
+    /* POD */
+    .pod-wrap{
+        border-radius: 16px;
+        border: 1px solid rgba(17,24,39,.10);
+        box-shadow: 0 10px 26px rgba(17,24,39,.08);
+        overflow:hidden;
+        background:#fff;
+        padding: 10px;
+    }
+    .pod-img{
+        width: 100%;
+        max-height: 380px;
+        object-fit: contain;
+        border-radius: 12px;
+        border: 1px solid rgba(17,24,39,.10);
+        background: #f8fafc;
+    }
+
+    /* Timeline */
+    .timeline{ position: relative; padding-left: 6px; }
+    .tl-item{
+        position: relative;
+        display:flex;
+        gap: 12px;
+        padding: 6px 0;
+    }
+    .tl-item:before{
+        content:"";
+        position:absolute;
+        left: 10px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: rgba(17,24,39,.10);
+    }
+    .tl-dot{
+        width: 14px;
+        height: 14px;
+        border-radius: 99px;
+        margin-top: 4px;
+        flex: 0 0 auto;
+        box-shadow: 0 0 0 4px rgba(17,24,39,.06);
+        z-index: 1;
+    }
+    .tl-dot.ok{ background:#22c55e; box-shadow: 0 0 0 4px rgba(34,197,94,.18); }
+    .tl-dot.info{ background:#0dcaf0; box-shadow: 0 0 0 4px rgba(13,202,240,.18); }
+    .tl-dot.warn{ background:#ffc107; box-shadow: 0 0 0 4px rgba(255,193,7,.22); }
+    .tl-dot.bad{ background:#dc3545; box-shadow: 0 0 0 4px rgba(220,53,69,.18); }
+    .tl-content{ padding-left: 6px; }
+
+    /* Actions */
+    .action-bar{
+        display:flex;
+        justify-content:flex-end;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    .btn-soft{ border-radius: 12px; font-weight: 850; }
 </style>

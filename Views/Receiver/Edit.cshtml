@@ -1,0 +1,71 @@
+@model WedNightFury.Models.Receiver
+@{
+    ViewData["Title"] = "Sửa người nhận";
+}
+
+<div class="receiver-create container py-4">
+    <div class="create-head mb-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="head-icon">✏️</div>
+            <div>
+                <h3 class="m-0 head-title">Cập nhật người nhận</h3>
+                <div class="head-sub text-muted">Chỉnh sửa thông tin và lưu thay đổi</div>
+            </div>
+        </div>
+    </div>
+
+    <form method="post" class="form-card">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label fw-bold">Tên người nhận</label>
+                <input asp-for="Name" class="form-control input-control" required />
+                <span asp-validation-for="Name" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label fw-bold">Số điện thoại</label>
+                <input asp-for="Phone" class="form-control input-control" />
+                <span asp-validation-for="Phone" class="text-danger small"></span>
+            </div>
+
+            <div class="col-12">
+                <label class="form-label fw-bold">Địa chỉ</label>
+                <input asp-for="Address" class="form-control input-control" />
+                <span asp-validation-for="Address" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label fw-bold">Tỷ lệ giao thành công</label>
+                <input asp-for="SuccessRate" class="form-control input-control" placeholder="Ví dụ: 95%" />
+                <span asp-validation-for="SuccessRate" class="text-danger small"></span>
+            </div>
+        </div>
+
+        <div class="form-actions mt-4">
+            <div class="text-muted small">* Nhấn lưu để cập nhật dữ liệu</div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-danger px-4">💾 Lưu thay đổi</button>
+                <a href="/Receiver" class="btn btn-outline-secondary px-4">⬅ Quay lại</a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<style>
+    /* dùng cùng style với Create để đồng bộ */
+    .receiver-create{--border:rgba(17,24,39,.12);--shadow:0 10px 30px rgba(17,24,39,.08);font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;}
+    .create-head{display:flex;align-items:center;padding:14px 16px;border-radius:16px;border:1px solid var(--border);background:linear-gradient(180deg, rgba(220,53,69,.10), rgba(220,53,69,.02));box-shadow:var(--shadow);}
+    .head-icon{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:#fff;border:1px solid var(--border);box-shadow:0 8px 24px rgba(17,24,39,.08);font-size:20px;}
+    .head-title{font-weight:900;letter-spacing:-0.2px;color:#dc3545;}
+    .head-sub{margin-top:4px;font-size:.95rem;}
+    .form-card{margin-top:12px;border-radius:18px;border:1px solid var(--border);background:#fff;box-shadow:var(--shadow);padding:18px;}
+    .input-control{border-radius:12px;border:1px solid rgba(17,24,39,.15);box-shadow:0 6px 18px rgba(17,24,39,.06);transition:all .15s ease;}
+    .input-control:focus{border-color:#dc3545;box-shadow:0 0 0 .2rem rgba(220,53,69,.18);}
+    .form-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:14px;border-top:1px dashed rgba(17,24,39,.12);flex-wrap:wrap;}
+    @@media (max-width:576px){.form-actions{flex-direction:column;align-items:stretch;}.form-actions .btn{width:100%;}}
+</style>

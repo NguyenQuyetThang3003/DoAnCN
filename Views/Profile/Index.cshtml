@@ -2,94 +2,327 @@
 @using System.Text.Json
 
 @{
-    // Layout do controller set theo role, mặc định dùng layout customer
     Layout = ViewBag.Layout ?? "~/Views/Shared/_Layout.cshtml";
     ViewData["Title"] = "Cài đặt tài khoản";
 }
 
-<div class="container py-4">
-    <h3 class="fw-bold text-danger mb-4">⚙️ CÀI ĐẶT TÀI KHOẢN</h3>
+<div class="profile-page container py-4">
+
+    <!-- Header -->
+    <div class="page-head mb-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="page-icon">⚙️</div>
+            <div>
+                <h3 class="m-0 page-title">Cài đặt tài khoản</h3>
+                <div class="page-sub text-muted">Cập nhật thông tin cá nhân và địa chỉ xuất hóa đơn</div>
+            </div>
+        </div>
+
+        <div class="head-meta">
+            <span class="meta-dot"></span>
+            <span class="text-muted">Tự lưu theo form</span>
+        </div>
+    </div>
 
     @if (ViewBag.Message != null)
     {
-        <div class="alert alert-success">@ViewBag.Message</div>
+        <div class="alert alert-success shadow-sm mb-3" role="alert">
+            @ViewBag.Message
+        </div>
     }
 
-    <form asp-action="Index" method="post" class="card shadow-sm p-4">
+    <form asp-action="Index" method="post" class="profile-card">
         @Html.AntiForgeryToken()
-
-        <h5 class="mb-3 text-primary fw-bold">Thông tin tài khoản</h5>
 
         <input type="hidden" asp-for="Id" />
         <input type="hidden" asp-for="UserId" />
 
-        <div class="row mb-3">
-            <div class="col-md-6">
-                <label class="form-label">Tên khách hàng / Công ty</label>
-                <input asp-for="FullName" class="form-control" />
+        <!-- Section: Account -->
+        <div class="section">
+            <div class="section-head">
+                <div class="sec-title">
+                    <span class="sec-ic">👤</span>
+                    <span>Thông tin tài khoản</span>
+                </div>
+                <div class="sec-sub text-muted">Thông tin dùng cho liên hệ và xác nhận</div>
             </div>
-            <div class="col-md-6">
-                <label class="form-label">Email</label>
-                <input asp-for="Email" class="form-control" />
+
+            <div class="row g-3 mt-1">
+                <div class="col-md-6">
+                    <label class="form-label">Tên khách hàng / Công ty</label>
+                    <div class="input-wrap">
+                        <span class="input-ic">🏷️</span>
+                        <input asp-for="FullName" class="form-control input-control" placeholder="Ví dụ: Nguyễn Văn A / Công ty ABC" />
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Email</label>
+                    <div class="input-wrap">
+                        <span class="input-ic">📧</span>
+                        <input asp-for="Email" class="form-control input-control" placeholder="example@gmail.com" />
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Số điện thoại</label>
+                    <div class="input-wrap">
+                        <span class="input-ic">📞</span>
+                        <input asp-for="Phone" class="form-control input-control" placeholder="090xxxxxxx" />
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Ngày sinh</label>
+                    <div class="input-wrap">
+                        <span class="input-ic">📅</span>
+                        <input asp-for="BirthDate" type="date" class="form-control input-control" />
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Chứng minh thư / Mã số thuế</label>
+                    <div class="input-wrap">
+                        <span class="input-ic">🪪</span>
+                        <input asp-for="TaxCode" class="form-control input-control" placeholder="Ví dụ: 0123456789" />
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Tên công ty (nếu có)</label>
+                    <div class="input-wrap">
+                        <span class="input-ic">🏢</span>
+                        <input asp-for="CompanyName" class="form-control input-control" placeholder="Ví dụ: Công ty TNHH ..." />
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div class="row mb-3">
-            <div class="col-md-6">
-                <label class="form-label">Số điện thoại</label>
-                <input asp-for="Phone" class="form-control" />
+        <!-- Section: Address -->
+        <div class="section mt-3">
+            <div class="section-head">
+                <div class="sec-title">
+                    <span class="sec-ic">📍</span>
+                    <span>Địa chỉ & Khu vực</span>
+                </div>
+                <div class="sec-sub text-muted">Chọn đúng tỉnh/huyện/xã để hỗ trợ định tuyến giao hàng</div>
             </div>
-            <div class="col-md-6">
-                <label class="form-label">Ngày sinh</label>
-                <input asp-for="BirthDate" type="date" class="form-control" />
+
+            <div class="row g-3 mt-1">
+                <div class="col-12">
+                    <label class="form-label">Địa chỉ thường trú / Địa chỉ xuất hóa đơn</label>
+                    <div class="input-wrap">
+                        <span class="input-ic">🏠</span>
+                        <input asp-for="Address" class="form-control input-control" placeholder="Số nhà, đường, phường/xã..." />
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Tỉnh / Thành phố</label>
+                    <select asp-for="City" class="form-select select-control" id="citySelect">
+                        <option value="">-- Chọn tỉnh / thành phố --</option>
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Quận / Huyện</label>
+                    <select asp-for="District" class="form-select select-control" id="districtSelect">
+                        <option value="">-- Chọn quận / huyện --</option>
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Phường / Xã</label>
+                    <select asp-for="Ward" class="form-select select-control" id="wardSelect">
+                        <option value="">-- Chọn phường / xã --</option>
+                    </select>
+                </div>
             </div>
         </div>
 
-        <div class="mb-3">
-            <label class="form-label">Chứng minh thư / Mã số thuế</label>
-            <input asp-for="TaxCode" class="form-control" />
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Địa chỉ thường trú / Địa chỉ xuất hóa đơn</label>
-            <input asp-for="Address" class="form-control" />
-        </div>
-
-        <div class="row mb-3">
-            <div class="col-md-4">
-                <label class="form-label">Tỉnh / Thành phố</label>
-                <select asp-for="City" class="form-select" id="citySelect">
-                    <option value="">-- Chọn tỉnh / thành phố --</option>
-                </select>
+        <!-- Actions -->
+        <div class="actions mt-4">
+            <div class="text-muted small">
+                * Nhấn “Lưu thay đổi” để cập nhật thông tin. Dữ liệu vị trí sẽ tự động load theo tỉnh/huyện/xã.
             </div>
-            <div class="col-md-4">
-                <label class="form-label">Quận / Huyện</label>
-                <select asp-for="District" class="form-select" id="districtSelect">
-                    <option value="">-- Chọn quận / huyện --</option>
-                </select>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label">Phường / Xã</label>
-                <select asp-for="Ward" class="form-select" id="wardSelect">
-                    <option value="">-- Chọn phường / xã --</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Tên công ty (nếu có)</label>
-            <input asp-for="CompanyName" class="form-control" />
-        </div>
-
-        <div class="text-end">
-            <button type="submit" class="btn btn-danger px-4">💾 Lưu thay đổi</button>
+            <button type="submit" class="btn btn-danger px-4 btn-save">
+                💾 Lưu thay đổi
+            </button>
         </div>
     </form>
 </div>
 
 <style>
-    .form-label { font-weight: 600; }
-    .card { border-radius: 12px; }
+    .profile-page {
+        --border: rgba(17, 24, 39, 0.12);
+        --shadow: 0 10px 30px rgba(17, 24, 39, 0.08);
+        --shadow2: 0 14px 40px rgba(17, 24, 39, 0.10);
+        font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    }
+
+    /* Header */
+    .page-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 14px 16px;
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        background: linear-gradient(180deg, rgba(220, 53, 69, 0.10), rgba(220, 53, 69, 0.02));
+        box-shadow: var(--shadow);
+        flex-wrap: wrap;
+    }
+
+    .page-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        background: #fff;
+        border: 1px solid var(--border);
+        box-shadow: 0 8px 24px rgba(17, 24, 39, 0.08);
+        font-size: 20px;
+        flex: 0 0 auto;
+    }
+
+    .page-title {
+        font-weight: 900;
+        letter-spacing: -0.2px;
+        color: #dc3545;
+        text-transform: uppercase;
+        font-size: 1.15rem;
+    }
+
+    .page-sub { margin-top: 4px; font-size: 0.95rem; }
+
+    .head-meta {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: #fff;
+        box-shadow: 0 8px 18px rgba(17, 24, 39, 0.06);
+        font-weight: 700;
+        font-size: 0.9rem;
+        user-select: none;
+    }
+
+    .meta-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 99px;
+        background: #22c55e;
+        box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.18);
+    }
+
+    /* Card */
+    .profile-card {
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background: #fff;
+        box-shadow: var(--shadow);
+        padding: 18px;
+    }
+
+    /* Sections */
+    .section {
+        border: 1px solid rgba(17, 24, 39, 0.08);
+        border-radius: 16px;
+        padding: 14px 14px 16px 14px;
+        background: linear-gradient(180deg, rgba(17, 24, 39, 0.02), rgba(17, 24, 39, 0.01));
+    }
+
+    .section-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        padding-bottom: 10px;
+        border-bottom: 1px dashed rgba(17, 24, 39, 0.12);
+        margin-bottom: 10px;
+    }
+
+    .sec-title {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 900;
+        color: #0d6efd;
+        letter-spacing: -0.2px;
+    }
+
+    .sec-ic {
+        width: 34px;
+        height: 34px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        background: #fff;
+        border: 1px solid rgba(17, 24, 39, 0.10);
+        box-shadow: 0 8px 18px rgba(17, 24, 39, 0.06);
+    }
+
+    .sec-sub { font-size: 0.92rem; }
+
+    /* Inputs */
+    .form-label { font-weight: 800; color: #111827; }
+
+    .input-wrap { position: relative; }
+    .input-ic {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        opacity: 0.6;
+        font-size: 15px;
+    }
+
+    .input-control {
+        padding-left: 38px;
+        border-radius: 12px;
+        border: 1px solid rgba(17, 24, 39, 0.15);
+        box-shadow: 0 6px 18px rgba(17, 24, 39, 0.06);
+        transition: all .15s ease;
+    }
+
+    .input-control:focus {
+        border-color: #dc3545;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.18);
+    }
+
+    .select-control {
+        border-radius: 12px;
+        border: 1px solid rgba(17, 24, 39, 0.15);
+        box-shadow: 0 6px 18px rgba(17, 24, 39, 0.05);
+        transition: all .15s ease;
+    }
+
+    .select-control:focus {
+        border-color: #dc3545;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.18);
+    }
+
+    /* Actions */
+    .actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding-top: 14px;
+        border-top: 1px dashed rgba(17, 24, 39, 0.12);
+        flex-wrap: wrap;
+    }
+
+    .btn-save {
+        border-radius: 12px;
+        box-shadow: 0 12px 26px rgba(220, 53, 69, 0.22);
+        font-weight: 800;
+    }
 </style>
 
 @section Scripts {
@@ -200,4 +433,3 @@
         }
     </script>
 }
-

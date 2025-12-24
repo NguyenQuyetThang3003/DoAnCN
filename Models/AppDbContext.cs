@@ -21,6 +21,11 @@ namespace WedNightFury.Models
         public DbSet<Promotion> Promotions { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<DriverLocation> DriverLocations { get; set; }
+        public DbSet<GiamGia> GiamGias { get; set; }
+        public DbSet<GiamGia> giamgia { get; set; } = default!;
+
+        
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

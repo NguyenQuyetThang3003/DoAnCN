@@ -1,0 +1,60 @@
+@model WedNightFury.Models.Receiver
+@{
+    ViewData["Title"] = "Chi tiết người nhận";
+}
+
+<div class="container py-4">
+    <div class="detail-card">
+        <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">
+            <div class="d-flex align-items-center gap-3">
+                <div class="detail-ic">👁️</div>
+                <div>
+                    <h3 class="m-0 detail-title">Chi tiết người nhận</h3>
+                    <div class="text-muted">Thông tin đầy đủ người nhận</div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <a class="btn btn-outline-secondary" href="/Receiver">⬅ Quay lại</a>
+                <a class="btn btn-outline-primary" href="/Receiver/Edit/@Model.Id">✏️ Sửa</a>
+                <a class="btn btn-outline-danger" href="/Receiver/Delete/@Model.Id">🗑️ Xóa</a>
+            </div>
+        </div>
+
+        <div class="row g-3 mt-3">
+            <div class="col-md-6">
+                <div class="info-box">
+                    <div class="info-label">Tên</div>
+                    <div class="info-val">@Model.Name</div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="info-box">
+                    <div class="info-label">Số điện thoại</div>
+                    <div class="info-val">@Model.Phone</div>
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="info-box">
+                    <div class="info-label">Địa chỉ</div>
+                    <div class="info-val">@Model.Address</div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="info-box">
+                    <div class="info-label">Tỷ lệ giao thành công</div>
+                    <div class="info-val">@Model.SuccessRate</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .detail-card{border-radius:18px;border:1px solid rgba(17,24,39,.12);box-shadow:0 10px 30px rgba(17,24,39,.08);background:#fff;padding:18px;font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;}
+    .detail-ic{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:#fff;border:1px solid rgba(17,24,39,.10);box-shadow:0 8px 24px rgba(17,24,39,.08);font-size:20px;}
+    .detail-title{font-weight:950;letter-spacing:-0.2px;color:#0d6efd;}
+    .info-box{border:1px solid rgba(17,24,39,.10);border-radius:14px;padding:12px 14px;background:rgba(17,24,39,.02);}
+    .info-label{font-size:.82rem;color:#6b7280;font-weight:900;text-transform:uppercase;letter-spacing:.3px;}
+    .info-val{margin-top:4px;font-weight:800;color:#111827;}
+</style>

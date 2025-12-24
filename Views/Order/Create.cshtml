@@ -12,10 +12,48 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
-<div class="container py-5">
-    <h2 class="text-center text-danger fw-bold mb-4">
-        <i class="bi bi-truck"></i> TẠO ĐƠN HÀNG NIGHTFURY
-    </h2>
+<div class="order-create container py-5">
+
+    <!-- HERO -->
+    <div class="order-hero mb-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="hero-ic"><i class="bi bi-truck"></i></div>
+            <div class="min-w-0">
+                <h2 class="m-0 hero-title">Tạo đơn hàng NightFury Express</h2>
+                <div class="hero-sub text-muted">
+                    Điền thông tin người gửi/nhận, chọn vị trí trên bản đồ và cấu hình dịch vụ để tạo đơn nhanh chóng.
+                </div>
+            </div>
+        </div>
+
+        <div class="hero-pill">
+            <span class="pill-dot"></span>
+            <span>CREATE ORDER</span>
+        </div>
+    </div>
+
+    <!-- STEPPER -->
+    <div class="stepper mb-3">
+        <div class="step active">
+            <div class="step-no">1</div>
+            <div class="step-text">Người gửi</div>
+        </div>
+        <div class="step-line"></div>
+        <div class="step">
+            <div class="step-no">2</div>
+            <div class="step-text">Người nhận</div>
+        </div>
+        <div class="step-line"></div>
+        <div class="step">
+            <div class="step-no">3</div>
+            <div class="step-text">Hàng hóa</div>
+        </div>
+        <div class="step-line"></div>
+        <div class="step">
+            <div class="step-no">4</div>
+            <div class="step-text">Giao hàng</div>
+        </div>
+    </div>
 
     @using (Html.BeginForm("Create", "Order", FormMethod.Post, new { id = "orderForm" }))
     {
@@ -24,283 +62,344 @@
         <div asp-validation-summary="All" class="text-danger mb-3"></div>
 
         <!-- 1. NGƯỜI GỬI -->
-        <div class="card p-3 mb-4">
-            <h5>1. NGƯỜI GỬI</h5>
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label class="form-label">Tên người gửi</label>
-                    <input asp-for="SenderName" class="form-control" />
+        <div class="section-card mb-4">
+            <div class="section-head">
+                <div class="sec-left">
+                    <div class="sec-ic">1</div>
+                    <div>
+                        <h5 class="m-0 sec-title">Người gửi</h5>
+                        <div class="sec-sub text-muted">Thông tin người tạo đơn</div>
+                    </div>
                 </div>
-                <div class="col-md-6">
-                    <label class="form-label">Số điện thoại</label>
-                    <input asp-for="SenderPhone" class="form-control" />
-                </div>
-                <div class="col-md-12">
-                    <label class="form-label">Địa chỉ gửi</label>
-                    <input asp-for="SenderAddress" class="form-control" />
+            </div>
+
+            <div class="section-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Tên người gửi</label>
+                        <input asp-for="SenderName" class="form-control" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Số điện thoại</label>
+                        <input asp-for="SenderPhone" class="form-control" />
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label">Địa chỉ gửi</label>
+                        <input asp-for="SenderAddress" class="form-control" />
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- 2. NGƯỜI NHẬN -->
-        <div class="card p-3 mb-4">
-            <h5>2. NGƯỜI NHẬN</h5>
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label class="form-label">Tên người nhận</label>
-                    <input asp-for="ReceiverName" class="form-control" />
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label">SĐT người nhận</label>
-                    <input asp-for="ReceiverPhone" class="form-control" />
-                </div>
-
-                <div class="col-md-4">
-                    <label class="form-label">Tỉnh/Thành phố</label>
-                    <select id="province" name="ProvinceId" class="form-select"></select>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">Quận/Huyện</label>
-                    <select id="district" name="DistrictId" class="form-select"></select>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">Phường/Xã</label>
-                    <select id="ward" name="WardId" class="form-select"></select>
-                </div>
-
-                <div class="col-md-12" id="detailWrap">
-                    <label class="form-label">Địa chỉ chi tiết (không bắt buộc nếu đã chọn bản đồ)</label>
-                    <input asp-for="ReceiverAddress" id="DetailAddress" class="form-control" autocomplete="off" />
-                    <small class="text-muted">
-                        Nếu không dùng map: nhập <b>số nhà + tên đường</b> hoặc <b>tên tòa nhà</b>.
-                        (VD: <i>161 Xa lộ Hà Nội, Vincom Mega Mall Thảo Điền</i>)
-                    </small>
-
-                    <div class="text-danger mt-2 d-none" id="addrErr">
-                        Địa chỉ đang quá mơ hồ. Hãy thêm số nhà / tên đường / tên tòa nhà để lấy tọa độ chính xác.
+        <div class="section-card mb-4">
+            <div class="section-head">
+                <div class="sec-left">
+                    <div class="sec-ic">2</div>
+                    <div>
+                        <h5 class="m-0 sec-title">Người nhận</h5>
+                        <div class="sec-sub text-muted">Thông tin người nhận + tọa độ giao hàng</div>
                     </div>
                 </div>
+            </div>
 
-                <div class="text-danger mt-2 d-none" id="coordErr">
-                    Chưa có tọa độ (Lat/Lng). Hãy bấm <b>Tìm tọa độ</b> hoặc <b>click chọn vị trí trên bản đồ</b>.
-                </div>
-
-                <div class="col-md-12 mt-2">
-                    <div class="d-flex flex-wrap gap-2 align-items-end">
-                        <div style="flex: 1; min-width: 260px;">
-                            <label class="form-label mb-1">Tìm tọa độ theo địa chỉ (tuỳ chọn)</label>
-                            <input id="GeoQuery" class="form-control"
-                                   placeholder="VD: Vincom Mega Mall Thảo Điền, 161 Võ Nguyên Giáp"
-                                   autocomplete="off" />
-                            <small class="text-muted">Bạn có thể bỏ qua và click map trực tiếp.</small>
-                        </div>
-                        <div>
-                            <button type="button" class="btn btn-outline-primary" id="btnGeocode">
-                                <i class="bi bi-search"></i> Tìm tọa độ
-                            </button>
-                        </div>
-                        <div>
-                            <button type="button" class="btn btn-outline-secondary" id="btnUseDetail">
-                                <i class="bi bi-arrow-repeat"></i> Dùng “địa chỉ chi tiết”
-                            </button>
-                        </div>
-                        <div class="ms-auto">
-                            <span class="badge text-bg-light border" id="coordBadge">Lat/Lng: (chưa chọn)</span>
-                        </div>
+            <div class="section-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Tên người nhận</label>
+                        <input asp-for="ReceiverName" class="form-control" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">SĐT người nhận</label>
+                        <input asp-for="ReceiverPhone" class="form-control" />
                     </div>
 
-                    <div class="mt-2 d-none" id="geoResultsWrap">
-                        <label class="form-label mb-1">Kết quả tìm thấy (chọn 1)</label>
-                        <div class="list-group" id="geoResults"></div>
+                    <div class="col-md-4">
+                        <label class="form-label">Tỉnh/Thành phố</label>
+                        <select id="province" name="ProvinceId" class="form-select"></select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Quận/Huyện</label>
+                        <select id="district" name="DistrictId" class="form-select"></select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Phường/Xã</label>
+                        <select id="ward" name="WardId" class="form-select"></select>
                     </div>
 
-                    <div class="mt-3" style="height: 320px; border-radius: 12px; overflow: hidden; border: 1px solid #e5e5e5;">
-                        <div id="map" style="height: 100%; width: 100%;"></div>
-                    </div>
-
-                    <div class="d-flex justify-content-between align-items-center mt-2">
+                    <div class="col-md-12" id="detailWrap">
+                        <label class="form-label">Địa chỉ chi tiết (không bắt buộc nếu đã chọn bản đồ)</label>
+                        <input asp-for="ReceiverAddress" id="DetailAddress" class="form-control" autocomplete="off" />
                         <small class="text-muted">
-                            Tip: <b>Click bản đồ</b> để lấy Lat/Lng chuẩn. Có Lat/Lng thì không cần địa chỉ chi tiết.
+                            Nếu không dùng map: nhập <b>số nhà + tên đường</b> hoặc <b>tên tòa nhà</b>.
+                            (VD: <i>161 Xa lộ Hà Nội, Vincom Mega Mall Thảo Điền</i>)
                         </small>
-                        <button type="button" class="btn btn-sm btn-outline-danger d-none" id="btnClearPin">
-                            <i class="bi bi-x-circle"></i> Xoá vị trí đã chọn
-                        </button>
-                    </div>
-                </div>
 
-                <input type="hidden" name="Lat" id="Lat"
-                       value="@(Model.Lat?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")" />
-                <input type="hidden" name="Lng" id="Lng"
-                       value="@(Model.Lng?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")" />
+                        <div class="text-danger mt-2 d-none" id="addrErr">
+                            Địa chỉ đang quá mơ hồ. Hãy thêm số nhà / tên đường / tên tòa nhà để lấy tọa độ chính xác.
+                        </div>
+                    </div>
+
+                    <div class="text-danger mt-2 d-none" id="coordErr">
+                        Chưa có tọa độ (Lat/Lng). Hãy bấm <b>Tìm tọa độ</b> hoặc <b>click chọn vị trí trên bản đồ</b>.
+                    </div>
+
+                    <div class="col-md-12 mt-2">
+                        <div class="tool-card">
+                            <div class="d-flex flex-wrap gap-2 align-items-end">
+                                <div style="flex: 1; min-width: 260px;">
+                                    <label class="form-label mb-1">Tìm tọa độ theo địa chỉ (tuỳ chọn)</label>
+                                    <input id="GeoQuery" class="form-control"
+                                           placeholder="VD: Vincom Mega Mall Thảo Điền, 161 Võ Nguyên Giáp"
+                                           autocomplete="off" />
+                                    <small class="text-muted">Bạn có thể bỏ qua và click map trực tiếp.</small>
+                                </div>
+                                <div>
+                                    <button type="button" class="btn btn-outline-primary" id="btnGeocode">
+                                        <i class="bi bi-search"></i> Tìm tọa độ
+                                    </button>
+                                </div>
+                                <div>
+                                    <button type="button" class="btn btn-outline-secondary" id="btnUseDetail">
+                                        <i class="bi bi-arrow-repeat"></i> Dùng “địa chỉ chi tiết”
+                                    </button>
+                                </div>
+                                <div class="ms-auto">
+                                    <span class="badge text-bg-light border" id="coordBadge">Lat/Lng: (chưa chọn)</span>
+                                </div>
+                            </div>
+
+                            <div class="mt-2 d-none" id="geoResultsWrap">
+                                <label class="form-label mb-1">Kết quả tìm thấy (chọn 1)</label>
+                                <div class="list-group" id="geoResults"></div>
+                            </div>
+
+                            <div class="mt-3 map-wrap">
+                                <div id="map" style="height: 100%; width: 100%;"></div>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <small class="text-muted">
+                                    Tip: <b>Click bản đồ</b> để lấy Lat/Lng chuẩn. Có Lat/Lng thì không cần địa chỉ chi tiết.
+                                </small>
+                                <button type="button" class="btn btn-sm btn-outline-danger d-none" id="btnClearPin">
+                                    <i class="bi bi-x-circle"></i> Xoá vị trí đã chọn
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <input type="hidden" name="Lat" id="Lat"
+                           value="@(Model.Lat?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")" />
+                    <input type="hidden" name="Lng" id="Lng"
+                           value="@(Model.Lng?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")" />
+                </div>
             </div>
         </div>
 
         <!-- 3. THÔNG TIN HÀNG HÓA -->
-        <div class="card p-3 mb-4">
-            <h5>3. THÔNG TIN HÀNG HÓA</h5>
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <label class="form-label">Tên hàng</label>
-                    <input asp-for="ProductName" class="form-control" />
+        <div class="section-card mb-4">
+            <div class="section-head">
+                <div class="sec-left">
+                    <div class="sec-ic">3</div>
+                    <div>
+                        <h5 class="m-0 sec-title">Thông tin hàng hóa</h5>
+                        <div class="sec-sub text-muted">Phục vụ tính phí, COD và xử lý vận chuyển</div>
+                    </div>
                 </div>
+            </div>
 
-                <div class="col-md-4">
-                    <label class="form-label">Loại hàng</label>
-                    <select name="GoodsType" class="form-select">
-                        <option value="">-- Chọn loại hàng --</option>
-                        <option value="document">Tài liệu / Hồ sơ</option>
-                        <option value="normal">Hàng thông thường</option>
-                        <option value="fragile">Hàng dễ vỡ</option>
-                        <option value="electronic">Điện tử / Giá trị cao</option>
-                    </select>
-                </div>
+            <div class="section-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Tên hàng</label>
+                        <input asp-for="ProductName" class="form-control" />
+                    </div>
 
-                <div class="col-md-4">
-                    <label class="form-label">Khối lượng (kg)</label>
-                    <input asp-for="Weight" id="Weight" type="number" step="0.1" min="0"
-                           class="form-control" oninput="calculateShipping()" />
-                    <small class="text-muted">Ví dụ: 1.5 kg</small>
-                </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Loại hàng</label>
+                        <select name="GoodsType" class="form-select">
+                            <option value="">-- Chọn loại hàng --</option>
+                            <option value="document">Tài liệu / Hồ sơ</option>
+                            <option value="normal">Hàng thông thường</option>
+                            <option value="fragile">Hàng dễ vỡ</option>
+                            <option value="electronic">Điện tử / Giá trị cao</option>
+                        </select>
+                    </div>
 
-                <div class="col-md-4 mt-3">
-                    <label class="form-label">Giá trị hàng (VNĐ)</label>
-                    <input id="Value" name="ValueText" class="form-control"
-                           oninput="formatCurrency(this);
-                                    document.getElementById('ValueHidden').value=this.value.replace(/\\D/g,'');" />
-                    <small class="text-muted">Nếu không COD thì để trống hoặc 0.</small>
-                </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Khối lượng (kg)</label>
+                        <input asp-for="Weight" id="Weight" type="number" step="0.1" min="0"
+                               class="form-control" oninput="calculateShipping()" />
+                        <small class="text-muted">Ví dụ: 1.5 kg</small>
+                    </div>
 
-                <div class="col-md-8 mt-3">
-                    <label class="form-label">Ghi chú</label>
-                    <textarea asp-for="Note" class="form-control"></textarea>
+                    <div class="col-md-4 mt-3">
+                        <label class="form-label">Giá trị hàng (VNĐ)</label>
+                        <input id="Value" name="ValueText" class="form-control"
+                               oninput="formatCurrency(this);
+                                    document.getElementById('ValueHidden').value=this.value.replace(/\D/g,'');" />
+                        <small class="text-muted">Nếu không COD thì để trống hoặc 0.</small>
+                    </div>
+
+                    <div class="col-md-8 mt-3">
+                        <label class="form-label">Ghi chú</label>
+                        <textarea asp-for="Note" class="form-control"></textarea>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- 4. CẤU HÌNH GIAO HÀNG -->
-        <div class="card p-3 mb-4">
-            <h5>4. CẤU HÌNH GIAO HÀNG</h5>
-
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <label class="form-label">Khu vực giao nhận</label>
-                    <div class="btn-group d-flex" role="group">
-                        <input type="radio" name="AreaType" id="area-inner" value="inner"
-                               class="btn-check" checked onchange="calculateShipping()" />
-                        <label class="btn btn-outline-secondary w-50" for="area-inner">Nội thành</label>
-
-                        <input type="radio" name="AreaType" id="area-outer" value="outer"
-                               class="btn-check" onchange="calculateShipping()" />
-                        <label class="btn btn-outline-secondary w-50" for="area-outer">Ngoại thành</label>
+        <div class="section-card mb-4">
+            <div class="section-head">
+                <div class="sec-left">
+                    <div class="sec-ic">4</div>
+                    <div>
+                        <h5 class="m-0 sec-title">Cấu hình giao hàng</h5>
+                        <div class="sec-sub text-muted">Chọn dịch vụ, phương thức lấy hàng, trả phí, mã giảm giá</div>
                     </div>
                 </div>
+            </div>
 
-                <div class="col-md-4">
-                    <label class="form-label">Phương thức gửi hàng</label>
-                    <div class="btn-group d-flex" role="group">
-                        <input type="radio" name="PickupMethod" id="pickup-staff" value="pickup"
-                               class="btn-check" checked onchange="calculateShipping(); onPickupMethodChanged();" />
-                        <label class="btn btn-outline-primary w-50" for="pickup-staff">Nhân viên đến lấy</label>
+            <div class="section-body">
+                <div class="row g-3">
 
-                        <input type="radio" name="PickupMethod" id="pickup-hub" value="dropoff_hub"
-                               class="btn-check" onchange="calculateShipping(); onPickupMethodChanged();" />
-                        <label class="btn btn-outline-primary w-50" for="pickup-hub">Tự đem đến hub</label>
+                    <div class="col-md-4">
+                        <label class="form-label">Khu vực giao nhận</label>
+                        <div class="btn-group d-flex" role="group">
+                            <input type="radio" name="AreaType" id="area-inner" value="inner"
+                                   class="btn-check" checked onchange="calculateShipping()" />
+                            <label class="btn btn-outline-secondary w-50" for="area-inner">Nội thành</label>
+
+                            <input type="radio" name="AreaType" id="area-outer" value="outer"
+                                   class="btn-check" onchange="calculateShipping()" />
+                            <label class="btn btn-outline-secondary w-50" for="area-outer">Ngoại thành</label>
+                        </div>
                     </div>
-                </div>
 
-                <div class="col-md-4 d-none" id="hub-wrapper">
-                    <label class="form-label">Chọn Hub (bắt buộc khi tự đem đến)</label>
-                    <select class="form-select" id="HubId" name="HubId">
-                        <option value="">-- Chọn hub --</option>
-                        @foreach (var h in hubs)
-                        {
-                            <option value="@h.Id">@h.Name</option>
-                        }
-                    </select>
-                    <small class="text-muted">Chỉ cần chọn khi bạn “Tự đem đến hub”.</small>
-                </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Phương thức gửi hàng</label>
+                        <div class="btn-group d-flex" role="group">
+                            <input type="radio" name="PickupMethod" id="pickup-staff" value="pickup"
+                                   class="btn-check" checked onchange="calculateShipping(); onPickupMethodChanged();" />
+                            <label class="btn btn-outline-primary w-50" for="pickup-staff">Nhân viên đến lấy</label>
 
-                <div class="col-md-6 mt-3">
-                    <label class="form-label">Mức dịch vụ</label>
-                    <div class="btn-group d-flex" role="group">
-                        <input type="radio" name="ServiceLevel" id="sv-standard" value="standard"
-                               class="btn-check" checked onchange="calculateShipping()" />
-                        <label class="btn btn-outline-success w-100" for="sv-standard">Tiêu chuẩn</label>
-
-                        <input type="radio" name="ServiceLevel" id="sv-fast" value="fast"
-                               class="btn-check" onchange="calculateShipping()" />
-                        <label class="btn btn-outline-success w-100" for="sv-fast">Nhanh</label>
-
-                        <input type="radio" name="ServiceLevel" id="sv-express" value="express"
-                               class="btn-check" onchange="calculateShipping()" />
-                        <label class="btn btn-outline-success w-100" for="sv-express">Hỏa tốc</label>
+                            <input type="radio" name="PickupMethod" id="pickup-hub" value="dropoff_hub"
+                                   class="btn-check" onchange="calculateShipping(); onPickupMethodChanged();" />
+                            <label class="btn btn-outline-primary w-50" for="pickup-hub">Tự đem đến hub</label>
+                        </div>
                     </div>
-                </div>
 
-                <div class="col-md-3 mt-3">
-                    <label class="form-label">Phí vận chuyển dự kiến</label>
-                    <input id="shipping-fee" class="form-control fw-bold text-danger" disabled />
-                </div>
+                    <div class="col-md-4 d-none" id="hub-wrapper">
+                        <label class="form-label">Chọn Hub (bắt buộc khi tự đem đến)</label>
+                        <select class="form-select" id="HubId" name="HubId">
+                            <option value="">-- Chọn hub --</option>
+                            @foreach (var h in hubs)
+                            {
+                                <option value="@h.Id">@h.Name</option>
+                            }
+                        </select>
+                        <small class="text-muted">Chỉ cần chọn khi bạn “Tự đem đến hub”.</small>
+                    </div>
 
-                <div class="col-md-3 mt-3">
-                    <label class="form-label">COD (tiền thu hộ)</label>
-                    <input id="codInput" type="text" class="form-control"
-                           oninput="formatCurrency(this);
-                                    document.getElementById('CodHidden').value=this.value.replace(/\\D/g,'');
+                    <div class="col-md-6 mt-3">
+                        <label class="form-label">Mức dịch vụ</label>
+                        <div class="btn-group d-flex" role="group">
+                            <input type="radio" name="ServiceLevel" id="sv-standard" value="standard"
+                                   class="btn-check" checked onchange="calculateShipping()" />
+                            <label class="btn btn-outline-success w-100" for="sv-standard">Tiêu chuẩn</label>
+
+                            <input type="radio" name="ServiceLevel" id="sv-fast" value="fast"
+                                   class="btn-check" onchange="calculateShipping()" />
+                            <label class="btn btn-outline-success w-100" for="sv-fast">Nhanh</label>
+
+                            <input type="radio" name="ServiceLevel" id="sv-express" value="express"
+                                   class="btn-check" onchange="calculateShipping()" />
+                            <label class="btn btn-outline-success w-100" for="sv-express">Hỏa tốc</label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 mt-3">
+                        <label class="form-label">Phí vận chuyển dự kiến</label>
+                        <input id="shipping-fee" class="form-control fw-bold text-danger" disabled />
+                    </div>
+
+                    <!-- ✅ Mã giảm giá -->
+                    <div class="col-md-3 mt-3">
+                        <label class="form-label">Mã giảm giá</label>
+                        <div class="input-group">
+                            <input id="PromoCode" name="PromoCode" class="form-control" placeholder="VD: FREESHIP10K" />
+                            <button type="button" class="btn btn-outline-dark" id="btnApplyPromo">Áp dụng</button>
+                        </div>
+                        <small class="text-muted">Giảm theo % phí vận chuyển.</small>
+                        <div class="text-danger mt-1 d-none" id="promoErr"></div>
+                        <div class="text-success mt-1 d-none" id="promoOk"></div>
+                    </div>
+
+                    <div class="col-md-3 mt-3">
+                        <label class="form-label">Giảm giá</label>
+                        <input id="discount-amount" class="form-control fw-bold" disabled />
+                    </div>
+
+                    <div class="col-md-3 mt-3">
+                        <label class="form-label">Phí sau giảm</label>
+                        <input id="final-ship-fee" class="form-control fw-bold text-danger" disabled />
+                    </div>
+
+                    <div class="col-md-3 mt-3">
+                        <label class="form-label">COD (tiền thu hộ)</label>
+                        <input id="codInput" type="text" class="form-control"
+                               oninput="formatCurrency(this);
+                                    document.getElementById('CodHidden').value=this.value.replace(/\D/g,'');
                                     updateSenderSummary();" />
-                    <div class="form-check mt-2">
-                        <input id="codByValue" class="form-check-input" type="checkbox" onclick="useOrderValue()">
-                        <label class="form-check-label">Thu bằng giá trị hàng</label>
-                    </div>
-                </div>
-
-                <div class="col-md-3 mt-3">
-                    <label class="form-label">Ai trả phí vận chuyển?</label>
-
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="ShipPayer"
-                               id="payer-sender" value="sender"
-                               onchange="onShipPayerChanged(); syncSenderPayMethod(); updateSenderSummary();">
-                        <label class="form-check-label" for="payer-sender">Người gửi</label>
+                        <div class="form-check mt-2">
+                            <input id="codByValue" class="form-check-input" type="checkbox" onclick="useOrderValue()">
+                            <label class="form-check-label">Thu bằng giá trị hàng</label>
+                        </div>
                     </div>
 
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="ShipPayer"
-                               id="payer-receiver" value="receiver" checked
-                               onchange="onShipPayerChanged(); syncSenderPayMethod(); updateSenderSummary();">
-                        <label class="form-check-label" for="payer-receiver">Người nhận</label>
-                    </div>
+                    <div class="col-md-3 mt-3">
+                        <label class="form-label">Ai trả phí vận chuyển?</label>
 
-                    <small class="text-muted">Mặc định: người nhận trả ship.</small>
-
-                    <div class="mt-3 d-none" id="sender-paymethod-wrap">
-                        <label class="form-label mb-1">Hình thức thanh toán (người gửi)</label>
-
-                        <!-- UI radio: không gửi lên server trực tiếp -->
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" name="SenderPayMethodUi"
-                                   id="pay-cash" value="cash" checked onchange="syncSenderPayMethod();">
-                            <label class="form-check-label" for="pay-cash">Tiền mặt</label>
+                            <input class="form-check-input" type="radio" name="ShipPayer"
+                                   id="payer-sender" value="sender"
+                                   onchange="onShipPayerChanged(); syncSenderPayMethod(); updateSenderSummary();">
+                            <label class="form-check-label" for="payer-sender">Người gửi</label>
                         </div>
 
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" name="SenderPayMethodUi"
-                                   id="pay-momo" value="momo" onchange="syncSenderPayMethod();">
-                            <label class="form-check-label" for="pay-momo">MoMo</label>
+                            <input class="form-check-input" type="radio" name="ShipPayer"
+                                   id="payer-receiver" value="receiver" checked
+                                   onchange="onShipPayerChanged(); syncSenderPayMethod(); updateSenderSummary();">
+                            <label class="form-check-label" for="payer-receiver">Người nhận</label>
                         </div>
 
-                        <small class="text-muted">Chỉ hiện khi người gửi trả phí ship.</small>
+                        <small class="text-muted">Mặc định: người nhận trả ship.</small>
+
+                        <div class="mt-3 d-none" id="sender-paymethod-wrap">
+                            <label class="form-label mb-1">Hình thức thanh toán (người gửi)</label>
+
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="SenderPayMethodUi"
+                                       id="pay-cash" value="cash" checked onchange="syncSenderPayMethod();">
+                                <label class="form-check-label" for="pay-cash">Tiền mặt</label>
+                            </div>
+
+                            <small class="text-muted">Chỉ hiện khi người gửi trả phí ship.</small>
+                        </div>
                     </div>
-                </div>
 
-                <div class="col-md-3 mt-3">
-                    <label class="form-label">Phí ship người gửi chịu</label>
-                    <input id="sender-ship-fee" class="form-control fw-bold" disabled />
-                </div>
+                    <div class="col-md-3 mt-3">
+                        <label class="form-label">Phí ship người gửi chịu</label>
+                        <input id="sender-ship-fee" class="form-control fw-bold" disabled />
+                    </div>
 
-                <div class="col-md-3 mt-3">
-                    <label class="form-label">Tổng tiền shop dự kiến nhận được</label>
-                    <input id="sender-net" class="form-control fw-bold" disabled />
+                    <div class="col-md-3 mt-3">
+                        <label class="form-label">Tổng tiền shop dự kiến nhận được</label>
+                        <input id="sender-net" class="form-control fw-bold" disabled />
+                    </div>
                 </div>
             </div>
         </div>
@@ -314,14 +413,210 @@
         <input type="hidden" id="DistrictHidden" name="District" />
         <input type="hidden" id="WardHidden" name="Ward" />
 
-        <!-- ✅ QUAN TRỌNG: Controller đọc Request.Form["SenderPayMethod"] -->
         <input type="hidden" id="SenderPayMethod" name="SenderPayMethod" value="" />
 
-        <div class="text-center">
-            <button type="submit" class="btn btn-danger btn-lg px-5">GỬI NGAY</button>
+        <!-- ✅ Giữ lại để khỏi lỗi, nhưng Controller không dùng -->
+        <input type="hidden" id="GiamgiaId" name="GiamgiaId" />
+        <input type="hidden" id="DiscountPercent" name="DiscountPercent" />
+        <input type="hidden" id="DiscountAmount" name="DiscountAmount" />
+
+        <!-- ACTION BAR -->
+        <div class="action-bar mt-4">
+            <div class="text-muted small">
+                * Hệ thống sẽ tự kiểm tra địa chỉ/tọa độ trước khi tạo đơn.
+            </div>
+            <button type="submit" class="btn btn-danger btn-lg px-5 btn-cta">
+                <i class="bi bi-send-fill me-2"></i> GỬI NGAY
+            </button>
         </div>
     }
 </div>
+
+<style>
+    .order-create{
+        --border: rgba(17,24,39,.12);
+        --shadow: 0 10px 30px rgba(17,24,39,.08);
+        --shadow2: 0 14px 40px rgba(17,24,39,.10);
+        font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    }
+
+    /* Hero */
+    .order-hero{
+        padding: 16px 18px;
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background: linear-gradient(180deg, rgba(220,53,69,.10), rgba(220,53,69,.02));
+        box-shadow: var(--shadow);
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap: 14px;
+        flex-wrap: wrap;
+    }
+    .hero-ic{
+        width: 46px; height: 46px;
+        border-radius: 16px;
+        display:grid; place-items:center;
+        background:#fff;
+        border:1px solid var(--border);
+        box-shadow: 0 8px 24px rgba(17,24,39,.08);
+        font-size: 20px;
+        color:#dc3545;
+        flex: 0 0 auto;
+    }
+    .hero-title{
+        font-weight: 950;
+        letter-spacing: -0.2px;
+        color:#dc3545;
+        text-transform: uppercase;
+        font-size: 1.25rem;
+    }
+    .hero-sub{ margin-top: 4px; font-size: .95rem; line-height: 1.35; }
+    .hero-pill{
+        display:inline-flex; align-items:center; gap:10px;
+        padding: 10px 12px;
+        border-radius: 999px;
+        border:1px solid var(--border);
+        background:#fff;
+        box-shadow: 0 8px 18px rgba(17,24,39,.06);
+        color:#6b7280;
+        font-weight: 900;
+        font-size: .85rem;
+        letter-spacing: .6px;
+        user-select:none;
+    }
+    .pill-dot{
+        width:10px;height:10px;border-radius:99px;
+        background:#22c55e;
+        box-shadow: 0 0 0 4px rgba(34,197,94,.18);
+    }
+
+    /* Stepper */
+    .stepper{
+        padding: 12px 14px;
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        background:#fff;
+        box-shadow: var(--shadow);
+        display:flex;
+        align-items:center;
+        gap: 10px;
+        overflow:auto;
+    }
+    .step{display:flex;align-items:center;gap:10px;flex:0 0 auto;}
+    .step-no{
+        width:32px;height:32px;border-radius:14px;
+        display:grid;place-items:center;
+        background: rgba(13,110,253,.10);
+        border: 1px solid rgba(13,110,253,.18);
+        color:#0d6efd;
+        font-weight: 950;
+    }
+    .step-text{font-weight: 900; color:#111827; font-size:.92rem; white-space:nowrap;}
+    .step.active .step-no{
+        background: rgba(220,53,69,.12);
+        border-color: rgba(220,53,69,.25);
+        color:#dc3545;
+    }
+    .step-line{
+        width: 44px;
+        height: 2px;
+        background: rgba(17,24,39,.12);
+        border-radius: 99px;
+        flex: 0 0 auto;
+    }
+
+    /* Section cards */
+    .section-card{
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background:#fff;
+        box-shadow: var(--shadow);
+        overflow:hidden;
+    }
+    .section-head{
+        padding: 14px 16px;
+        border-bottom: 1px solid rgba(17,24,39,.08);
+        background: linear-gradient(180deg, rgba(17,24,39,.03), rgba(17,24,39,.01));
+    }
+    .sec-left{display:flex;align-items:center;gap:12px;}
+    .sec-ic{
+        width: 38px; height: 38px;
+        border-radius: 14px;
+        display:grid; place-items:center;
+        background:#fff;
+        border: 1px solid rgba(17,24,39,.10);
+        box-shadow: 0 8px 18px rgba(17,24,39,.06);
+        font-weight: 950;
+        color:#dc3545;
+        flex: 0 0 auto;
+    }
+    .sec-title{font-weight: 950; letter-spacing: -0.2px; color:#111827;}
+    .sec-sub{margin-top: 2px; font-size: .92rem;}
+    .section-body{ padding: 16px; }
+
+    /* Inputs */
+    .form-label{ font-weight: 800; color:#111827; }
+    .form-control, .form-select{
+        border-radius: 12px;
+        border: 1px solid rgba(17,24,39,.15);
+        box-shadow: 0 6px 18px rgba(17,24,39,.05);
+        transition: all .15s ease;
+    }
+    .form-control:focus, .form-select:focus{
+        border-color: #dc3545;
+        box-shadow: 0 0 0 .2rem rgba(220,53,69,.18);
+    }
+
+    /* Tool card around geocode/map */
+    .tool-card{
+        border: 1px dashed rgba(17,24,39,.14);
+        border-radius: 16px;
+        padding: 14px;
+        background: rgba(17,24,39,.01);
+    }
+
+    /* Map */
+    .map-wrap{
+        height: 360px;
+        border-radius: 14px;
+        overflow: hidden;
+        border: 1px solid rgba(17,24,39,.10);
+        box-shadow: 0 10px 26px rgba(17,24,39,.08);
+    }
+
+    #coordBadge{
+        border-radius: 999px !important;
+        padding: 10px 12px;
+        font-weight: 900;
+        box-shadow: 0 8px 18px rgba(17,24,39,.06);
+    }
+
+    /* Action bar */
+    .action-bar{
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap: 12px;
+        padding: 14px 16px;
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        background: #fff;
+        box-shadow: var(--shadow);
+        flex-wrap: wrap;
+    }
+    .btn-cta{
+        border-radius: 14px;
+        font-weight: 950;
+        box-shadow: 0 14px 28px rgba(220,53,69,.22);
+    }
+
+    @@media (max-width: 576px){
+        .btn-cta{width:100%;}
+        .action-bar{flex-direction:column; align-items:stretch;}
+        .map-wrap{height: 320px;}
+    }
+</style>
 
 <script>
     function formatCurrency(input) {
@@ -361,21 +656,143 @@
         else wrap.classList.add("d-none");
     }
 
-    // ✅ sync UI -> hidden SenderPayMethod (controller dùng)
     function syncSenderPayMethod() {
         const payer = document.querySelector('input[name="ShipPayer"]:checked')?.value || "receiver";
         const hidden = document.getElementById("SenderPayMethod");
         if (!hidden) return;
 
-        if (payer !== "sender") {
-            hidden.value = ""; // người nhận trả => không dùng
+        hidden.value = (payer === "sender") ? "cash" : "";
+    }
+
+    // =========================================================
+    // PROMO UI (match Controller ValidatePromo: ok, code, percent, cap)
+    // =========================================================
+    let appliedPromo = null; // { code, percent, cap }
+
+    function money(n) {
+        n = Math.max(0, Math.round(Number(n) || 0));
+        return new Intl.NumberFormat("vi-VN").format(n) + " đ";
+    }
+
+    function resetPromoUi() {
+        const err = document.getElementById("promoErr");
+        const ok = document.getElementById("promoOk");
+
+        document.getElementById("discount-amount").value = "0 đ";
+        document.getElementById("final-ship-fee").value = "";
+
+        document.getElementById("GiamgiaId").value = "";
+        document.getElementById("DiscountPercent").value = "";
+        document.getElementById("DiscountAmount").value = "";
+
+        err?.classList.add("d-none");
+        ok?.classList.add("d-none");
+    }
+
+    document.getElementById("PromoCode")?.addEventListener("input", () => {
+        if (!appliedPromo) return;
+        const cur = (document.getElementById("PromoCode")?.value || "").trim();
+        if (!cur || cur.toLowerCase() !== (appliedPromo.code || "").toLowerCase()) {
+            appliedPromo = null;
+            resetPromoUi();
+            calculateShipping();
+        }
+    });
+
+    function applyDiscountToShip(shipFee) {
+        const discountBox = document.getElementById("discount-amount");
+        const finalBox = document.getElementById("final-ship-fee");
+        const hidPercent = document.getElementById("DiscountPercent");
+        const hidAmount = document.getElementById("DiscountAmount");
+
+        if (!appliedPromo) {
+            discountBox.value = "0 đ";
+            finalBox.value = money(shipFee);
+
+            document.getElementById("GiamgiaId").value = "";
+            hidPercent.value = "";
+            hidAmount.value = "";
+            document.getElementById("promoErr")?.classList.add("d-none");
+            document.getElementById("promoOk")?.classList.add("d-none");
+
+            return shipFee;
+        }
+
+        const percent = Number(appliedPromo.percent || 0);
+        const cap = Number(appliedPromo.cap || 0);
+
+        let discount = Math.round(shipFee * percent / 100);
+        if (cap > 0 && discount > cap) discount = cap;
+        if (discount < 0) discount = 0;
+        if (discount > shipFee) discount = shipFee;
+
+        const finalFee = Math.max(0, shipFee - discount);
+
+        discountBox.value = money(discount);
+        finalBox.value = money(finalFee);
+
+        document.getElementById("GiamgiaId").value = "";
+        hidPercent.value = String(percent);
+        hidAmount.value = String(discount);
+
+        return finalFee;
+    }
+
+    document.getElementById("btnApplyPromo")?.addEventListener("click", async () => {
+        const code = (document.getElementById("PromoCode")?.value || "").trim();
+        const err = document.getElementById("promoErr");
+        const ok = document.getElementById("promoOk");
+
+        err?.classList.add("d-none");
+        ok?.classList.add("d-none");
+
+        if (!code) {
+            err.textContent = "Vui lòng nhập mã.";
+            err.classList.remove("d-none");
+            appliedPromo = null;
+            resetPromoUi();
+            calculateShipping();
             return;
         }
 
-        const method = document.querySelector('input[name="SenderPayMethodUi"]:checked')?.value || "cash";
-        hidden.value = method; // cash | momo
-    }
+        try {
+            const res = await fetch(`/Order/ValidatePromo?code=${encodeURIComponent(code)}`);
+            const data = await res.json();
 
+            if (!data.ok) {
+                err.textContent = data.message || "Mã không hợp lệ.";
+                err.classList.remove("d-none");
+                appliedPromo = null;
+                resetPromoUi();
+                calculateShipping();
+                return;
+            }
+
+            appliedPromo = {
+                code: data.code || code,
+                percent: data.percent,
+                cap: data.cap
+            };
+
+            ok.textContent =
+                (data.cap && Number(data.cap) > 0)
+                    ? `Áp dụng thành công: giảm ${data.percent}% (tối đa ${money(data.cap)}).`
+                    : `Áp dụng thành công: giảm ${data.percent}% phí vận chuyển.`;
+            ok.classList.remove("d-none");
+
+            calculateShipping();
+        } catch {
+            err.textContent = "Không kiểm tra được mã. Vui lòng thử lại.";
+            err.classList.remove("d-none");
+            appliedPromo = null;
+            resetPromoUi();
+            calculateShipping();
+        }
+    });
+
+    // =========================================================
+    // ĐỊA GIỚI + MAP
+    // =========================================================
     const provinceEl = document.getElementById("province");
     const districtEl = document.getElementById("district");
     const wardEl = document.getElementById("ward");
@@ -666,13 +1083,16 @@
         }
     });
 
-    // ===== UI phí ship dự kiến (server sẽ tính lại khi submit) =====
+    // =========================================================
+    // SHIP UI (server sẽ tính lại khi submit)
+    // =========================================================
     function calculateShipping() {
         let w = parseFloat((document.getElementById("Weight").value || "0").replace(",", ".")) || 0;
 
         if (w <= 0) {
             document.getElementById("shipping-fee").value = "";
             document.getElementById("ShipFeeHidden").value = "";
+            resetPromoUi();
             updateSenderSummary();
             return;
         }
@@ -691,8 +1111,10 @@
 
         fee = Math.round(fee * factor);
 
-        document.getElementById("shipping-fee").value = new Intl.NumberFormat("vi-VN").format(fee) + " đ";
-        document.getElementById("ShipFeeHidden").value = fee;
+        document.getElementById("shipping-fee").value = money(fee);
+
+        const finalFee = applyDiscountToShip(fee);
+        document.getElementById("ShipFeeHidden").value = finalFee;
 
         updateSenderSummary();
     }
@@ -706,11 +1128,8 @@
         let net = cod > 0 ? (cod - senderShip) : 0;
         if (net < 0) net = 0;
 
-        document.getElementById("sender-ship-fee").value =
-            senderShip > 0 ? new Intl.NumberFormat("vi-VN").format(senderShip) + " đ" : "0 đ";
-
-        document.getElementById("sender-net").value =
-            net > 0 ? new Intl.NumberFormat("vi-VN").format(net) + " đ" : "0 đ";
+        document.getElementById("sender-ship-fee").value = senderShip > 0 ? money(senderShip) : "0 đ";
+        document.getElementById("sender-net").value = net > 0 ? money(net) : "0 đ";
     }
 
     document.addEventListener("DOMContentLoaded", function () {
@@ -731,9 +1150,7 @@
 
         const initLat = (latEl?.value || "").trim();
         const initLng = (lngEl?.value || "").trim();
-        if (initLat && initLng) {
-            setMarker(Number(initLat), Number(initLng), 16);
-        }
+        if (initLat && initLng) setMarker(Number(initLat), Number(initLng), 16);
 
         map.on("click", async (e) => {
             await applyCoordinates(e.latlng.lat, e.latlng.lng, true);
@@ -744,7 +1161,6 @@
         form?.addEventListener("submit", async function (e) {
             if (isAutoSubmitting) return;
 
-            // ✅ sync trước khi submit
             syncSenderPayMethod();
 
             setHiddenText(provinceEl, provinceHidden);
@@ -775,7 +1191,7 @@
                 return;
             }
 
-            // ===== AUTO GEOCODE rồi SUBMIT luôn =====
+            // AUTO GEOCODE rồi SUBMIT
             e.preventDefault();
             coordErr?.classList.add("d-none");
 
@@ -787,7 +1203,6 @@
 
             if (Array.isArray(list) && list.length > 0) {
                 await applyCoordinates(list[0].lat, list[0].lon, false);
-
                 isAutoSubmitting = true;
                 form.submit();
                 return;
