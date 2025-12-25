@@ -12,97 +12,269 @@
     var newThisMonth = Model?.Count(d => d.CreatedAt >= thisMonth) ?? 0;
 }
 
-<div class="container-fluid py-3">
+<style>
+    /* ===== Match your Dashboard style (dash) ===== */
+    .dash {
+        --text: #111827;
+        --muted: #6b7280;
+        --border: rgba(17, 24, 39, 0.10);
+        --shadow: 0 10px 30px rgba(17, 24, 39, 0.08);
+        --shadow2: 0 14px 40px rgba(17, 24, 39, 0.10);
+        font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+        color: var(--text);
+    }
 
-    <!-- Header + stats -->
-    <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
-        <div>
-            <h2 class="mb-1 fw-semibold">Quản lý tài xế</h2>
-            <p class="text-muted mb-0">
-                Theo dõi và quản lý hồ sơ tài xế NightFury.
-            </p>
+    /* ===== Header block ===== */
+    .dash-head{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:14px;
+        padding:14px 16px;
+        border-radius:16px;
+        border:1px solid var(--border);
+        background: linear-gradient(180deg, rgba(13, 110, 253, 0.08), rgba(13, 110, 253, 0.02));
+        box-shadow: var(--shadow);
+        margin-bottom: 14px;
+        flex-wrap: wrap;
+    }
+    .dash-left{display:flex;gap:12px;align-items:center;}
+    .dash-avatar{
+        width:44px;height:44px;border-radius:14px;
+        display:grid;place-items:center;
+        background:#fff;border:1px solid var(--border);
+        box-shadow:0 8px 24px rgba(17, 24, 39, 0.08);
+        font-size:20px;
+        flex:0 0 auto;
+    }
+    .dash-title{font-weight:900;letter-spacing:-.2px;margin:0;}
+    .dash-sub{color:var(--muted);font-size:.95rem;margin-top:4px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+    .dash-dot{width:6px;height:6px;border-radius:99px;background:rgba(17,24,39,0.25);display:inline-block;}
+
+    .dash-pill{
+        display:inline-flex;align-items:center;gap:10px;
+        padding:10px 12px;border-radius:999px;
+        border:1px solid var(--border);background:#fff;
+        box-shadow:0 8px 18px rgba(17, 24, 39, 0.06);
+        color: var(--muted);font-weight:900;font-size:.9rem;
+        user-select:none;
+        text-decoration:none;
+        white-space:nowrap;
+    }
+    .pill-dot{
+        width:10px;height:10px;border-radius:99px;
+        background:#22c55e;
+        box-shadow:0 0 0 4px rgba(34,197,94,0.18);
+    }
+
+    /* ===== KPI (stat cards) ===== */
+    .kpi{
+        border-radius:18px;
+        border:1px solid var(--border);
+        background:#fff;
+        box-shadow: var(--shadow);
+        padding:14px 16px;
+        transition: transform .18s ease, box-shadow .18s ease;
+        height:100%;
+    }
+    .kpi:hover{transform:translateY(-2px);box-shadow:var(--shadow2);}
+    .kpi-top{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+    .kpi-label{color:var(--muted);font-weight:900;font-size:.85rem;letter-spacing:.04em;text-transform:uppercase;}
+    .kpi-value{font-weight:950;font-size:1.65rem;letter-spacing:-.4px;margin-top:4px;}
+    .kpi-icon{
+        width:44px;height:44px;border-radius:16px;
+        display:grid;place-items:center;
+        border:1px solid var(--border);
+        background: rgba(17,24,39,0.03);
+        font-weight:950;
+    }
+    .kpi-primary{border-left:6px solid rgba(13,110,253,.80);}
+    .kpi-success{border-left:6px solid rgba(40,167,69,.80);}
+    .kpi-warning{border-left:6px solid rgba(255,193,7,.80);}
+
+    /* ===== Panel ===== */
+    .panel{
+        border-radius:18px;
+        border:1px solid var(--border);
+        background:#fff;
+        box-shadow: var(--shadow);
+        overflow:hidden;
+        transition: transform .18s ease, box-shadow .18s ease;
+    }
+    .panel:hover{transform:translateY(-2px);box-shadow:var(--shadow2);}
+    .panel-head{
+        padding:14px 16px;
+        border-bottom: 1px solid rgba(17, 24, 39, 0.08);
+        background: linear-gradient(180deg, rgba(17, 24, 39, 0.03), rgba(17, 24, 39, 0.01));
+        display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    }
+    .panel-title{font-weight:950;letter-spacing:-.2px;}
+    .panel-sub{color:var(--muted);font-size:.92rem;margin-top:4px;}
+    .panel-body{padding:14px 16px 16px 16px;}
+
+    /* ===== Search bar ===== */
+    .search-wrap{
+        display:flex;align-items:end;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    }
+    .search-left{flex:1 1 360px;}
+    .search-actions{display:flex;gap:10px;flex-wrap:wrap;}
+    .btn-pill{
+        border-radius:999px !important;
+        font-weight:900;
+        padding:.55rem .95rem;
+        white-space:nowrap;
+    }
+    .input-group-text{
+        border-radius:12px 0 0 12px !important;
+        background:#fff !important;
+        border-color: rgba(17,24,39,0.12) !important;
+    }
+    .search-input{
+        border-radius:0 12px 12px 0 !important;
+        border-color: rgba(17,24,39,0.12) !important;
+        padding:.55rem .75rem;
+    }
+
+    /* ===== Table ===== */
+    .table-clean{
+        margin:0;
+    }
+    .table-clean thead th{
+        background: rgba(17,24,39,0.03) !important;
+        font-weight:950;
+        color: var(--text);
+        border-bottom: 1px solid rgba(17,24,39,0.10) !important;
+        white-space: nowrap;
+    }
+    .table-clean td, .table-clean th{
+        padding:.85rem .95rem;
+        vertical-align:middle;
+        border-color: rgba(17,24,39,0.06);
+    }
+    .table-clean tbody tr{transition: background .12s ease;}
+    .table-clean tbody tr:hover{background: rgba(13,110,253,.04);}
+
+    .truncate{
+        max-width: 180px;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        white-space:nowrap;
+    }
+
+    /* ===== Action buttons ===== */
+    .btn-group .btn{
+        border-radius:999px !important;
+        font-weight:900;
+        padding:.35rem .75rem;
+    }
+    .btn-group .btn + .btn{ margin-left: 6px; }
+
+    /* ===== Responsive tweaks ===== */
+    @@media (max-width: 992px){
+        .btn-group{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
+        .btn-group .btn{margin-left:0 !important;}
+    }
+</style>
+
+<div class="dash container-fluid py-3">
+
+    <!-- Header -->
+    <div class="dash-head">
+        <div class="dash-left">
+            <div class="dash-avatar">🚚</div>
+            <div>
+                <h2 class="dash-title">Quản lý tài xế</h2>
+                <div class="dash-sub">
+                    Theo dõi và quản lý hồ sơ tài xế NightFury
+                    <span class="dash-dot"></span>
+                    <span class="text-muted">Tổng: <b>@totalDrivers</b></span>
+                </div>
+            </div>
         </div>
-        <div class="d-flex gap-2">
-            <a asp-action="Create" class="btn btn-success fw-semibold">
-                + Thêm tài xế
-            </a>
-        </div>
+
+        <a asp-action="Create" class="dash-pill">
+            <span class="pill-dot"></span>
+            <span><i class="fas fa-plus me-1"></i> Thêm tài xế</span>
+        </a>
     </div>
 
     <!-- Stat cards -->
     <div class="row g-3 mb-3">
         <div class="col-md-4">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-body d-flex justify-content-between align-items-center">
+            <div class="kpi kpi-primary">
+                <div class="kpi-top">
                     <div>
-                        <div class="text-uppercase small text-muted mb-1">Tổng tài xế</div>
-                        <div class="fs-4 fw-bold">@totalDrivers</div>
+                        <div class="kpi-label">Tổng tài xế</div>
+                        <div class="kpi-value">@totalDrivers</div>
                     </div>
-                    <div class="rounded-circle bg-primary bg-opacity-10 p-3">
-                        <span class="fw-bold text-primary">TX</span>
-                    </div>
+                    <div class="kpi-icon text-primary">TX</div>
                 </div>
             </div>
         </div>
+
         <div class="col-md-4">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-body d-flex justify-content-between align-items-center">
+            <div class="kpi kpi-success">
+                <div class="kpi-top">
                     <div>
-                        <div class="text-uppercase small text-muted mb-1">Đăng ký hôm nay</div>
-                        <div class="fs-4 fw-bold">@newToday</div>
+                        <div class="kpi-label">Đăng ký hôm nay</div>
+                        <div class="kpi-value">@newToday</div>
                     </div>
-                    <div class="rounded-circle bg-success bg-opacity-10 p-3">
-                        <span class="fw-bold text-success">+1d</span>
-                    </div>
+                    <div class="kpi-icon text-success">+1d</div>
                 </div>
             </div>
         </div>
+
         <div class="col-md-4">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-body d-flex justify-content-between align-items-center">
+            <div class="kpi kpi-warning">
+                <div class="kpi-top">
                     <div>
-                        <div class="text-uppercase small text-muted mb-1">Đăng ký trong tháng</div>
-                        <div class="fs-4 fw-bold">@newThisMonth</div>
+                        <div class="kpi-label">Trong tháng</div>
+                        <div class="kpi-value">@newThisMonth</div>
                     </div>
-                    <div class="rounded-circle bg-warning bg-opacity-10 p-3">
-                        <span class="fw-bold text-warning">@today.ToString("MM")</span>
-                    </div>
+                    <div class="kpi-icon text-warning">@today.ToString("MM")</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Search + filter -->
-    <div class="card shadow-sm border-0">
-        <div class="card-body pb-0">
-            <form method="get" class="row g-2 align-items-center">
-                <div class="col-md-5">
+    <!-- Search + Table panel -->
+    <div class="panel">
+        <div class="panel-head">
+            <div>
+                <div class="panel-title"><i class="fas fa-search me-1"></i> Tìm kiếm & danh sách</div>
+                <div class="panel-sub">Tìm theo tên / SĐT / username và quản lý thao tác nhanh.</div>
+            </div>
+        </div>
+
+        <div class="panel-body pb-0">
+            <form method="get" class="search-wrap">
+                <div class="search-left">
                     <div class="input-group">
-                        <span class="input-group-text bg-white">
-                            <i class="bi bi-search"></i>
+                        <span class="input-group-text">
+                            <i class="fas fa-search"></i>
                         </span>
                         <input type="text"
                                name="search"
                                value="@ViewBag.Search"
-                               class="form-control"
+                               class="form-control search-input"
                                placeholder="Tìm theo tên / SĐT / username" />
                     </div>
                 </div>
-                <div class="col-md-7 d-flex justify-content-md-end gap-2">
-                    <button type="submit" class="btn btn-primary">
-                        Tìm kiếm
+
+                <div class="search-actions">
+                    <button type="submit" class="btn btn-primary btn-pill">
+                        <i class="fas fa-search me-1"></i> Tìm kiếm
                     </button>
-                    <a asp-action="Index" class="btn btn-outline-secondary">
-                        Xóa lọc
+                    <a asp-action="Index" class="btn btn-outline-secondary btn-pill">
+                        <i class="fas fa-eraser me-1"></i> Xóa lọc
                     </a>
                 </div>
             </form>
         </div>
 
-        <!-- Table -->
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-dark">
+            <table class="table table-clean table-hover align-middle mb-0">
+                <thead>
                     <tr>
                         <th style="width:60px;">#</th>
                         <th>Username</th>
@@ -112,7 +284,7 @@
                         <th>CMND/CCCD</th>
                         <th>Khu vực</th>
                         <th style="width:120px;">Ngày tạo</th>
-                        <th style="width:160px;" class="text-end">Thao tác</th>
+                        <th style="width:190px;" class="text-end">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -121,7 +293,7 @@
                 }
                 @if (Model != null && Model.Any())
                 {
-                    @foreach (var item in Model)
+                    foreach (var item in Model)
                     {
                         string location = "";
 
@@ -139,34 +311,35 @@
                         }
 
                         <tr>
-                            <td class="text-muted">@index</td>
-                            <td class="fw-semibold">@item.UserName</td>
+                            <td class="text-muted fw-bold">@index</td>
+                            <td class="fw-bold">@item.UserName</td>
                             <td>@item.FullName</td>
                             <td>@item.Phone</td>
-                            <td class="text-truncate" style="max-width:180px;">@item.Email</td>
+                            <td class="truncate">@item.Email</td>
                             <td>@item.CitizenId</td>
                             <td>@location</td>
                             <td>@item.CreatedAt.ToString("dd/MM/yyyy")</td>
                             <td class="text-end">
-                                <div class="btn-group btn-group-sm" role="group">
+                                <div class="btn-group btn-group-sm" role="group" aria-label="actions">
                                     <a asp-action="Details"
                                        asp-route-id="@item.UserId"
                                        class="btn btn-outline-secondary">
-                                        Xem
+                                        <i class="fas fa-eye me-1"></i> Xem
                                     </a>
                                     <a asp-action="Edit"
                                        asp-route-id="@item.UserId"
                                        class="btn btn-outline-primary">
-                                        Sửa
+                                        <i class="fas fa-pen me-1"></i> Sửa
                                     </a>
                                     <a asp-action="Delete"
                                        asp-route-id="@item.UserId"
                                        class="btn btn-outline-danger">
-                                        Xóa
+                                        <i class="fas fa-trash me-1"></i> Xóa
                                     </a>
                                 </div>
                             </td>
                         </tr>
+
                         index++;
                     }
                 }
@@ -182,4 +355,5 @@
             </table>
         </div>
     </div>
+
 </div>

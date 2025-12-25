@@ -3,48 +3,336 @@
     ViewData["Title"] = "Quản lý khu vực giao";
     Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
     int stt = 1;
+
+    var total = Model?.Count() ?? 0;
+    var active = Model?.Count(x => x.IsActive) ?? 0;
+    var inactive = total - active;
 }
 
-<h3 class="mb-3 text-danger fw-bold">Quản lý khu vực giao</h3>
-
-<a asp-action="Create" class="btn btn-primary mb-3">+ Thêm khu vực</a>
-
-<table class="table table-striped table-hover">
-    <thead class="table-dark">
-        <tr>
-            <th>#</th>
-            <th>Tên khu vực</th>
-            <th>Loại</th>
-            <th>Lat</th>
-            <th>Lng</th>
-            <th>Bán kính (km)</th>
-            <th>Base fee</th>
-            <th>Trạng thái</th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-    @foreach (var item in Model)
-    {
-        <tr>
-            <td>@(stt++)</td>
-            <td>@item.Name</td>
-            <td>@item.AreaType</td>
-            <td>@item.CenterLat</td>
-            <td>@item.CenterLng</td>
-            <td>@item.RadiusKm</td>
-            <td>@item.BaseShipFee.ToString("N0")</td>
-            <td>@(item.IsActive ? "Hoạt động" : "Ngưng")</td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">Sửa</a>
-                <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline">
-                    <button type="submit" class="btn btn-sm btn-danger"
-                            onclick="return confirm('Xóa khu vực này?');">
-                        Xóa
-                    </button>
-                </form>
-            </td>
-        </tr>
+<style>
+    /* ===== Match your Dashboard style (dash) ===== */
+    .dash {
+        --text: #111827;
+        --muted: #6b7280;
+        --border: rgba(17, 24, 39, 0.10);
+        --shadow: 0 10px 30px rgba(17, 24, 39, 0.08);
+        --shadow2: 0 14px 40px rgba(17, 24, 39, 0.10);
+        font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+        color: var(--text);
     }
-    </tbody>
-</table>
+
+    /* ===== Header like dashboard ===== */
+    .dash-head{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:14px;
+        padding:14px 16px;
+        border-radius:16px;
+        border:1px solid var(--border);
+        background: linear-gradient(180deg, rgba(13,110,253,.08), rgba(13,110,253,.02));
+        box-shadow: var(--shadow);
+        margin-bottom: 14px;
+        flex-wrap: wrap;
+    }
+    .dash-left{display:flex;gap:12px;align-items:center;}
+    .dash-avatar{
+        width:44px;height:44px;border-radius:14px;
+        display:grid;place-items:center;
+        background:#fff;border:1px solid var(--border);
+        box-shadow:0 8px 24px rgba(17,24,39,.08);
+        font-size:20px;
+        flex:0 0 auto;
+    }
+    .dash-title{font-weight:950;letter-spacing:-.2px;margin:0;}
+    .dash-sub{
+        color:var(--muted);
+        font-size:.95rem;
+        margin-top:4px;
+        display:flex;
+        gap:10px;
+        align-items:center;
+        flex-wrap:wrap;
+    }
+    .dash-dot{width:6px;height:6px;border-radius:99px;background:rgba(17,24,39,0.25);display:inline-block;}
+
+    .dash-pill{
+        display:inline-flex;align-items:center;gap:10px;
+        padding:10px 12px;border-radius:999px;
+        border:1px solid var(--border);background:#fff;
+        box-shadow:0 8px 18px rgba(17,24,39,.06);
+        color: var(--muted);
+        font-weight:950;
+        font-size:.9rem;
+        user-select:none;
+        text-decoration:none;
+        white-space:nowrap;
+    }
+    .pill-dot{width:10px;height:10px;border-radius:99px;background:#22c55e;box-shadow:0 0 0 4px rgba(34,197,94,0.18);}
+
+    /* ===== KPI cards ===== */
+    .stat-grid{
+        display:grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+    .kpi{
+        border-radius:18px;
+        border:1px solid var(--border);
+        background:#fff;
+        box-shadow: var(--shadow);
+        padding: 14px 16px;
+        transition: transform .18s ease, box-shadow .18s ease;
+        min-height: 92px;
+    }
+    .kpi:hover{transform:translateY(-2px);box-shadow:var(--shadow2);}
+    .kpi-top{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+    .kpi-label{font-weight:950;color:var(--muted);font-size:.9rem;}
+    .kpi-value{font-weight:950;font-size:1.45rem;letter-spacing:-.3px;margin-top:4px;}
+    .kpi-badge{
+        display:inline-flex;align-items:center;gap:8px;
+        padding:6px 10px;border-radius:999px;
+        border:1px solid rgba(17,24,39,0.12);
+        background: rgba(17,24,39,0.03);
+        font-weight:950;font-size:.86rem;
+        white-space:nowrap;
+    }
+    .kpi-primary{border-left:6px solid rgba(13,110,253,.75);}
+    .kpi-success{border-left:6px solid rgba(25,135,84,.75);}
+    .kpi-danger{border-left:6px solid rgba(220,53,69,.75);}
+
+    /* ===== Panel ===== */
+    .panel{
+        border-radius:18px;
+        border:1px solid var(--border);
+        background:#fff;
+        box-shadow: var(--shadow);
+        overflow:hidden;
+        transition: transform .18s ease, box-shadow .18s ease;
+    }
+    .panel:hover{transform:translateY(-2px);box-shadow:var(--shadow2);}
+    .panel-head{
+        padding:14px 16px;
+        border-bottom: 1px solid rgba(17, 24, 39, 0.08);
+        background: linear-gradient(180deg, rgba(17, 24, 39, 0.03), rgba(17, 24, 39, 0.01));
+        display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    }
+    .panel-title{font-weight:950;letter-spacing:-.2px;}
+    .panel-sub{color:var(--muted);font-size:.92rem;margin-top:4px;}
+    .panel-body{padding:14px 16px 16px 16px;}
+
+    /* ===== Buttons ===== */
+    .btn-pill{
+        border-radius:999px !important;
+        font-weight:950;
+        padding:.55rem .95rem;
+        white-space:nowrap;
+    }
+    .btn-ghost{
+        border-radius:999px !important;
+        font-weight:950;
+        padding:.55rem .95rem;
+        background:#fff;
+        border: 1px solid rgba(17,24,39,0.14);
+        color:#111827;
+    }
+    .btn-soft-primary{
+        background: rgba(13,110,253,.08);
+        border: 1px solid rgba(13,110,253,.18);
+        color: #0d6efd;
+    }
+    .btn-soft-primary:hover{background: rgba(13,110,253,.12); color:#0d6efd;}
+
+    /* ===== Table ===== */
+    .table-clean{margin:0;}
+    .table-clean thead th{
+        background: rgba(17,24,39,0.03) !important;
+        font-weight:950;
+        color: var(--text);
+        border-bottom: 1px solid rgba(17,24,39,0.10) !important;
+        white-space: nowrap;
+    }
+    .table-clean td, .table-clean th{
+        padding:.85rem .95rem;
+        vertical-align:middle;
+        border-color: rgba(17,24,39,0.06);
+    }
+    .table-clean tbody tr{transition: background .12s ease;}
+    .table-clean tbody tr:hover{background: rgba(13,110,253,.04);}
+
+    .mono{font-variant-numeric: tabular-nums; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
+    .truncate{
+        max-width: 260px;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        white-space:nowrap;
+    }
+
+    /* ===== Status badge pill ===== */
+    .badge-pill{
+        border-radius:999px;
+        padding:.35rem .65rem;
+        font-weight:950;
+        letter-spacing:.01em;
+        display:inline-flex;
+        align-items:center;
+        gap: 6px;
+        white-space:nowrap;
+    }
+    .role-dot{
+        width:8px;height:8px;border-radius:50%;
+        box-shadow:0 0 0 3px rgba(0,0,0,.03);
+        display:inline-block;
+    }
+
+    @@media (max-width: 992px){
+        .stat-grid{grid-template-columns: 1fr;}
+        .truncate{max-width: 100%;}
+    }
+</style>
+
+<div class="dash container-fluid py-3">
+
+    <!-- Header -->
+    <div class="dash-head">
+        <div class="dash-left">
+            <div class="dash-avatar">🗺️</div>
+            <div>
+                <h2 class="dash-title">Quản lý khu vực giao</h2>
+                <div class="dash-sub">
+                    Thiết lập vùng phục vụ theo tọa độ và bán kính
+                    <span class="dash-dot"></span>
+                    <span class="text-muted">Tổng: <b>@total</b> khu vực</span>
+                </div>
+            </div>
+        </div>
+
+        <a asp-action="Create" class="dash-pill btn-soft-primary">
+            <span class="pill-dot"></span>
+            <span><i class="fas fa-plus me-1"></i> Thêm khu vực</span>
+        </a>
+    </div>
+
+    <!-- KPIs -->
+    <div class="stat-grid">
+        <div class="kpi kpi-primary">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Tổng khu vực</div>
+                    <div class="kpi-value">@total</div>
+                </div>
+                <span class="kpi-badge">All</span>
+            </div>
+        </div>
+        <div class="kpi kpi-success">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Đang hoạt động</div>
+                    <div class="kpi-value">@active</div>
+                </div>
+                <span class="kpi-badge">Active</span>
+            </div>
+        </div>
+        <div class="kpi kpi-danger">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Tạm ngưng</div>
+                    <div class="kpi-value">@inactive</div>
+                </div>
+                <span class="kpi-badge">Off</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table panel -->
+    <div class="panel">
+        <div class="panel-head">
+            <div>
+                <div class="panel-title"><i class="fas fa-table me-1"></i> Danh sách khu vực</div>
+                <div class="panel-sub">Bạn có thể chỉnh sửa cấu hình hoặc xóa khu vực không còn sử dụng.</div>
+            </div>
+
+            <div class="d-flex gap-2 flex-wrap">
+                <a asp-action="Create" class="btn btn-primary btn-pill">
+                    <i class="fas fa-plus me-1"></i> Thêm khu vực
+                </a>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-clean table-hover mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th style="width:70px;">#</th>
+                        <th>Tên khu vực</th>
+                        <th>Loại</th>
+                        <th class="text-end">Lat</th>
+                        <th class="text-end">Lng</th>
+                        <th class="text-end">Bán kính (km)</th>
+                        <th class="text-end">Base fee</th>
+                        <th>Trạng thái</th>
+                        <th style="width:170px;" class="text-end">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    foreach (var item in Model)
+                    {
+                        var isActive = item.IsActive;
+
+                        // badge styles
+                        var statusBadge = isActive ? "bg-success" : "bg-secondary";
+                        var dot = isActive ? "bg-success" : "bg-secondary";
+                        var statusText = isActive ? "Hoạt động" : "Ngưng";
+
+                        <tr>
+                            <td class="text-muted fw-bold">@(stt++)</td>
+                            <td class="fw-bold">@item.Name</td>
+                            <td>
+                                <span class="badge bg-info text-dark badge-pill">
+                                    <span class="role-dot bg-info"></span>
+                                    @item.AreaType
+                                </span>
+                            </td>
+                            <td class="text-end mono">@item.CenterLat</td>
+                            <td class="text-end mono">@item.CenterLng</td>
+                            <td class="text-end fw-bold">@item.RadiusKm</td>
+                            <td class="text-end fw-bold">@item.BaseShipFee.ToString("N0")</td>
+                            <td>
+                                <span class="badge @statusBadge badge-pill">
+                                    <span class="role-dot @dot"></span>
+                                    @statusText
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <div class="d-inline-flex gap-2">
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-warning btn-sm btn-pill">
+                                        <i class="fas fa-pen me-1"></i> Sửa
+                                    </a>
+
+                                    <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline">
+                                        <button type="submit" class="btn btn-danger btn-sm btn-pill"
+                                                onclick="return confirm('Xóa khu vực này?');">
+                                            <i class="fas fa-trash me-1"></i> Xóa
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="9" class="text-center text-muted py-4">
+                            Chưa có khu vực nào. Hãy bấm <b>Thêm khu vực</b> để tạo mới.
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

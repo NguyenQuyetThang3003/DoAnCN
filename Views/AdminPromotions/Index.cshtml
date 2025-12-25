@@ -6,107 +6,454 @@
 
     var q = ViewBag.Q as string;
     bool? active = ViewBag.Active as bool?;
+
+    var now = DateTime.Now;
+
+    var total = Model?.Count ?? 0;
+    var activeCount = Model?.Count(x => x.Trangthai && x.Ngayketthuc >= now) ?? 0;
+    var lockedCount = Model?.Count(x => !x.Trangthai) ?? 0;
+    var expiredCount = Model?.Count(x => x.Ngayketthuc < now) ?? 0;
+    var soonCount = Model?.Count(x => x.Ngayketthuc >= now && x.Ngayketthuc <= now.AddDays(3)) ?? 0;
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <div>
-        <h3 class="mb-0">Quản lý mã giảm giá</h3>
-        <div class="text-muted">Tạo / sửa / khóa mã khuyến mãi.</div>
+<div class="promo container-fluid px-4 py-3">
+
+    <!-- Header -->
+    <div class="dash-head mb-3">
+        <div class="dash-head__left">
+            <div class="dash-avatar">🏷️</div>
+            <div>
+                <div class="dash-title">
+                    Quản lý mã giảm giá
+                </div>
+                <div class="dash-sub">
+                    Tạo / sửa / khóa mã khuyến mãi
+                    <span class="dash-dot"></span>
+                    <span class="text-muted">Cập nhật theo thời gian thực</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="dash-head__right d-flex gap-2 flex-wrap">
+            <div class="dash-pill">
+                <span class="pill-dot"></span>
+                <span>Admin</span>
+            </div>
+
+            <a class="btn btn-primary btn-soft" asp-action="Create">
+                <i class="fas fa-plus"></i> Tạo mã
+            </a>
+        </div>
     </div>
-    <a class="btn btn-danger" asp-action="Create">
-        <i class="fas fa-plus me-1"></i> Tạo mã
-    </a>
-</div>
 
-@if (TempData["ok"] != null)
-{
-    <div class="alert alert-success">@TempData["ok"]</div>
-}
+    @if (TempData["ok"] != null)
+    {
+        <div class="alert alert-success">@TempData["ok"]</div>
+    }
 
-<div class="card shadow-sm mb-3">
-    <div class="card-body">
-        <form method="get" class="row g-2 align-items-end">
-            <div class="col-md-4">
-                <label class="form-label">Tìm theo mã</label>
-                <input name="q" value="@q" class="form-control" placeholder="VD: FREESHIP10" />
+    <!-- KPI -->
+    <div class="row g-3 mb-3">
+        <div class="col-lg-3 col-md-6">
+            <div class="kpi kpi-primary h-100">
+                <div class="kpi-top">
+                    <div class="kpi-icon">📦</div>
+                    <div>
+                        <div class="kpi-label">Tổng mã</div>
+                        <div class="kpi-value">@total</div>
+                    </div>
+                </div>
+                <div class="kpi-foot">
+                    <span>Toàn hệ thống</span>
+                    <span class="kpi-badge">Total</span>
+                </div>
             </div>
-            <div class="col-md-3">
-                <label class="form-label">Trạng thái</label>
-                <select class="form-select" name="active">
-                    <option value="">Tất cả</option>
-                    <option value="true" selected="@(active == true)">Đang hoạt động</option>
-                    <option value="false" selected="@(active == false)">Đã khóa</option>
-                </select>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <div class="kpi kpi-success h-100">
+                <div class="kpi-top">
+                    <div class="kpi-icon">✅</div>
+                    <div>
+                        <div class="kpi-label">Đang hoạt động</div>
+                        <div class="kpi-value">@activeCount</div>
+                    </div>
+                </div>
+                <div class="kpi-foot">
+                    <span>Hợp lệ</span>
+                    <span class="kpi-badge">Active</span>
+                </div>
             </div>
-            <div class="col-md-5 d-flex gap-2">
-                <button class="btn btn-dark" type="submit">
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <div class="kpi kpi-warning h-100">
+                <div class="kpi-top">
+                    <div class="kpi-icon">⏳</div>
+                    <div>
+                        <div class="kpi-label">Sắp hết hạn (3 ngày)</div>
+                        <div class="kpi-value">@soonCount</div>
+                    </div>
+                </div>
+                <div class="kpi-foot">
+                    <span>Cần theo dõi</span>
+                    <span class="kpi-badge">Soon</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <div class="kpi kpi-danger h-100">
+                <div class="kpi-top">
+                    <div class="kpi-icon">🛑</div>
+                    <div>
+                        <div class="kpi-label">Hết hạn / Khóa</div>
+                        <div class="kpi-value">@(@expiredCount + @lockedCount)</div>
+                    </div>
+                </div>
+                <div class="kpi-foot">
+                    <span>Không khả dụng</span>
+                    <span class="kpi-badge">Off</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter -->
+    <div class="panel mb-3">
+        <div class="panel-head">
+            <div>
+                <div class="panel-title">
+                    <i class="fas fa-filter me-1"></i> Bộ lọc
+                </div>
+                <div class="panel-sub">Tìm nhanh theo mã và trạng thái hoạt động</div>
+            </div>
+
+            <form method="get" class="dash-filter">
+                <div class="filter-group">
+                    <label class="filter-label">Mã</label>
+                    <input name="q" value="@q" class="form-control form-control-sm" placeholder="VD: FREESHIP10" />
+                </div>
+
+                <div class="filter-group">
+                    <label class="filter-label">Trạng thái</label>
+                    <select class="form-select form-select-sm" name="active">
+                        <option value="">Tất cả</option>
+                        <option value="true" selected="@(active == true)">Đang hoạt động</option>
+                        <option value="false" selected="@(active == false)">Đã khóa</option>
+                    </select>
+                </div>
+
+                <button class="btn btn-sm btn-outline-primary filter-btn" type="submit">
                     <i class="fas fa-filter me-1"></i> Lọc
                 </button>
-                <a class="btn btn-outline-secondary" asp-action="Index">Reset</a>
+
+                <a class="btn btn-sm btn-outline-secondary filter-btn" asp-action="Index">Reset</a>
+            </form>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="panel">
+        <div class="panel-head">
+            <div>
+                <div class="panel-title">
+                    <i class="fas fa-tags me-1"></i> Danh sách mã
+                </div>
+                <div class="panel-sub">Quản trị vòng đời mã giảm giá (tạo – chỉnh – khóa/mở)</div>
             </div>
-        </form>
+
+            <div class="panel-meta text-muted">
+                Tổng: <b class="text-dark">@total</b>
+            </div>
+        </div>
+
+        <div class="panel-body p-0">
+            <div class="table-responsive">
+                <table class="table table-clean table-hover align-middle mb-0">
+                    <thead>
+                        <tr class="text-center">
+                            <th style="width:80px;">ID</th>
+                            <th style="min-width:160px;">Mã</th>
+                            <th style="width:120px;">Giảm</th>
+                            <th style="width:130px;">Bắt đầu</th>
+                            <th style="width:130px;">Kết thúc</th>
+                            <th style="width:150px;">Trạng thái</th>
+                            <th style="width:240px;">Thao tác</th>
+                        </tr>
+                    </thead>
+
+                    <tbody class="text-center">
+                    @if (Model == null || Model.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="7" class="text-muted py-4">
+                                Chưa có mã giảm giá.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var item in Model)
+                        {
+                            bool expired = item.Ngayketthuc < now;
+                            bool soon = !expired && item.Ngayketthuc <= now.AddDays(3);
+                            bool isActive = item.Trangthai && !expired;
+
+                            string statusText = expired ? "Hết hạn" : (item.Trangthai ? "Hoạt động" : "Đã khóa");
+                            string badgeClass = expired ? "bg-secondary" : (item.Trangthai ? "bg-success" : "bg-secondary");
+                            string dotClass = expired ? "bg-secondary" : (item.Trangthai ? "bg-success" : "bg-secondary");
+
+                            string rowClass = expired ? "row-expired" : (soon ? "row-soon" : "");
+                            <tr class="@rowClass">
+                                <td class="text-muted fw-bold">@item.Magiamgia</td>
+
+                                <td class="text-start">
+                                    <div class="fw-bold">@item.Code</div>
+                                    <div class="small text-muted">
+                                        @if (soon)
+                                        {
+                                            <span class="badge bg-warning text-dark badge-pill mt-1">
+                                                <span class="role-dot bg-warning"></span> Sắp hết hạn
+                                            </span>
+                                        }
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <span class="badge bg-info text-dark badge-pill">
+                                        <span class="role-dot bg-info"></span> -@item.Giatriphantram%
+                                    </span>
+                                </td>
+
+                                <td class="text-nowrap">@item.Ngaybatdau.ToString("dd/MM/yyyy")</td>
+
+                                <td class="text-nowrap">
+                                    @item.Ngayketthuc.ToString("dd/MM/yyyy")
+                                    @if (expired)
+                                    {
+                                        <div class="small text-danger fw-semibold">Đã hết hạn</div>
+                                    }
+                                </td>
+
+                                <td>
+                                    <span class="badge @badgeClass badge-pill">
+                                        <span class="role-dot @dotClass"></span> @statusText
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <div class="d-flex justify-content-center gap-2 flex-wrap">
+                                        <a class="btn btn-sm btn-outline-primary btn-action"
+                                           asp-action="Edit" asp-route-id="@item.Magiamgia">
+                                            <i class="fas fa-pen"></i> Sửa
+                                        </a>
+
+                                        <form asp-action="Toggle" asp-route-id="@item.Magiamgia"
+                                              method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+
+                                            <button type="submit"
+                                                    class="btn btn-sm btn-action @(item.Trangthai ? "btn-outline-danger" : "btn-outline-success")"
+                                                    title="@(expired ? "Mã đã hết hạn" : "")"
+                                                    @(expired ? "disabled" : "")>
+                                                <i class="fas @(item.Trangthai ? "fa-lock" : "fa-lock-open")"></i>
+                                                @(item.Trangthai ? "Khóa" : "Mở")
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 
-<div class="card shadow-sm">
-    <div class="table-responsive">
-        <table class="table table-hover mb-0">
-            <thead class="table-dark text-center">
-                <tr>
-                    <th>ID</th>
-                    <th>Mã</th>
-                    <th>% Giảm</th>
-                    <th>Bắt đầu</th>
-                    <th>Kết thúc</th>
-                    <th>Trạng thái</th>
-                    <th style="width:220px;">Thao tác</th>
-                </tr>
-            </thead>
-            <tbody class="text-center">
-            @if (Model.Count == 0)
-            {
-                <tr><td colspan="7" class="text-muted py-4">Chưa có mã giảm giá.</td></tr>
-            }
-            else
-            {
-                foreach (var item in Model)
-                {
-                    <tr>
-                        <td>@item.Magiamgia</td>
-                        <td class="fw-bold">@item.Code</td>
-                        <td>@item.Giatriphantram%</td>
-                        <td>@item.Ngaybatdau.ToString("dd/MM/yyyy")</td>
-                        <td>@item.Ngayketthuc.ToString("dd/MM/yyyy")</td>
-                        <td>
-                            @if (item.Trangthai)
-                            {
-                                <span class="badge bg-success">Hoạt động</span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-secondary">Đã khóa</span>
-                            }
-                        </td>
-                        <td class="text-center">
-                            <a class="btn btn-sm btn-outline-primary"
-                               asp-action="Edit" asp-route-id="@item.Magiamgia">
-                                <i class="fas fa-pen"></i> Sửa
-                            </a>
+<style>
+    .promo {
+        --text: #111827;
+        --muted: #6b7280;
+        --border: rgba(17, 24, 39, 0.10);
+        --shadow: 0 10px 30px rgba(17, 24, 39, 0.08);
+        --shadow2: 0 14px 40px rgba(17, 24, 39, 0.10);
+        color: var(--text);
+        font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    }
 
-                            <form asp-action="Toggle" asp-route-id="@item.Magiamgia"
-                                  method="post" class="d-inline">
-                                @Html.AntiForgeryToken()
-                                <button type="submit"
-                                        class="btn btn-sm @(item.Trangthai ? "btn-outline-danger" : "btn-outline-success")">
-                                    <i class="fas @(item.Trangthai ? "fa-lock" : "fa-lock-open")"></i>
-                                    @(item.Trangthai ? "Khóa" : "Mở")
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                }
-            }
-            </tbody>
-        </table>
-    </div>
-</div>
+    /* Header (same dashboard vibe) */
+    .dash-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 14px 16px;
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        background: linear-gradient(180deg, rgba(13, 110, 253, 0.08), rgba(13, 110, 253, 0.02));
+        box-shadow: var(--shadow);
+    }
+
+    .dash-head__left { display:flex; gap:12px; align-items:center; }
+    .dash-avatar {
+        width: 44px; height: 44px; border-radius: 14px;
+        display: grid; place-items: center;
+        background: #fff; border: 1px solid var(--border);
+        box-shadow: 0 8px 24px rgba(17, 24, 39, 0.08);
+        font-size: 20px;
+        flex: 0 0 auto;
+    }
+
+    .dash-title { font-weight: 950; letter-spacing: -0.2px; font-size: 1.15rem; }
+    .dash-sub { margin-top: 4px; color: var(--muted); font-size: 0.95rem; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .dash-dot { width: 6px; height: 6px; border-radius: 99px; background: rgba(17,24,39,0.25); display:inline-block; }
+
+    .dash-pill {
+        display: inline-flex; align-items: center; gap: 10px;
+        padding: 10px 12px; border-radius: 999px;
+        border: 1px solid var(--border); background: #fff;
+        box-shadow: 0 8px 18px rgba(17, 24, 39, 0.06);
+        color: var(--muted); font-weight: 800; font-size: 0.9rem;
+        user-select: none;
+    }
+    .pill-dot { width: 10px; height: 10px; border-radius: 99px; background: #22c55e; box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.18); }
+
+    .btn-soft{
+        border-radius: 999px;
+        font-weight: 800;
+        padding: .45rem .9rem;
+        display:inline-flex;
+        align-items:center;
+        gap:.5rem;
+    }
+
+    /* KPI cards */
+    .kpi{
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background:#fff;
+        box-shadow: var(--shadow);
+        padding: 14px 16px;
+        transition: transform .18s ease, box-shadow .18s ease;
+    }
+    .kpi:hover { transform: translateY(-2px); box-shadow: var(--shadow2); }
+    .kpi-top{ display:flex; align-items:center; gap:12px; }
+    .kpi-icon{
+        width: 44px; height: 44px; border-radius: 16px;
+        display:grid; place-items:center;
+        background: rgba(17,24,39,0.04);
+        border: 1px solid var(--border);
+        font-size: 18px;
+        flex: 0 0 auto;
+    }
+    .kpi-label{ color: var(--muted); font-weight: 850; font-size: .95rem; }
+    .kpi-value{ font-weight: 950; font-size: 1.6rem; letter-spacing: -0.4px; margin-top:2px; }
+    .kpi-foot{
+        margin-top: 12px;
+        padding-top: 10px;
+        border-top: 1px dashed rgba(17,24,39,0.12);
+        display:flex; align-items:center; justify-content:space-between;
+        color: var(--muted); font-weight: 750; font-size: .92rem;
+    }
+    .kpi-badge{
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: rgba(17,24,39,0.03);
+        color:#111827;
+        font-weight: 850;
+        font-size: .86rem;
+    }
+    .kpi-success{ border-left: 6px solid rgba(40, 167, 69, 0.80); }
+    .kpi-danger { border-left: 6px solid rgba(220, 53, 69, 0.80); }
+    .kpi-primary{ border-left: 6px solid rgba(13, 110, 253, 0.80); }
+    .kpi-warning{ border-left: 6px solid rgba(255, 193, 7, 0.85); }
+
+    /* Panels */
+    .panel{
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background:#fff;
+        box-shadow: var(--shadow);
+        overflow:hidden;
+        transition: transform .18s ease, box-shadow .18s ease;
+    }
+    .panel:hover { transform: translateY(-2px); box-shadow: var(--shadow2); }
+    .panel-head{
+        padding: 14px 16px;
+        border-bottom: 1px solid rgba(17,24,39,0.08);
+        background: linear-gradient(180deg, rgba(17,24,39,0.03), rgba(17,24,39,0.01));
+        display:flex; align-items:center; justify-content:space-between; gap:12px;
+        flex-wrap:wrap;
+    }
+    .panel-title{ font-weight: 950; letter-spacing: -0.2px; }
+    .panel-sub{ color: var(--muted); font-size: .92rem; margin-top: 4px; }
+    .panel-meta{ font-weight: 800; font-size: .9rem; }
+    .panel-body{ padding: 14px 16px 16px 16px; }
+
+    /* Filter */
+    .dash-filter{ display:flex; align-items:end; gap:10px; flex-wrap:wrap; }
+    .filter-group{ display:grid; gap:4px; }
+    .filter-label{ font-size: .78rem; color: var(--muted); font-weight: 900; }
+    .filter-btn{ white-space: nowrap; border-radius: 999px; font-weight: 800; }
+
+    /* Table */
+    .table-clean thead th{
+        background: #f8f9fa !important;
+        font-weight: 900;
+        color:#495057;
+        border-bottom: 1px solid rgba(16,24,40,.08) !important;
+        white-space: nowrap;
+    }
+    .table-clean td, .table-clean th{
+        padding: .9rem .95rem;
+        border-color: rgba(16,24,40,.06);
+        vertical-align: middle;
+    }
+    .table-clean tbody tr:hover{
+        background: rgba(13,110,253,.04);
+    }
+
+    /* Badge pill + dot */
+    .badge-pill{
+        border-radius: 999px;
+        padding: .35rem .65rem;
+        font-weight: 900;
+        letter-spacing: .01em;
+        display:inline-flex;
+        align-items:center;
+        gap: 8px;
+    }
+    .role-dot{
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        box-shadow: 0 0 0 4px rgba(0,0,0,.03);
+        display:inline-block;
+    }
+
+    /* Row state highlight */
+    .row-expired{
+        opacity: .85;
+    }
+    .row-soon{
+        border-left: 4px solid rgba(255, 193, 7, 0.9);
+    }
+
+    /* Buttons */
+    .btn-action{
+        border-radius: 999px;
+        font-weight: 850;
+        padding: .35rem .75rem;
+        display:inline-flex;
+        align-items:center;
+        gap:.4rem;
+    }
+
+    @@media (max-width: 576px){
+        .dash-head{ padding: 12px 12px; }
+        .dash-title{ font-size: 1.05rem; }
+    }
+</style>

@@ -1,197 +1,417 @@
 @model WedNightFury.Models.Order
+@using System.Globalization
+@using System.Text.RegularExpressions
 
 @{
-    // Layout dành cho tài xế
-    Layout = "_LayoutDriver";
+    Layout = "~/Views/Shared/_LayoutDriver.cshtml";
+    ViewData["Title"] = $"Điểm giao - {Model?.Code}";
 
-    ViewData["Title"] = $"Điểm giao - {Model.Code}";
-
-    decimal ship  = Model.ShipFee;
-    decimal cod   = Model.CodAmount;
-    string payer  = Model.ShipPayer ?? "receiver";
+    decimal ship  = Model?.ShipFee ?? 0;
+    decimal cod   = Model?.CodAmount ?? 0;
+    string payer  = (Model?.ShipPayer ?? "receiver").ToLowerInvariant();
 
     // Tổng tiền tài xế THU TỪ KHÁCH
     decimal totalCollect = 0;
     if (cod <= 0)
-    {
-        // Không COD
         totalCollect = (payer == "receiver") ? ship : 0;
-    }
     else
-    {
-        // Có COD
         totalCollect = (payer == "receiver") ? ship + cod : cod;
-    }
 
     // Tiền tài xế phải nộp (tiền hàng)
     decimal driverDeposit = cod > 0 ? cod : 0;
 
     string shipPayerText = payer == "sender" ? "Người gửi" : "Người nhận";
 
-    // ===========================
-    // MAP – dùng địa chỉ khách
-    // ===========================
-    string rawAddress  = Model.ReceiverAddress ?? "";
-    string fullAddress = string.IsNullOrWhiteSpace(rawAddress)
-        ? "Việt Nam"
-        : rawAddress + ", Việt Nam";  // thêm country cho chắc
+    // Normalize phone for tel & zalo
+    string rawPhone = Model?.ReceiverPhone ?? "";
+    string phoneDigits = Regex.Replace(rawPhone, @"\D", ""); // chỉ lấy số
+    // Nếu user nhập 0xxxxxxxxx thì zalo vẫn ok; nếu 84xxxxxxxxx cũng ok.
 
+    // ===========================
+    // MAP: ưu tiên Lat/Lng nếu có
+    // ===========================
+    bool hasLatLng = (Model?.Lat.HasValue == true) && (Model?.Lng.HasValue == true);
+    string latLng = hasLatLng
+        ? $"{Model!.Lat!.Value.ToString(CultureInfo.InvariantCulture)},{Model!.Lng!.Value.ToString(CultureInfo.InvariantCulture)}"
+        : "";
+
+    string rawAddress  = Model?.ReceiverAddress ?? "";
+    string fullAddress = string.IsNullOrWhiteSpace(rawAddress) ? "Việt Nam" : (rawAddress + ", Việt Nam");
     string encodedAddress = Uri.EscapeDataString(fullAddress);
+
+    // URL embed + direction
+    string embedSrc = hasLatLng
+        ? $"https://www.google.com/maps?q={Uri.EscapeDataString(latLng)}&output=embed"
+        : $"https://www.google.com/maps?q={encodedAddress}&output=embed";
+
+    string directionUrl = hasLatLng
+        ? $"https://www.google.com/maps/dir/?api=1&destination={Uri.EscapeDataString(latLng)}"
+        : $"https://www.google.com/maps/dir/?api=1&destination={encodedAddress}";
 }
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 
-<style>
-    .box {
-        background:#fff;
-        padding:25px;
-        border-radius:15px;
-        box-shadow:0 4px 12px rgba(0,0,0,0.08);
-    }
-    .label { width:160px; font-weight:600; color:#555; }
-    .val { font-weight:600; }
-    .btn-big { padding:12px 25px; border-radius:12px; font-size:17px; }
-    .timeline { border-left:3px solid #d32f2f; margin-left:15px; padding-left:20px; }
-    .tl-item { margin-bottom:15px; }
-</style>
+<div class="driver-stop container py-4">
 
-<div class="box mb-4">
-    <h3 class="fw-bold text-danger mb-3">
-        📦 ĐIỂM GIAO: @Model.Code
-    </h3>
-
-    <!-- Timeline -->
-    <div class="timeline mb-4">
-        <div class="tl-item">
-            <strong>📌 Tạo đơn:</strong>
-            @Model.CreatedAt?.ToString("dd/MM/yyyy HH:mm")
+    <!-- Header -->
+    <div class="hero mb-3">
+        <div class="hero-left">
+            <div class="hero-ic"><i class="fa-solid fa-location-dot"></i></div>
+            <div class="min-w-0">
+                <div class="hero-title">Điểm giao</div>
+                <div class="hero-code">@Model?.Code</div>
+                <div class="hero-sub">
+                    <span class="text-muted">Mã đơn:</span>
+                    <span class="fw-bold">#@Model?.Id</span>
+                    <span class="sep">•</span>
+                    <span class="text-muted">Trạng thái:</span>
+                    <span class="badge @StatusBadge(Model?.Status)">@((Model?.Status ?? "unknown").ToUpper())</span>
+                </div>
+            </div>
         </div>
 
-        @if (Model.AssignedAt.HasValue)
-        {
-            <div class="tl-item">
-                <strong>🚚 Đang giao lúc:</strong>
-                @Model.AssignedAt?.ToString("dd/MM/yyyy HH:mm")
+        <div class="hero-right">
+            <div class="money-card">
+                <div class="money-label">Khách phải trả</div>
+                <div class="money-value text-danger">@totalCollect.ToString("N0") đ</div>
             </div>
-        }
-
-        @if (Model.Status == "done" && Model.DeliveredAt.HasValue)
-        {
-            <div class="tl-item">
-                <strong>✔ Giao thành công:</strong>
-                @Model.DeliveredAt?.ToString("dd/MM/yyyy HH:mm")
+            <div class="money-card">
+                <div class="money-label">Tài xế phải nộp</div>
+                <div class="money-value text-primary">@driverDeposit.ToString("N0") đ</div>
             </div>
-        }
+        </div>
+    </div>
 
-        @if (Model.Status == "failed" && Model.FailedAt.HasValue)
-        {
-            <div class="tl-item">
-                <strong>✖ Giao thất bại:</strong>
-                @Model.FailedAt?.ToString("dd/MM/yyyy HH:mm")
+    <!-- Content grid -->
+    <div class="grid">
+        <!-- Left: Order info -->
+        <div class="panel">
+            <div class="panel-head">
+                <div class="panel-title"><i class="fa-solid fa-box"></i> Thông tin đơn</div>
+                <div class="panel-sub">Cập nhật theo trạng thái thực tế</div>
             </div>
-        }
-    </div>
 
-    <!-- Thông tin đơn -->
-    <div class="d-flex mb-2">
-        <div class="label">Người nhận:</div>
-        <div class="val">@Model.ReceiverName</div>
-    </div>
+            <!-- Timeline -->
+            <div class="timeline">
+                <div class="tl-item">
+                    <span class="dot dot-green"></span>
+                    <div>
+                        <div class="tl-title">Tạo đơn</div>
+                        <div class="tl-time">@Model?.CreatedAt?.ToString("dd/MM/yyyy HH:mm")</div>
+                    </div>
+                </div>
 
-    <div class="d-flex mb-2">
-        <div class="label">SĐT:</div>
-        <div class="val">@Model.ReceiverPhone</div>
-    </div>
+                @if (Model?.AssignedAt.HasValue == true)
+                {
+                    <div class="tl-item">
+                        <span class="dot dot-blue"></span>
+                        <div>
+                            <div class="tl-title">Bắt đầu giao</div>
+                            <div class="tl-time">@Model.AssignedAt?.ToString("dd/MM/yyyy HH:mm")</div>
+                        </div>
+                    </div>
+                }
 
-    <div class="d-flex mb-2">
-        <div class="label">Địa chỉ:</div>
-        <div class="val">@rawAddress</div>
-    </div>
+                @if ((Model?.Status ?? "") == "done" && Model?.DeliveredAt.HasValue == true)
+                {
+                    <div class="tl-item">
+                        <span class="dot dot-green"></span>
+                        <div>
+                            <div class="tl-title">Giao thành công</div>
+                            <div class="tl-time">@Model.DeliveredAt?.ToString("dd/MM/yyyy HH:mm")</div>
+                        </div>
+                    </div>
+                }
 
-    <div class="d-flex mb-2">
-        <div class="label">Giá trị hàng:</div>
-        <div class="val">@Model.Value.ToString("N0") đ</div>
-    </div>
+                @if ((Model?.Status ?? "") == "failed" && Model?.FailedAt.HasValue == true)
+                {
+                    <div class="tl-item">
+                        <span class="dot dot-red"></span>
+                        <div>
+                            <div class="tl-title">Giao thất bại</div>
+                            <div class="tl-time">@Model.FailedAt?.ToString("dd/MM/yyyy HH:mm")</div>
+                        </div>
+                    </div>
+                }
+            </div>
 
-    <div class="d-flex mb-2">
-        <div class="label">COD:</div>
-        <div class="val">@Model.CodAmount.ToString("N0") đ</div>
-    </div>
+            <div class="kv">
+                <div class="row">
+                    <div class="k">Người nhận</div>
+                    <div class="v">@Model?.ReceiverName</div>
+                </div>
+                <div class="row">
+                    <div class="k">SĐT</div>
+                    <div class="v">@rawPhone</div>
+                </div>
+                <div class="row">
+                    <div class="k">Địa chỉ</div>
+                    <div class="v">@rawAddress</div>
+                </div>
+                <div class="row">
+                    <div class="k">Giá trị hàng</div>
+                    <div class="v">@((Model?.Value ?? 0).ToString("N0")) đ</div>
+                </div>
 
-    <div class="d-flex mb-2">
-        <div class="label">Phí ship:</div>
-        <div class="val">@Model.ShipFee.ToString("N0") đ</div>
-    </div>
+                <hr class="line" />
 
-    <div class="d-flex mb-2">
-        <div class="label">Người trả ship:</div>
-        <div class="val">@shipPayerText</div>
-    </div>
+                <div class="row">
+                    <div class="k">COD</div>
+                    <div class="v">@cod.ToString("N0") đ</div>
+                </div>
+                <div class="row">
+                    <div class="k">Phí ship</div>
+                    <div class="v text-danger fw-bold">@ship.ToString("N0") đ</div>
+                </div>
+                <div class="row">
+                    <div class="k">Người trả ship</div>
+                    <div class="v">@shipPayerText</div>
+                </div>
 
-    <hr />
+                <div class="row total">
+                    <div class="k">Khách phải trả</div>
+                    <div class="v text-danger">@totalCollect.ToString("N0") đ</div>
+                </div>
 
-    <div class="d-flex mb-2">
-        <div class="label">Khách phải trả:</div>
-        <div class="val text-danger">@totalCollect.ToString("N0") đ</div>
-    </div>
+                <div class="row total2">
+                    <div class="k">Tài xế phải nộp</div>
+                    <div class="v text-primary">@driverDeposit.ToString("N0") đ</div>
+                </div>
 
-    <div class="d-flex mb-2">
-        <div class="label">Tài xế phải nộp:</div>
-        <div class="val text-primary">@driverDeposit.ToString("N0") đ</div>
+                @if (!hasLatLng)
+                {
+                    <div class="warn mt-2">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        Đơn này chưa có tọa độ Lat/Lng. Bản đồ sẽ định vị theo địa chỉ, có thể sai nhẹ.
+                    </div>
+                }
+                else
+                {
+                    <div class="ok mt-2">
+                        <i class="fa-solid fa-location-crosshairs"></i>
+                        Đang dùng tọa độ Lat/Lng: <b>@latLng</b>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Right: Map + Actions -->
+        <div class="panel">
+            <div class="panel-head">
+                <div class="panel-title"><i class="fa-solid fa-map-location-dot"></i> Bản đồ giao hàng</div>
+                <div class="panel-sub">Điều hướng nhanh tới điểm giao</div>
+            </div>
+
+            <div class="map-wrap">
+                <iframe
+                    width="100%"
+                    height="320"
+                    style="border:0;"
+                    loading="lazy"
+                    referrerpolicy="no-referrer-when-downgrade"
+                    src="@embedSrc">
+                </iframe>
+            </div>
+
+            <div class="actions">
+                <a href="tel:@rawPhone" class="btnx btn-outline-primary">
+                    <i class="fa-solid fa-phone"></i> Gọi khách
+                </a>
+
+                @if (!string.IsNullOrWhiteSpace(phoneDigits))
+                {
+                    <a href="https://zalo.me/@phoneDigits" target="_blank" class="btnx btn-outline-info">
+                        <i class="fa-solid fa-comment-dots"></i> Nhắn Zalo
+                    </a>
+                }
+                else
+                {
+                    <button type="button" class="btnx btn-outline-info" disabled title="Chưa có SĐT">
+                        <i class="fa-solid fa-comment-dots"></i> Nhắn Zalo
+                    </button>
+                }
+
+                <a class="btnx btn-outline-dark" target="_blank" href="@directionUrl">
+                    <i class="fa-solid fa-route"></i> Điều hướng
+                </a>
+
+                <a asp-action="Delivered" asp-route-id="@Model?.Id" class="btnx btn-success">
+                    <i class="fa-solid fa-circle-check"></i> Đã giao (POD)
+                </a>
+
+                <a asp-action="Failed" asp-route-id="@Model?.Id" class="btnx btn-danger">
+                    <i class="fa-solid fa-circle-xmark"></i> Giao thất bại
+                </a>
+            </div>
+        </div>
     </div>
 </div>
 
-<!-- Bản đồ giao hàng -->
-<div class="box mb-4" style="padding:15px 15px 5px 15px;">
-    <h5 class="fw-bold mb-2">🗺 Bản đồ giao hàng</h5>
-
-    <iframe
-        width="100%"
-        height="320"
-        style="border:0; border-radius:12px;"
-        loading="lazy"
-        referrerpolicy="no-referrer-when-downgrade"
-        src="https://www.google.com/maps?q=@encodedAddress&output=embed">
-    </iframe>
-</div>
-
-<!-- Action Buttons -->
-<div class="d-flex flex-wrap gap-3 mb-4">
-
-    <!-- Gọi khách -->
-    <a href="tel:@Model.ReceiverPhone"
-       class="btn btn-outline-primary btn-big fw-bold">
-        ☎ Gọi khách
-    </a>
-
-    <!-- Nhắn Zalo -->
-    @if (!string.IsNullOrWhiteSpace(Model.ReceiverPhone))
+@functions{
+    public string StatusBadge(string? status)
     {
-        <a href="https://zalo.me/@Model.ReceiverPhone"
-           target="_blank"
-           class="btn btn-outline-info btn-big fw-bold">
-            💬 Nhắn Zalo
-        </a>
+        status = (status ?? "").ToLowerInvariant();
+        return status switch
+        {
+            "pending"  => "bg-warning text-dark",
+            "assigned" => "bg-secondary",
+            "shipping" => "bg-primary",
+            "done"     => "bg-success",
+            "failed"   => "bg-danger",
+            "cancelled"=> "bg-dark",
+            _          => "bg-secondary"
+        };
+    }
+}
+
+<style>
+    .driver-stop {
+        --border: rgba(17,24,39,.12);
+        --shadow: 0 12px 30px rgba(17,24,39,.08);
+        font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
     }
 
-    <!-- Điều hướng: dùng địa chỉ trên đơn -->
-    <a class="btn btn-outline-dark btn-big fw-bold"
-       target="_blank"
-       href="https://www.google.com/maps/dir/?api=1&destination=@encodedAddress">
-        📍 Điều hướng
-    </a>
+    .hero {
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: linear-gradient(180deg, rgba(220,53,69,.10), rgba(220,53,69,.02));
+        box-shadow: var(--shadow);
+        padding: 16px;
+        display: flex;
+        justify-content: space-between;
+        gap: 14px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
 
-    <!-- Giao thành công / POD -->
-    <a asp-action="Delivered"
-       asp-route-id="@Model.Id"
-       class="btn btn-success btn-big fw-bold">
-        ✔ Đã giao (POD)
-    </a>
+    .hero-left { display:flex; gap:12px; align-items:center; min-width: 0; }
+    .hero-ic {
+        width: 46px; height: 46px; border-radius: 16px;
+        background:#fff; border:1px solid var(--border);
+        display:grid; place-items:center;
+        box-shadow: 0 10px 24px rgba(17,24,39,.08);
+        color:#dc3545;
+    }
+    .hero-title { font-weight: 950; letter-spacing:-.2px; color:#dc3545; text-transform: uppercase; }
+    .hero-code { font-size: 1.25rem; font-weight: 900; margin-top: 2px; }
+    .hero-sub { margin-top: 6px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .sep { color:#cbd5e1; }
 
-    <!-- Giao thất bại -->
-    <a asp-action="Failed"
-       asp-route-id="@Model.Id"
-       class="btn btn-danger btn-big fw-bold">
-        ✖ Giao thất bại
-    </a>
-</div>
+    .hero-right { display:flex; gap:10px; flex-wrap:wrap; }
+    .money-card {
+        background:#fff;
+        border:1px solid var(--border);
+        border-radius: 16px;
+        padding: 10px 12px;
+        box-shadow: 0 10px 22px rgba(17,24,39,.06);
+        min-width: 170px;
+    }
+    .money-label { font-size:.85rem; color:#6b7280; font-weight:700; }
+    .money-value { font-size:1.05rem; font-weight: 950; }
+
+    .grid {
+        display:grid;
+        grid-template-columns: 1.05fr .95fr;
+        gap: 14px;
+        margin-top: 14px;
+    }
+
+    .panel {
+        background:#fff;
+        border:1px solid var(--border);
+        border-radius: 18px;
+        box-shadow: var(--shadow);
+        padding: 14px;
+    }
+
+    .panel-head { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap; }
+    .panel-title { font-weight: 950; color:#111827; }
+    .panel-sub { color:#6b7280; font-size:.9rem; }
+
+    .timeline { margin-top: 12px; border-left: 3px solid rgba(220,53,69,.6); padding-left: 14px; }
+    .tl-item { display:flex; gap:10px; margin-bottom: 12px; }
+    .dot { width:10px; height:10px; border-radius: 99px; margin-top:6px; flex:0 0 auto; }
+    .dot-green { background:#22c55e; box-shadow:0 0 0 4px rgba(34,197,94,.15); }
+    .dot-blue  { background:#3b82f6; box-shadow:0 0 0 4px rgba(59,130,246,.15); }
+    .dot-red   { background:#ef4444; box-shadow:0 0 0 4px rgba(239,68,68,.15); }
+    .tl-title { font-weight: 900; }
+    .tl-time { color:#6b7280; font-size:.9rem; }
+
+    .kv { margin-top: 10px; }
+    .kv .row { display:flex; justify-content:space-between; gap:12px; padding: 8px 0; }
+    .kv .k { width: 150px; color:#6b7280; font-weight: 800; }
+    .kv .v { flex: 1; font-weight: 800; color:#111827; text-align:right; }
+    .kv .line { margin: 10px 0; opacity:.15; }
+    .kv .total .k, .kv .total .v { font-size: 1rem; font-weight: 950; }
+    .kv .total2 .k, .kv .total2 .v { font-weight: 950; }
+
+    .warn, .ok {
+        border-radius: 14px;
+        padding: 10px 12px;
+        display:flex;
+        gap:10px;
+        align-items:flex-start;
+        font-weight: 700;
+        font-size: .92rem;
+    }
+    .warn { background: rgba(255,193,7,.10); border: 1px solid rgba(255,193,7,.35); color:#92400e; }
+    .ok   { background: rgba(34,197,94,.10); border: 1px solid rgba(34,197,94,.35); color:#166534; }
+
+    .map-wrap {
+        margin-top: 10px;
+        border-radius: 16px;
+        overflow:hidden;
+        border: 1px solid rgba(17,24,39,.12);
+        box-shadow: 0 12px 26px rgba(17,24,39,.08);
+    }
+
+    .actions {
+        display:grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 12px;
+    }
+
+    .btnx {
+        border-radius: 14px;
+        padding: 12px 12px;
+        font-weight: 950;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        gap: 10px;
+        text-decoration:none;
+        border: 1px solid rgba(17,24,39,.14);
+        background:#fff;
+        transition: .15s ease;
+        user-select:none;
+    }
+    .btnx:hover { transform: translateY(-1px); box-shadow: 0 12px 26px rgba(17,24,39,.10); }
+
+    .btn-outline-primary { color:#0d6efd; }
+    .btn-outline-primary:hover { background: rgba(13,110,253,.10); }
+
+    .btn-outline-info { color:#0ea5e9; }
+    .btn-outline-info:hover { background: rgba(14,165,233,.10); }
+
+    .btn-outline-dark { color:#111827; }
+    .btn-outline-dark:hover { background: rgba(17,24,39,.06); }
+
+    .btn-success { background:#22c55e; border-color:#22c55e; color:#fff; }
+    .btn-success:hover { background:#16a34a; border-color:#16a34a; }
+
+    .btn-danger { background:#ef4444; border-color:#ef4444; color:#fff; }
+    .btn-danger:hover { background:#dc2626; border-color:#dc2626; }
+
+    /* Razor-safe media query */
+    @@media (max-width: 992px) {
+        .grid { grid-template-columns: 1fr; }
+    }
+
+    @@media (max-width: 576px) {
+        .actions { grid-template-columns: 1fr; }
+        .kv .k { width: 120px; }
+        .hero-right { width: 100%; }
+        .money-card { flex: 1; min-width: 0; }
+    }
+</style>

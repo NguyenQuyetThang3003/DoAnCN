@@ -1,37 +1,387 @@
 @model WedNightFury.Models.ViewModels.FailedDeliveryViewModel
 @{
+    Layout = "~/Views/Shared/_LayoutDriver.cshtml";
     ViewData["Title"] = "Xác nhận giao thất bại";
+
+    var code = Model?.Code ?? "";
+    var receiver = Model?.ReceiverName ?? "";
+    var addr = Model?.ReceiverAddress ?? "";
 }
 
-<h2 class="fw-bold mb-3 text-danger">❌ GIAO HÀNG THẤT BẠI</h2>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 
-<div class="card">
-    <div class="card-body">
-        <h5 class="card-title">@Model.Code - @Model.ReceiverName</h5>
-        <p class="card-text">
-            <i class="fa fa-location-dot"></i> @Model.ReceiverAddress
-        </p>
+<div class="fail-page container-fluid py-4">
+    <div class="wrap mx-auto">
 
-        <form asp-action="Failed" method="post" enctype="multipart/form-data">
-            <input type="hidden" asp-for="OrderId"/>
-
-            <div class="mb-3">
-                <label asp-for="FailedReason" class="form-label">Lý do thất bại (bắt buộc)</label>
-                <textarea asp-for="FailedReason" class="form-control"></textarea>
-                <span asp-validation-for="FailedReason" class="text-danger"></span>
+        <!-- HERO -->
+        <div class="hero mb-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="hero-ic"><i class="bi bi-x-circle"></i></div>
+                <div class="min-w-0">
+                    <h2 class="m-0 hero-title">Giao hàng thất bại</h2>
+                    <div class="hero-sub text-muted">
+                        Vui lòng nhập lý do rõ ràng và (nếu có) tải ảnh minh chứng để đối soát.
+                    </div>
+                </div>
             </div>
 
-            <div class="mb-3">
-                <label asp-for="EvidenceImage" class="form-label">Ảnh minh chứng (không bắt buộc)</label>
-                <input asp-for="EvidenceImage" class="form-control" type="file" accept="image/*"/>
+            <a asp-action="StopDetail" asp-route-id="@Model.OrderId" class="btn btn-outline-dark btn-soft">
+                <i class="bi bi-arrow-left me-1"></i> Quay lại
+            </a>
+        </div>
+
+        <div class="row g-3">
+            <!-- LEFT: FORM -->
+            <div class="col-lg-7">
+                <div class="cardx">
+                    <div class="cardx-head">
+                        <div class="fw-bold">
+                            <i class="bi bi-clipboard2-x me-2"></i> Xác nhận & ghi nhận lý do
+                        </div>
+                        <span class="badge badge-danger">
+                            <i class="bi bi-shield-exclamation me-1"></i> ACTION REQUIRED
+                        </span>
+                    </div>
+
+                    <div class="cardx-body">
+                        <!-- Order summary -->
+                        <div class="order-summary mb-3">
+                            <div class="os-row">
+                                <div class="os-label">Mã đơn</div>
+                                <div class="os-value text-primary fw-bold">@code</div>
+                            </div>
+                            <div class="os-row">
+                                <div class="os-label">Người nhận</div>
+                                <div class="os-value fw-semibold">@receiver</div>
+                            </div>
+                            <div class="os-row">
+                                <div class="os-label">Địa chỉ</div>
+                                <div class="os-value text-muted">
+                                    <i class="fa fa-location-dot me-1"></i>@addr
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-warning rounded-4 border-0 shadow-sm mb-3">
+                            <i class="bi bi-info-circle me-2"></i>
+                            Gợi ý: Chọn nhanh lý do bên dưới để tiết kiệm thời gian, bạn vẫn có thể chỉnh sửa lại.
+                        </div>
+
+                        <!-- Quick reasons -->
+                        <div class="quick mb-3">
+                            <button type="button" class="btn btn-outline-danger btn-soft quick-btn">Không liên hệ được khách</button>
+                            <button type="button" class="btn btn-outline-danger btn-soft quick-btn">Khách hẹn giao lại</button>
+                            <button type="button" class="btn btn-outline-danger btn-soft quick-btn">Sai địa chỉ / không tìm thấy</button>
+                            <button type="button" class="btn btn-outline-danger btn-soft quick-btn">Khách từ chối nhận</button>
+                            <button type="button" class="btn btn-outline-danger btn-soft quick-btn">Không giao được do thời tiết / sự cố đường</button>
+                            <button type="button" class="btn btn-outline-danger btn-soft quick-btn">Hàng lỗi / bao bì hư</button>
+                        </div>
+
+                        <form asp-action="Failed" method="post" enctype="multipart/form-data" id="failedForm">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" asp-for="OrderId" />
+
+                            <div class="mb-3">
+                                <label asp-for="FailedReason" class="form-label fw-bold">
+                                    Lý do thất bại <span class="text-danger">*</span>
+                                </label>
+
+                                <textarea asp-for="FailedReason"
+                                          class="form-control input-soft"
+                                          rows="4"
+                                          id="FailedReason"
+                                          placeholder="Ví dụ: Gọi 3 cuộc không bắt máy, khách hẹn giao lại ngày mai 10:00..."></textarea>
+
+                                <div class="d-flex justify-content-between mt-1">
+                                    <span asp-validation-for="FailedReason" class="text-danger"></span>
+                                    <small class="text-muted" id="charCount">0 ký tự</small>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="EvidenceImage" class="form-label fw-bold">
+                                    Ảnh minh chứng (không bắt buộc)
+                                </label>
+
+                                <input asp-for="EvidenceImage"
+                                       class="form-control input-soft"
+                                       type="file"
+                                       accept="image/*"
+                                       id="EvidenceImage" />
+
+                                <small class="text-muted d-block mt-1" id="fileName"></small>
+
+                                <div class="preview mt-2 d-none" id="previewWrap">
+                                    <div class="preview-title">
+                                        <i class="bi bi-image me-1"></i> Xem trước
+                                    </div>
+                                    <img id="previewImg" alt="Evidence preview" />
+                                </div>
+                            </div>
+
+                            <div class="d-flex flex-wrap gap-2">
+                                <button type="submit" class="btn btn-danger btn-lg btn-soft px-4">
+                                    <i class="bi bi-x-octagon-fill me-2"></i> Xác nhận thất bại
+                                </button>
+
+                                <a asp-action="StopDetail" asp-route-id="@Model.OrderId" class="btn btn-outline-secondary btn-lg btn-soft px-4">
+                                    <i class="bi bi-arrow-left me-2"></i> Quay lại
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </div>
 
-            <button type="submit" class="btn btn-danger">Xác nhận thất bại</button>
-            <a asp-action="StopDetail" asp-route-id="@Model.OrderId" class="btn btn-secondary ms-2">Quay lại</a>
-        </form>
+            <!-- RIGHT: HELP -->
+            <div class="col-lg-5">
+                <div class="cardx">
+                    <div class="cardx-head">
+                        <div class="fw-bold">
+                            <i class="bi bi-lightbulb me-2"></i> Lưu ý khi báo thất bại
+                        </div>
+                    </div>
+                    <div class="cardx-body">
+                        <ul class="tips">
+                            <li>Nêu rõ tình huống: gọi bao nhiêu lần, thời điểm, khách phản hồi thế nào.</li>
+                            <li>Nếu sai địa chỉ: ghi lại điểm gần nhất / mốc nhận diện.</li>
+                            <li>Nếu khách hẹn: ghi thời gian hẹn cụ thể để điều phối xử lý.</li>
+                            <li>Ảnh minh chứng giúp admin đối soát nhanh hơn (địa điểm, hàng, tin nhắn...).</li>
+                        </ul>
+
+                        <hr />
+
+                        <div class="mini">
+                            <div class="mini-ic"><i class="bi bi-shield-lock"></i></div>
+                            <div>
+                                <div class="fw-bold">Đối soát & minh bạch</div>
+                                <div class="text-muted small">
+                                    Thông tin bạn nhập sẽ được lưu vào lịch sử đơn để hỗ trợ xử lý khiếu nại.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-3">
+                            <a class="btn btn-outline-dark btn-soft w-100" href="/Support">
+                                <i class="bi bi-headset me-2"></i> Cần hỗ trợ khẩn?
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="note mt-3">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Nếu đơn có COD, không được thu tiền khách khi chưa giao thành công.
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
 @section Scripts{
     <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Quick reasons -> auto fill textarea
+            const reason = document.getElementById("FailedReason");
+            const charCount = document.getElementById("charCount");
+
+            function updateCount() {
+                if (!reason || !charCount) return;
+                const n = (reason.value || "").length;
+                charCount.textContent = n + " ký tự";
+            }
+            updateCount();
+
+            document.querySelectorAll(".quick-btn").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    if (!reason) return;
+                    const text = (btn.innerText || "").trim();
+                    reason.value = text + ": ";
+                    reason.focus();
+                    updateCount();
+                });
+            });
+
+            reason?.addEventListener("input", updateCount);
+
+            // Evidence preview
+            const fileInput = document.getElementById("EvidenceImage");
+            const fileName = document.getElementById("fileName");
+            const previewWrap = document.getElementById("previewWrap");
+            const previewImg = document.getElementById("previewImg");
+
+            if (fileInput) {
+                fileInput.addEventListener("change", function () {
+                    const f = this.files && this.files.length ? this.files[0] : null;
+                    if (!f) {
+                        if (fileName) fileName.textContent = "";
+                        previewWrap?.classList.add("d-none");
+                        if (previewImg) previewImg.src = "";
+                        return;
+                    }
+
+                    if (fileName) fileName.textContent = "Đã chọn: " + f.name;
+
+                    const url = URL.createObjectURL(f);
+                    if (previewImg) previewImg.src = url;
+                    previewWrap?.classList.remove("d-none");
+                });
+            }
+        });
+    </script>
 }
+
+<style>
+    .fail-page{
+        --border: rgba(17,24,39,.12);
+        --shadow: 0 10px 30px rgba(17,24,39,.08);
+        font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    }
+    .wrap{ max-width: 980px; }
+
+    /* HERO */
+    .hero{
+        padding: 16px 18px;
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background: linear-gradient(180deg, rgba(220,53,69,.14), rgba(220,53,69,.02));
+        box-shadow: var(--shadow);
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap: 14px;
+        flex-wrap: wrap;
+    }
+    .hero-ic{
+        width:46px;height:46px;border-radius:16px;
+        display:grid;place-items:center;
+        background:#fff;border:1px solid var(--border);
+        box-shadow:0 8px 24px rgba(17,24,39,.08);
+        font-size:20px;color:#dc3545;
+        flex: 0 0 auto;
+    }
+    .hero-title{
+        font-weight:950;
+        text-transform:uppercase;
+        letter-spacing:-.2px;
+        color:#dc3545;
+        font-size:1.2rem;
+    }
+    .hero-sub{ margin-top:4px; font-size:.95rem; line-height:1.35; }
+
+    /* Cards */
+    .cardx{
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background:#fff;
+        box-shadow: var(--shadow);
+        overflow:hidden;
+    }
+    .cardx-head{
+        padding: 14px 16px;
+        border-bottom: 1px solid rgba(17,24,39,.08);
+        background: linear-gradient(180deg, rgba(17,24,39,.03), rgba(17,24,39,.01));
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    .cardx-body{ padding: 16px; }
+
+    .btn-soft{ border-radius: 14px; font-weight: 900; }
+    .input-soft{
+        border-radius: 14px;
+        border: 1px solid rgba(17,24,39,.15);
+        box-shadow: 0 6px 18px rgba(17,24,39,.05);
+    }
+
+    /* Summary */
+    .order-summary{
+        border: 1px solid rgba(17,24,39,.10);
+        border-radius: 16px;
+        padding: 12px 14px;
+        background: rgba(17,24,39,.02);
+    }
+    .os-row{ display:flex; gap:10px; padding:6px 0; }
+    .os-label{ width: 110px; font-weight: 900; color:#111827; }
+    .os-value{ flex:1; min-width:0; }
+
+    /* Badge */
+    .badge-danger{
+        border-radius: 999px;
+        padding: 7px 12px;
+        font-weight: 900;
+        font-size: .85rem;
+        background: rgba(220,53,69,.12);
+        color:#842029;
+        border: 1px solid rgba(220,53,69,.22);
+        white-space: nowrap;
+    }
+
+    /* Quick reasons */
+    .quick{ display:flex; gap:10px; flex-wrap:wrap; }
+    .quick-btn{ border-radius:999px; font-weight:900; }
+
+    /* Preview */
+    .preview{
+        border: 1px solid rgba(17,24,39,.12);
+        border-radius: 16px;
+        padding: 10px;
+        background: rgba(17,24,39,.02);
+    }
+    .preview-title{
+        font-weight: 900;
+        color:#111827;
+        margin-bottom: 8px;
+        font-size: .92rem;
+    }
+    .preview img{
+        width: 100%;
+        max-height: 300px;
+        object-fit: contain;
+        border-radius: 12px;
+        background:#fff;
+        border: 1px solid rgba(17,24,39,.10);
+    }
+
+    /* Tips */
+    .tips{ margin:0; padding-left: 18px; color:#111827; }
+    .tips li{ margin-bottom: 8px; }
+
+    .mini{
+        display:flex; gap: 12px; align-items:flex-start;
+        padding: 12px 12px;
+        border-radius: 16px;
+        border: 1px solid rgba(17,24,39,.10);
+        background: rgba(13,110,253,.04);
+    }
+    .mini-ic{
+        width: 40px; height: 40px;
+        border-radius: 14px;
+        display:grid; place-items:center;
+        background:#fff;
+        border:1px solid rgba(17,24,39,.10);
+        box-shadow:0 8px 18px rgba(17,24,39,.06);
+        color:#0d6efd;
+        flex: 0 0 auto;
+        font-size: 18px;
+    }
+
+    .note{
+        padding: 12px 14px;
+        border-radius: 16px;
+        border: 1px solid rgba(255,193,7,.35);
+        background: rgba(255,193,7,.12);
+        box-shadow: var(--shadow);
+        color:#664d03;
+        font-weight: 800;
+    }
+
+    @@media (max-width: 576px){
+        .os-label{ width: 95px; }
+    }
+</style>

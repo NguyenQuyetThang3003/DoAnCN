@@ -4,59 +4,229 @@
     Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
 }
 
-<h3 class="mb-3 text-danger fw-bold">Cập nhật khu vực giao</h3>
+<style>
+    /* ===== Match your Dashboard style (dash) ===== */
+    .dash {
+        --text: #111827;
+        --muted: #6b7280;
+        --border: rgba(17, 24, 39, 0.10);
+        --shadow: 0 10px 30px rgba(17, 24, 39, 0.08);
+        --shadow2: 0 14px 40px rgba(17, 24, 39, 0.10);
+        font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+        color: var(--text);
+    }
 
-<form asp-action="Edit" method="post" class="card p-3 shadow-sm">
-    @* cần Id để bind đúng record *@
-    <input type="hidden" asp-for="Id" />
+    /* ===== Header like dashboard ===== */
+    .dash-head{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:14px;
+        padding:14px 16px;
+        border-radius:16px;
+        border:1px solid var(--border);
+        background: linear-gradient(180deg, rgba(13,110,253,.08), rgba(13,110,253,.02));
+        box-shadow: var(--shadow);
+        margin: 12px 0 14px;
+        flex-wrap: wrap;
+    }
+    .dash-left{display:flex;gap:12px;align-items:center;}
+    .dash-avatar{
+        width:44px;height:44px;border-radius:14px;
+        display:grid;place-items:center;
+        background:#fff;border:1px solid var(--border);
+        box-shadow:0 8px 24px rgba(17,24,39,.08);
+        font-size:20px;
+        flex:0 0 auto;
+    }
+    .dash-title{font-weight:950;letter-spacing:-.2px;margin:0;}
+    .dash-sub{
+        color:var(--muted);
+        font-size:.95rem;
+        margin-top:4px;
+        display:flex;
+        gap:10px;
+        align-items:center;
+        flex-wrap:wrap;
+    }
+    .dash-dot{width:6px;height:6px;border-radius:99px;background:rgba(17,24,39,0.25);display:inline-block;}
 
-    <div class="mb-3">
-        <label asp-for="Name" class="form-label">Tên khu vực</label>
-        <input asp-for="Name" class="form-control" />
-        <span asp-validation-for="Name" class="text-danger"></span>
-    </div>
+    /* ===== Panel ===== */
+    .panel{
+        border-radius:18px;
+        border:1px solid var(--border);
+        background:#fff;
+        box-shadow: var(--shadow);
+        overflow:hidden;
+        transition: transform .18s ease, box-shadow .18s ease;
+    }
+    .panel:hover{transform:translateY(-2px);box-shadow:var(--shadow2);}
+    .panel-head{
+        padding:14px 16px;
+        border-bottom: 1px solid rgba(17, 24, 39, 0.08);
+        background: linear-gradient(180deg, rgba(17, 24, 39, 0.03), rgba(17, 24, 39, 0.01));
+        display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    }
+    .panel-title{font-weight:950;letter-spacing:-.2px;}
+    .panel-sub{color:var(--muted);font-size:.92rem;margin-top:4px;}
+    .panel-body{padding:14px 16px 16px 16px;}
 
-    <div class="mb-3">
-        <label asp-for="AreaType" class="form-label">Loại khu vực</label>
-        <select asp-for="AreaType" class="form-select">
-            <option value="inner">Nội thành</option>
-            <option value="outer">Ngoại thành</option>
-        </select>
-        <span asp-validation-for="AreaType" class="text-danger"></span>
-    </div>
+    /* ===== Form ===== */
+    .form-label{font-weight:900;color:var(--text);font-size:.92rem;}
+    .form-control, .form-select{
+        border-radius:12px;
+        padding:.55rem .75rem;
+        border-color: rgba(17,24,39,0.12);
+    }
+    .form-control:focus, .form-select:focus{
+        box-shadow: 0 0 0 .2rem rgba(13,110,253,.12);
+        border-color: rgba(13,110,253,.35);
+    }
+    .help{
+        color: var(--muted);
+        font-size: .9rem;
+        margin-top: 6px;
+        line-height: 1.4;
+        border-left: 3px solid rgba(13,110,253,.25);
+        padding-left: 10px;
+    }
 
-    <div class="row mb-3">
-        <div class="col-md-4">
-            <label asp-for="CenterLat" class="form-label">Vĩ độ (Lat)</label>
-            <input asp-for="CenterLat" class="form-control" />
-            <span asp-validation-for="CenterLat" class="text-danger"></span>
+    /* ===== Buttons ===== */
+    .btn-pill{
+        border-radius:999px !important;
+        font-weight:950;
+        padding:.55rem .95rem;
+        white-space:nowrap;
+    }
+    .btn-ghost{
+        border-radius:999px !important;
+        font-weight:950;
+        padding:.55rem .95rem;
+        background:#fff;
+        border: 1px solid rgba(17,24,39,0.14);
+        color:#111827;
+    }
+
+    /* ===== Toggle ===== */
+    .toggle-row{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:12px;
+        padding: 12px 12px;
+        border: 1px dashed rgba(17,24,39,0.14);
+        border-radius: 16px;
+        background: rgba(17,24,39,0.02);
+    }
+    .toggle-meta .t1{font-weight:950;}
+    .toggle-meta .t2{color:var(--muted);font-size:.9rem;margin-top:2px;}
+</style>
+
+<div class="dash container-fluid py-3">
+
+    <!-- Header -->
+    <div class="dash-head">
+        <div class="dash-left">
+            <div class="dash-avatar">🛠️</div>
+            <div>
+                <h2 class="dash-title">Cập nhật khu vực giao</h2>
+                <div class="dash-sub">
+                    Chỉnh sửa thông tin vùng phục vụ và trạng thái hoạt động
+                    <span class="dash-dot"></span>
+                    <span class="text-muted">Update region</span>
+                </div>
+            </div>
         </div>
-        <div class="col-md-4">
-            <label asp-for="CenterLng" class="form-label">Kinh độ (Lng)</label>
-            <input asp-for="CenterLng" class="form-control" />
-            <span asp-validation-for="CenterLng" class="text-danger"></span>
+
+        <a asp-action="Index" class="btn btn-ghost btn-pill">
+            <i class="fas fa-arrow-left me-1"></i> Quay lại
+        </a>
+    </div>
+
+    <form asp-action="Edit" method="post" class="panel">
+        @* cần Id để bind đúng record *@
+        <input type="hidden" asp-for="Id" />
+
+        <div class="panel-head">
+            <div>
+                <div class="panel-title"><i class="fas fa-map-marked-alt me-1"></i> Thông tin khu vực</div>
+                <div class="panel-sub">Cập nhật Lat/Lng, bán kính và phí cơ bản để tính toán chính xác.</div>
+            </div>
         </div>
-        <div class="col-md-4">
-            <label asp-for="RadiusKm" class="form-label">Bán kính khu vực (km)</label>
-            <input asp-for="RadiusKm" class="form-control" />
-            <span asp-validation-for="RadiusKm" class="text-danger"></span>
+
+        <div class="panel-body">
+            <div class="mb-3">
+                <label asp-for="Name" class="form-label">Tên khu vực</label>
+                <input asp-for="Name" class="form-control" placeholder="VD: Hồ Chí Minh - Nội thành" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="AreaType" class="form-label">Loại khu vực</label>
+                <select asp-for="AreaType" class="form-select">
+                    <option value="inner">Nội thành</option>
+                    <option value="outer">Ngoại thành</option>
+                </select>
+                <span asp-validation-for="AreaType" class="text-danger"></span>
+            </div>
+
+            <div class="row g-3 mb-2">
+                <div class="col-md-4">
+                    <label asp-for="CenterLat" class="form-label">Vĩ độ (Lat)</label>
+                    <input asp-for="CenterLat" class="form-control" placeholder="VD: 10.77653" />
+                    <span asp-validation-for="CenterLat" class="text-danger"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="CenterLng" class="form-label">Kinh độ (Lng)</label>
+                    <input asp-for="CenterLng" class="form-control" placeholder="VD: 106.70098" />
+                    <span asp-validation-for="CenterLng" class="text-danger"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="RadiusKm" class="form-label">Bán kính (km)</label>
+                    <input asp-for="RadiusKm" class="form-control" placeholder="VD: 8" />
+                    <span asp-validation-for="RadiusKm" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="help mb-3">
+                Tip: Nếu bạn đổi tâm/bán kính, các đơn nằm sát rìa vùng có thể chuyển sang khu vực khác khi tính phí.
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="BaseShipFee" class="form-label">Phí ship cơ bản (VNĐ)</label>
+                <input asp-for="BaseShipFee" class="form-control" placeholder="VD: 20000" />
+                <span asp-validation-for="BaseShipFee" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <div class="toggle-row">
+                    <div class="toggle-meta">
+                        <div class="t1">Trạng thái khu vực</div>
+                        <div class="t2">Bật để khu vực được dùng khi tính phí và phân loại đơn.</div>
+                    </div>
+
+                    <div class="form-check form-switch m-0">
+                        <input asp-for="IsActive" class="form-check-input" role="switch" id="IsActiveSwitch" />
+                        <label asp-for="IsActive" class="form-check-label fw-bold" for="IsActiveSwitch">
+                            Đang hoạt động
+                        </label>
+                    </div>
+                </div>
+                <span asp-validation-for="IsActive" class="text-danger"></span>
+            </div>
+
+            <div class="d-flex justify-content-between gap-2 flex-wrap mt-3">
+                <a asp-action="Index" class="btn btn-ghost btn-pill">
+                    <i class="fas fa-arrow-left me-1"></i> Quay lại
+                </a>
+
+                <button type="submit" class="btn btn-primary btn-pill">
+                    <i class="fas fa-save me-1"></i> Lưu thay đổi
+                </button>
+            </div>
         </div>
-    </div>
-
-    <div class="mb-3">
-        <label asp-for="BaseShipFee" class="form-label">Phí ship cơ bản (VNĐ)</label>
-        <input asp-for="BaseShipFee" class="form-control" />
-        <span asp-validation-for="BaseShipFee" class="text-danger"></span>
-    </div>
-
-    <div class="form-check mb-3">
-        <input asp-for="IsActive" class="form-check-input" />
-        <label asp-for="IsActive" class="form-check-label">Đang hoạt động</label>
-    </div>
-
-    <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
-    <a asp-action="Index" class="btn btn-secondary">Quay lại</a>
-</form>
+    </form>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

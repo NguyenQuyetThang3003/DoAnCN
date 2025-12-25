@@ -1,6 +1,6 @@
 @{
-    ViewData["Title"] = "Tra cứu vận đơn (Tài xế)";
-    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Tra cứu vận đơn";
+    Layout = "~/Views/Shared/_LayoutPublic.cshtml";
 }
 
 <div class="driver-track container py-4">
@@ -12,79 +12,44 @@
             <div class="min-w-0">
                 <h3 class="m-0 d-title">Tra cứu vận đơn</h3>
                 <div class="d-sub text-muted">
-                    Dành cho tài xế: nhập mã NF-... hoặc SĐT để xem nhanh trạng thái và thao tác điều hướng
+                    Chỉ nhập mã đơn (NF-...) để kiểm tra trạng thái
                 </div>
             </div>
         </div>
 
         <div class="d-badge">
             <span class="live-dot"></span>
-            <span>DRIVER MODE</span>
+            <span>TRACKING</span>
         </div>
     </div>
 
     <!-- Search Card -->
     <div class="d-card mb-3">
-        <form asp-action="Find" method="post" class="w-100">
+        <form asp-controller="Order" asp-action="Find" method="post" class="w-100">
             @Html.AntiForgeryToken()
 
-            <div class="row g-2 align-items-center">
-                <div class="col-12 col-lg-8">
-                    <div class="input-group input-group-lg d-group">
-                        <span class="input-group-text d-prefix" title="Tìm kiếm">
-                            <i class="bi bi-search"></i>
-                        </span>
+            <div class="input-group input-group-lg d-group">
+                <span class="input-group-text d-prefix" title="Tìm kiếm">
+                    <i class="bi bi-search"></i>
+                </span>
 
-                        <input id="kw"
-                               type="text"
-                               name="keyword"
-                               class="form-control d-input"
-                               placeholder="Nhập mã đơn (NF-...) hoặc SĐT người gửi/nhận"
-                               autocomplete="off"
-                               required />
+                <input id="kw"
+                       type="text"
+                       name="keyword"
+                       class="form-control d-input"
+                       placeholder="Nhập mã đơn (VD: NF-123456)"
+                       autocomplete="off"
+                       required />
 
-                        <button type="submit" class="btn btn-danger d-btn">
-                            <i class="bi bi-search me-1"></i> Tra cứu
-                        </button>
-                    </div>
-
-                    <div class="d-hint mt-2">
-                        <span class="hint-pill"><i class="bi bi-lightning-charge me-1"></i> Tip: dán mã từ clipboard</span>
-                        <span class="hint-pill"><i class="bi bi-telephone me-1"></i> Tip: nhập SĐT để ra nhiều đơn (nếu backend bạn hỗ trợ)</span>
-                    </div>
-                </div>
-
-                <div class="col-12 col-lg-4">
-                    <div class="d-actions">
-                        <button type="button" class="btn btn-outline-primary btn-soft" onclick="callReceiver()">
-                            <i class="bi bi-telephone-outbound me-1"></i> Gọi người nhận
-                        </button>
-                        <button type="button" class="btn btn-outline-success btn-soft" onclick="openMap()">
-                            <i class="bi bi-geo-alt me-1"></i> Mở Google Maps
-                        </button>
-                    </div>
-                    <div class="text-muted small mt-2">
-                        Hai nút trên dùng nhanh khi bạn đã có SĐT/địa chỉ. Không ảnh hưởng chức năng tra cứu.
-                    </div>
-                </div>
+                <button type="submit" class="btn btn-danger d-btn">
+                    <i class="bi bi-search me-1"></i> Tra cứu
+                </button>
             </div>
 
-            <!-- Quick chips (autofill keyword) -->
+            <!-- Quick chip: chỉ NF- -->
             <div class="d-chips mt-3">
                 <button type="button" class="chip" onclick="setKw('NF-')">
                     <i class="bi bi-upc-scan me-1"></i> NF-
-                </button>
-                <button type="button" class="chip" onclick="setKw('09')">
-                    <i class="bi bi-phone me-1"></i> SĐT (09…)
-                </button>
-                <button type="button" class="chip chip-soft" onclick="setKw('pending')">
-                    <i class="bi bi-hourglass-split me-1"></i> pending
-                </button>
-                <button type="button" class="chip chip-soft" onclick="setKw('shipping')">
-                    <i class="bi bi-truck me-1"></i> shipping
-                </button>
-                <button type="button" class="chip chip-soft" onclick="setKw('done')">
-                    <i class="bi bi-check2-circle me-1"></i> done
                 </button>
                 <button type="button" class="chip chip-soft" onclick="clearKw()">
                     <i class="bi bi-x-circle me-1"></i> Xoá nhanh
@@ -121,32 +86,6 @@
         el.value = '';
         el.focus();
     }
-
-    // UI quick action (không đổi backend)
-    function callReceiver() {
-        const el = document.getElementById('kw');
-        const raw = (el?.value || '').trim();
-        const phone = raw.replace(/[^\d+]/g, ''); // giữ số/+ để bấm gọi
-        if (!phone || phone.length < 9) {
-            alert("Hãy nhập SĐT người nhận vào ô tìm kiếm trước.");
-            el?.focus();
-            return;
-        }
-        window.location.href = `tel:${phone}`;
-    }
-
-    // UI quick action (mở map theo text)
-    function openMap() {
-        const el = document.getElementById('kw');
-        const q = (el?.value || '').trim();
-        if (!q) {
-            alert("Hãy nhập địa chỉ hoặc từ khoá (VD: tên đường/khu vực) vào ô tìm kiếm trước.");
-            el?.focus();
-            return;
-        }
-        const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
-        window.open(url, '_blank');
-    }
 </script>
 
 <style>
@@ -156,7 +95,6 @@
         font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
     }
 
-    /* HERO */
     .d-hero{
         padding: 16px 18px;
         border-radius: 18px;
@@ -210,7 +148,6 @@
         display:inline-block;
     }
 
-    /* CARD */
     .d-card{
         border-radius: 18px;
         border: 1px solid var(--border);
@@ -243,31 +180,6 @@
         padding-right: 20px;
     }
 
-    .d-hint{
-        display:flex;
-        gap: 10px;
-        flex-wrap: wrap;
-    }
-    .hint-pill{
-        display:inline-flex; align-items:center; gap:8px;
-        padding: 8px 10px;
-        border-radius: 999px;
-        border: 1px solid rgba(17,24,39,.10);
-        background: rgba(17,24,39,.02);
-        color:#6b7280;
-        font-weight: 650;
-        font-size: .92rem;
-    }
-
-    .d-actions{
-        display:flex;
-        gap: 10px;
-        justify-content: flex-end;
-        flex-wrap: wrap;
-    }
-    .btn-soft{ border-radius: 12px; font-weight: 850; }
-
-    /* CHIPS */
     .d-chips{
         display:flex;
         gap: 10px;
@@ -294,7 +206,6 @@
         border-color: rgba(25,135,84,.18);
     }
 
-    /* ALERT */
     .d-alert{
         border-radius: 16px;
         border: 1px solid rgba(255,193,7,.35);
@@ -302,9 +213,6 @@
         max-width: 980px;
     }
 
-    @@media (max-width: 992px){
-        .d-actions{ justify-content: flex-start; }
-    }
     @@media (max-width: 576px){
         .d-btn{ width: 100%; }
         .d-group{ flex-direction: column; }

@@ -1,138 +1,606 @@
 @model List<WedNightFury.Models.Order>
 
-<h2 class="fw-bold mb-4 text-danger">🚚 ĐƠN HÀNG CỦA BẠN</h2>
+@{
+    ViewData["Title"] = "Đơn hàng của tài xế";
 
-@if (TempData["Message"] != null)
-{
-    <div class="alert alert-info">@TempData["Message"]</div>
+    int total = Model?.Count ?? 0;
+    int pending = Model?.Count(x =>
+        (x.Status ?? "").ToLower() == "pending" ||
+        (x.Status ?? "").ToLower() == "assigned"
+    ) ?? 0;
+
+    int shipping = Model?.Count(x => (x.Status ?? "").ToLower() == "shipping") ?? 0;
+    int done = Model?.Count(x => (x.Status ?? "").ToLower() == "done") ?? 0;
+    int failed = Model?.Count(x => (x.Status ?? "").ToLower() == "failed") ?? 0;
+
+    int codNeedConfirm = Model?.Count(x =>
+        (x.Status ?? "").ToLower() == "done" && x.CodAmount > 0 && !x.IsCodPaid
+    ) ?? 0;
 }
 
-@if (Model == null || !Model.Any())
-{
-    <div class="alert alert-light border">
-        Hiện bạn chưa có đơn hàng nào được phân công.
+<div class="driver-orders container-fluid py-4">
+
+    <!-- HERO -->
+    <div class="d-hero mb-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="d-ic"><i class="bi bi-truck"></i></div>
+            <div class="min-w-0">
+                <h2 class="m-0 d-title">Đơn hàng của bạn</h2>
+                <div class="d-sub text-muted">Danh sách vận đơn được phân công và các thao tác giao hàng.</div>
+            </div>
+        </div>
+
+        <div class="d-badge">
+            <span class="live-dot"></span>
+            <span>DRIVER OPS</span>
+        </div>
     </div>
-}
-else
-{
-    <table class="table table-striped table-bordered align-middle">
-        <thead class="table-dark">
-            <tr>
-                <th style="width:150px;">Mã đơn</th>
-                <th>Người nhận</th>
-                <th>Địa chỉ</th>
-                <th style="width:160px;" class="text-end">Giá trị</th>
-                <th style="width:120px;">Trạng thái</th>
-                <th style="width:260px;">Thao tác</th>
-            </tr>
-        </thead>
 
-        <tbody>
-        @foreach (var o in Model)
-        {
-            var status = (o.Status ?? "").ToLower();
+    @if (TempData["Message"] != null)
+    {
+        <div class="alert alert-info rounded-4 shadow-sm border-0 mb-3">
+            <i class="bi bi-info-circle me-2"></i>@TempData["Message"]
+        </div>
+    }
 
-            <tr>
-                <td>
-                    <a asp-controller="Taixe"
-                       asp-action="StopDetail"
-                       asp-route-id="@o.Id"
-                       class="fw-semibold text-decoration-none">
-                        @o.Code
-                    </a>
-                </td>
+    <!-- STATS -->
+    <div class="row g-3 mb-3">
+        <div class="col-6 col-lg-2">
+            <div class="stat-card">
+                <div class="stat-top">
+                    <div class="stat-ic ic-dark"><i class="bi bi-inboxes"></i></div>
+                    <div class="stat-label">Tổng</div>
+                </div>
+                <div class="stat-value">@total</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-2">
+            <div class="stat-card stat-warn">
+                <div class="stat-top">
+                    <div class="stat-ic ic-warn"><i class="bi bi-hourglass-split"></i></div>
+                    <div class="stat-label">Chờ giao</div>
+                </div>
+                <div class="stat-value">@pending</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-2">
+            <div class="stat-card stat-info">
+                <div class="stat-top">
+                    <div class="stat-ic ic-info"><i class="bi bi-truck"></i></div>
+                    <div class="stat-label">Đang giao</div>
+                </div>
+                <div class="stat-value">@shipping</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-2">
+            <div class="stat-card stat-ok">
+                <div class="stat-top">
+                    <div class="stat-ic ic-ok"><i class="bi bi-check2-circle"></i></div>
+                    <div class="stat-label">Hoàn tất</div>
+                </div>
+                <div class="stat-value">@done</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-2">
+            <div class="stat-card stat-bad">
+                <div class="stat-top">
+                    <div class="stat-ic ic-bad"><i class="bi bi-x-circle"></i></div>
+                    <div class="stat-label">Thất bại</div>
+                </div>
+                <div class="stat-value">@failed</div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-2">
+            <div class="stat-card stat-cod">
+                <div class="stat-top">
+                    <div class="stat-ic ic-cod"><i class="bi bi-cash-coin"></i></div>
+                    <div class="stat-label">COD cần xác nhận</div>
+                </div>
+                <div class="stat-value">@codNeedConfirm</div>
+            </div>
+        </div>
+    </div>
 
-                <td>@o.ReceiverName</td>
-                <td>@o.ReceiverAddress</td>
-
-                <td class="fw-bold text-end">
-                    @o.Value.ToString("N0") đ
-                </td>
-
-                <td>
-                    @if (status == "pending" || status == "assigned")
-                    {
-                        <span class="badge bg-warning text-dark px-3 py-2">Chờ giao</span>
-                    }
-                    else if (status == "shipping")
-                    {
-                        <span class="badge bg-primary px-3 py-2">Đang giao</span>
-                    }
-                    else if (status == "done")
-                    {
-                        <span class="badge bg-success px-3 py-2">Hoàn tất</span>
-                    }
-                    else if (status == "failed")
-                    {
-                        <span class="badge bg-danger px-3 py-2">Thất bại</span>
-                    }
-                    else
-                    {
-                        <span class="badge bg-light text-dark px-3 py-2">Không rõ</span>
-                    }
-                </td>
-
-                <td>
-                    <div class="d-flex gap-2">
-                        <!-- Nút Xem -->
-                        <a asp-controller="Taixe"
-                           asp-action="StopDetail"
-                           asp-route-id="@o.Id"
-                           class="btn btn-dark btn-sm">
-                            Xem
-                        </a>
-
-                        @* PENDING / ASSIGNED → BẮT ĐẦU GIAO *@
-                        @if (status == "pending" || status == "assigned")
-                        {
-                            <form asp-controller="Taixe"
-                                  asp-action="UpdateStatus"
-                                  method="post" class="d-inline">
-                                <input type="hidden" name="id" value="@o.Id" />
-                                <button name="status"
-                                        value="shipping"
-                                        class="btn btn-primary btn-sm">
-                                    Bắt đầu giao
-                                </button>
-                            </form>
-                        }
-                        @* ĐANG GIAO → ĐÃ GIAO / THẤT BẠI *@
-                        else if (status == "shipping")
-                        {
-                            <a asp-controller="Taixe"
-                               asp-action="Delivered"
-                               asp-route-id="@o.Id"
-                               class="btn btn-success btn-sm">
-                                Đã giao
-                            </a>
-
-                            <a asp-controller="Taixe"
-                               asp-action="Failed"
-                               asp-route-id="@o.Id"
-                               class="btn btn-danger btn-sm">
-                                Thất bại
-                            </a>
-                        }
-                        @* ĐÃ GIAO & CÓ COD CHƯA THU → XÁC NHẬN COD *@
-                        else if (status == "done" && o.CodAmount > 0 && !o.IsCodPaid)
-                        {
-                            <a asp-controller="Taixe"
-                               asp-action="ConfirmCOD"
-                               asp-route-id="@o.Id"
-                               class="btn btn-warning btn-sm">
-                                Xác nhận COD
-                            </a>
-                        }
+    <!-- TOOLBAR -->
+    <div class="cardx mb-3">
+        <div class="cardx-body">
+            <div class="row g-2 align-items-center">
+                <div class="col-12 col-lg-6">
+                    <div class="btn-group w-100" role="group" aria-label="filters">
+                        <button type="button" class="btn btn-outline-secondary btn-soft active" data-filter="all">
+                            Tất cả (@total)
+                        </button>
+                        <button type="button" class="btn btn-outline-warning btn-soft" data-filter="pending">
+                            Chờ giao (@pending)
+                        </button>
+                        <button type="button" class="btn btn-outline-primary btn-soft" data-filter="shipping">
+                            Đang giao (@shipping)
+                        </button>
+                        <button type="button" class="btn btn-outline-success btn-soft" data-filter="done">
+                            Hoàn tất (@done)
+                        </button>
+                        <button type="button" class="btn btn-outline-danger btn-soft" data-filter="failed">
+                            Thất bại (@failed)
+                        </button>
                     </div>
-                </td>
-            </tr>
-        }
-        </tbody>
-    </table>
-}
+                </div>
+
+                <div class="col-12 col-lg-6">
+                    <div class="d-flex gap-2 justify-content-lg-end">
+                        <div class="search-wrap flex-grow-1 flex-lg-grow-0">
+                            <i class="bi bi-search"></i>
+                            <input id="q" class="form-control" placeholder="Tìm theo mã đơn / người nhận / địa chỉ..." />
+                        </div>
+
+                        <button type="button" class="btn btn-outline-dark btn-soft" onclick="resetFilter()">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-muted small mt-2">
+                Mẹo: Click mã đơn để mở chi tiết. Lọc ngay trên màn hình (không gọi lại server).
+            </div>
+        </div>
+    </div>
+
+    @if (Model == null || !Model.Any())
+    {
+        <div class="empty">
+            <div class="empty-ic">📭</div>
+            <div class="fw-bold">Hiện bạn chưa có đơn hàng nào được phân công</div>
+            <div class="text-muted">Vui lòng quay lại sau hoặc liên hệ điều phối.</div>
+        </div>
+    }
+    else
+    {
+        <!-- DESKTOP TABLE -->
+        <div class="cardx d-none d-lg-block">
+            <div class="cardx-head">
+                <div class="fw-bold"><i class="bi bi-table me-2"></i> Danh sách đơn</div>
+                <div class="text-muted small">Tổng: @total</div>
+            </div>
+
+            <div class="cardx-body p-0">
+                <div class="table-responsive table-wrap">
+                    <table class="table table-hover align-middle m-0">
+                        <thead class="table-head sticky-top">
+                            <tr>
+                                <th style="width:160px;">Mã đơn</th>
+                                <th style="min-width:160px;">Người nhận</th>
+                                <th>Địa chỉ</th>
+                                <th style="width:170px;" class="text-end">Giá trị</th>
+                                <th style="width:140px;">Trạng thái</th>
+                                <th style="width:320px;">Thao tác</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="rows">
+                        @foreach (var o in Model)
+                        {
+                            var status = (o.Status ?? "").ToLower();
+                            var rowStatus = (status == "assigned") ? "pending" : status;
+
+                            <tr class="order-row"
+                                data-status="@rowStatus"
+                                data-text="@($"{o.Code} {o.ReceiverName} {o.ReceiverAddress}".ToLower())">
+
+                                <td>
+                                    <a asp-controller="Taixe"
+                                       asp-action="StopDetail"
+                                       asp-route-id="@o.Id"
+                                       class="fw-bold text-primary text-decoration-none">
+                                        @o.Code
+                                    </a>
+                                    <div class="small text-muted">#@o.Id</div>
+                                </td>
+
+                                <td class="fw-semibold">@o.ReceiverName</td>
+                                <td class="text-muted">@o.ReceiverAddress</td>
+
+                                <td class="fw-bold text-end">@o.Value.ToString("N0") đ</td>
+
+                                <td>
+                                    @if (status == "pending" || status == "assigned")
+                                    {
+                                        <span class="badge badge-soft badge-warn">Chờ giao</span>
+                                    }
+                                    else if (status == "shipping")
+                                    {
+                                        <span class="badge badge-soft badge-info">Đang giao</span>
+                                    }
+                                    else if (status == "done")
+                                    {
+                                        <span class="badge badge-soft badge-ok">Hoàn tất</span>
+                                    }
+                                    else if (status == "failed")
+                                    {
+                                        <span class="badge badge-soft badge-bad">Thất bại</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-soft badge-dark">Không rõ</span>
+                                    }
+
+                                    @if (status == "done" && o.CodAmount > 0 && !o.IsCodPaid)
+                                    {
+                                        <div class="mt-1">
+                                            <span class="badge badge-soft badge-cod">COD cần xác nhận</span>
+                                        </div>
+                                    }
+                                </td>
+
+                                <td>
+                                    <div class="d-flex gap-2 flex-wrap">
+                                        <a asp-controller="Taixe"
+                                           asp-action="StopDetail"
+                                           asp-route-id="@o.Id"
+                                           class="btn btn-outline-dark btn-sm btn-soft">
+                                            <i class="bi bi-eye me-1"></i> Xem
+                                        </a>
+
+                                        @* PENDING / ASSIGNED -> BẮT ĐẦU GIAO *@
+                                        @if (status == "pending" || status == "assigned")
+                                        {
+                                            <form asp-controller="Taixe"
+                                                  asp-action="UpdateStatus"
+                                                  method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@o.Id" />
+                                                <button name="status" value="shipping" class="btn btn-primary btn-sm btn-soft">
+                                                    <i class="bi bi-play-fill me-1"></i> Bắt đầu giao
+                                                </button>
+                                            </form>
+                                        }
+
+                                        @* DONE + COD chưa đối soát -> Xác nhận COD (giữ nguyên) *@
+                                        @if (status == "done" && o.CodAmount > 0 && !o.IsCodPaid)
+                                        {
+                                            <a asp-controller="Taixe"
+                                               asp-action="ConfirmCOD"
+                                               asp-route-id="@o.Id"
+                                               class="btn btn-warning btn-sm btn-soft">
+                                                <i class="bi bi-cash-coin me-1"></i> Xác nhận COD
+                                            </a>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- MOBILE CARDS -->
+        <div class="d-lg-none">
+            <div class="row g-3" id="cards">
+                @foreach (var o in Model)
+                {
+                    var status = (o.Status ?? "").ToLower();
+                    var rowStatus = (status == "assigned") ? "pending" : status;
+
+                    <div class="col-12 order-card"
+                         data-status="@rowStatus"
+                         data-text="@($"{o.Code} {o.ReceiverName} {o.ReceiverAddress}".ToLower())">
+                        <div class="cardx">
+                            <div class="cardx-body">
+                                <div class="d-flex justify-content-between align-items-start gap-2">
+                                    <div class="min-w-0">
+                                        <a asp-controller="Taixe"
+                                           asp-action="StopDetail"
+                                           asp-route-id="@o.Id"
+                                           class="text-primary fw-bold text-decoration-none">
+                                            @o.Code
+                                        </a>
+                                        <div class="text-muted small">#@o.Id • @o.ReceiverName</div>
+                                    </div>
+
+                                    <div class="text-end">
+                                        <div class="fw-bold">@o.Value.ToString("N0") đ</div>
+                                        <div class="mt-1">
+                                            @if (status == "pending" || status == "assigned")
+                                            {
+                                                <span class="badge badge-soft badge-warn">Chờ giao</span>
+                                            }
+                                            else if (status == "shipping")
+                                            {
+                                                <span class="badge badge-soft badge-info">Đang giao</span>
+                                            }
+                                            else if (status == "done")
+                                            {
+                                                <span class="badge badge-soft badge-ok">Hoàn tất</span>
+                                            }
+                                            else if (status == "failed")
+                                            {
+                                                <span class="badge badge-soft badge-bad">Thất bại</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge badge-soft badge-dark">Không rõ</span>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mt-2 text-muted">
+                                    <i class="bi bi-geo-alt me-1"></i> @o.ReceiverAddress
+                                </div>
+
+                                @if (status == "done" && o.CodAmount > 0 && !o.IsCodPaid)
+                                {
+                                    <div class="mt-2">
+                                        <span class="badge badge-soft badge-cod">COD cần xác nhận</span>
+                                    </div>
+                                }
+
+                                <div class="mt-3 d-flex gap-2 flex-wrap">
+                                    <a asp-controller="Taixe" asp-action="StopDetail" asp-route-id="@o.Id"
+                                       class="btn btn-outline-dark btn-sm btn-soft">
+                                        <i class="bi bi-eye me-1"></i> Xem
+                                    </a>
+
+                                    @if (status == "pending" || status == "assigned")
+                                    {
+                                        <form asp-controller="Taixe" asp-action="UpdateStatus" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@o.Id" />
+                                            <button name="status" value="shipping" class="btn btn-primary btn-sm btn-soft">
+                                                <i class="bi bi-play-fill me-1"></i> Bắt đầu giao
+                                            </button>
+                                        </form>
+                                    }
+
+                                    @if (status == "done" && o.CodAmount > 0 && !o.IsCodPaid)
+                                    {
+                                        <a asp-controller="Taixe" asp-action="ConfirmCOD" asp-route-id="@o.Id"
+                                           class="btn btn-warning btn-sm btn-soft">
+                                            <i class="bi bi-cash-coin me-1"></i> Xác nhận COD
+                                        </a>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<script>
+    // Client-side filter (không đổi backend)
+    let currentFilter = "all";
+
+    function applyFilter() {
+        const q = (document.getElementById('q')?.value || "").trim().toLowerCase();
+
+        document.querySelectorAll(".order-row").forEach(r => {
+            const st = r.getAttribute("data-status") || "";
+            const text = r.getAttribute("data-text") || "";
+            const okStatus = (currentFilter === "all") || (st === currentFilter);
+            const okText = !q || text.includes(q);
+            r.style.display = (okStatus && okText) ? "" : "none";
+        });
+
+        document.querySelectorAll(".order-card").forEach(r => {
+            const st = r.getAttribute("data-status") || "";
+            const text = r.getAttribute("data-text") || "";
+            const okStatus = (currentFilter === "all") || (st === currentFilter);
+            const okText = !q || text.includes(q);
+            r.style.display = (okStatus && okText) ? "" : "none";
+        });
+    }
+
+    function resetFilter() {
+        currentFilter = "all";
+        document.getElementById('q').value = "";
+        document.querySelectorAll("[data-filter]").forEach(b => b.classList.remove("active"));
+        document.querySelector('[data-filter="all"]').classList.add("active");
+        applyFilter();
+    }
+
+    document.querySelectorAll("[data-filter]").forEach(btn => {
+        btn.addEventListener("click", () => {
+            document.querySelectorAll("[data-filter]").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            currentFilter = btn.getAttribute("data-filter") || "all";
+            applyFilter();
+        });
+    });
+
+    document.getElementById("q")?.addEventListener("input", applyFilter);
+</script>
 
 <style>
-    .table td, .table th {
-        vertical-align: middle !important;
+    .driver-orders{
+        --border: rgba(17,24,39,.12);
+        --shadow: 0 10px 30px rgba(17,24,39,.08);
+        font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    }
+
+    /* HERO */
+    .d-hero{
+        padding: 16px 18px;
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background: linear-gradient(180deg, rgba(25,135,84,.14), rgba(25,135,84,.03));
+        box-shadow: var(--shadow);
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap: 14px;
+        flex-wrap: wrap;
+    }
+    .d-ic{
+        width: 46px; height: 46px;
+        border-radius: 16px;
+        display:grid; place-items:center;
+        background:#fff;
+        border:1px solid var(--border);
+        box-shadow: 0 8px 24px rgba(17,24,39,.08);
+        font-size: 20px;
+        color:#198754;
+        flex: 0 0 auto;
+    }
+    .d-title{
+        font-weight: 950;
+        letter-spacing: -0.2px;
+        color:#198754;
+        text-transform: uppercase;
+        font-size: 1.2rem;
+    }
+    .d-sub{ margin-top: 4px; font-size: .95rem; line-height: 1.35; }
+
+    .d-badge{
+        display:inline-flex; align-items:center; gap:10px;
+        padding: 10px 12px;
+        border-radius: 999px;
+        border:1px solid var(--border);
+        background:#fff;
+        box-shadow: 0 8px 18px rgba(17,24,39,.06);
+        color:#6b7280;
+        font-weight: 900;
+        font-size: .85rem;
+        letter-spacing: .6px;
+        user-select:none;
+        white-space: nowrap;
+    }
+    .live-dot{
+        width:10px;height:10px;border-radius:99px;
+        background:#22c55e;
+        box-shadow: 0 0 0 4px rgba(34,197,94,.18);
+        display:inline-block;
+    }
+
+    /* Cards */
+    .cardx{
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background:#fff;
+        box-shadow: var(--shadow);
+        overflow:hidden;
+    }
+    .cardx-head{
+        padding: 14px 16px;
+        border-bottom: 1px solid rgba(17,24,39,.08);
+        background: linear-gradient(180deg, rgba(17,24,39,.03), rgba(17,24,39,.01));
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    .cardx-body{ padding: 16px; }
+
+    /* Stat */
+    .stat-card{
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background:#fff;
+        box-shadow: var(--shadow);
+        padding: 12px 14px;
+        height: 100%;
+    }
+    .stat-top{ display:flex; align-items:center; gap: 10px; }
+    .stat-ic{
+        width: 40px; height: 40px;
+        border-radius: 16px;
+        display:grid; place-items:center;
+        background:#fff;
+        border:1px solid rgba(17,24,39,.10);
+        box-shadow: 0 8px 18px rgba(17,24,39,.06);
+        font-size: 18px;
+        flex: 0 0 auto;
+    }
+    .stat-label{ font-weight: 850; color:#111827; font-size: .92rem; }
+    .stat-value{
+        font-weight: 950;
+        font-size: 1.35rem;
+        margin-top: 8px;
+        letter-spacing: -0.2px;
+        color:#111827;
+    }
+    .stat-info{ background: linear-gradient(180deg, rgba(13,110,253,.12), rgba(13,110,253,.02)); }
+    .stat-warn{ background: linear-gradient(180deg, rgba(255,193,7,.16), rgba(255,193,7,.03)); }
+    .stat-ok{   background: linear-gradient(180deg, rgba(25,135,84,.14), rgba(25,135,84,.03)); }
+    .stat-bad{  background: linear-gradient(180deg, rgba(220,53,69,.12), rgba(220,53,69,.02)); }
+    .stat-cod{  background: linear-gradient(180deg, rgba(255,193,7,.10), rgba(17,24,39,.01)); }
+
+    .ic-dark{ color:#111827; }
+    .ic-info{ color:#0d6efd; }
+    .ic-warn{ color:#ffb703; }
+    .ic-ok{ color:#198754; }
+    .ic-bad{ color:#dc3545; }
+    .ic-cod{ color:#b45309; }
+
+    /* Table */
+    .table-wrap{ max-height: 70vh; }
+    .table-head th{
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: #f8fafc !important;
+        border-bottom: 1px solid rgba(17,24,39,.10);
+        font-weight: 900;
+        color:#111827;
+        white-space: nowrap;
+    }
+    .table td, .table th{ vertical-align: middle !important; }
+    .table tbody tr:hover{ background: rgba(25,135,84,.04); }
+
+    /* Badges */
+    .badge-soft{
+        font-size: .88rem;
+        padding: 7px 10px;
+        border-radius: 999px;
+        font-weight: 900;
+        border: 1px solid rgba(17,24,39,.10);
+        display:inline-block;
+        white-space: nowrap;
+    }
+    .badge-warn{ background: rgba(255,193,7,.18); color:#664d03; }
+    .badge-info{ background: rgba(13,110,253,.14); color:#0a58ca; }
+    .badge-ok{ background: rgba(25,135,84,.16); color:#0f5132; }
+    .badge-bad{ background: rgba(220,53,69,.14); color:#842029; }
+    .badge-dark{ background: rgba(17,24,39,.06); color:#111827; }
+    .badge-cod{ background: rgba(255,193,7,.16); color:#7c4a03; border-color: rgba(255,193,7,.28); }
+
+    /* Toolbar */
+    .btn-soft{ border-radius: 12px; font-weight: 850; }
+
+    .search-wrap{
+        position: relative;
+        min-width: 260px;
+    }
+    .search-wrap i{
+        position:absolute;
+        top: 50%;
+        left: 12px;
+        transform: translateY(-50%);
+        color:#6b7280;
+    }
+    .search-wrap .form-control{
+        padding-left: 36px;
+        border-radius: 12px;
+        border: 1px solid rgba(17,24,39,.15);
+        box-shadow: 0 6px 18px rgba(17,24,39,.05);
+    }
+
+    /* Empty */
+    .empty{
+        padding: 22px 16px;
+        border-radius: 18px;
+        border: 1px dashed rgba(17,24,39,.16);
+        background: rgba(17,24,39,.02);
+        box-shadow: var(--shadow);
+        text-align:center;
+    }
+    .empty-ic{ font-size: 38px; margin-bottom: 6px; }
+
+    @@media (max-width: 576px){
+        .search-wrap{ min-width: 100%; }
     }
 </style>

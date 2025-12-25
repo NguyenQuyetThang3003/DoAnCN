@@ -15,219 +15,493 @@
     var ratingCounts = Model.RatingStats.Select(x => x.Count).ToList();
 }
 
-<h3 class="mb-3 text-danger fw-bold">Báo cáo & Thống kê</h3>
+<style>
+    /* ===== Match your Dashboard style (dash) ===== */
+    .dash {
+        --text: #111827;
+        --muted: #6b7280;
+        --border: rgba(17, 24, 39, 0.10);
+        --shadow: 0 10px 30px rgba(17, 24, 39, 0.08);
+        --shadow2: 0 14px 40px rgba(17, 24, 39, 0.10);
+        font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+        color: var(--text);
+    }
 
-<!-- Bộ lọc ngày -->
-<form asp-action="Overview" asp-controller="AdminReports" method="get" class="card p-3 mb-3">
-    <div class="row g-3 align-items-end">
-        <div class="col-md-3">
-            <label class="form-label">Từ ngày</label>
-            <input type="date"
-                   name="from"
-                   class="form-control"
-                   value="@Model.FromDate.ToString("yyyy-MM-dd")" />
-        </div>
-        <div class="col-md-3">
-            <label class="form-label">Đến ngày</label>
-            <input type="date"
-                   name="to"
-                   class="form-control"
-                   value="@Model.ToDate.ToString("yyyy-MM-dd")" />
+    /* ===== Header ===== */
+    .dash-head{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:14px;
+        padding:14px 16px;
+        border-radius:16px;
+        border:1px solid var(--border);
+        background: linear-gradient(180deg, rgba(13,110,253,.08), rgba(13,110,253,.02));
+        box-shadow: var(--shadow);
+        margin: 12px 0 14px;
+        flex-wrap: wrap;
+    }
+    .dash-left{display:flex;gap:12px;align-items:center;}
+    .dash-avatar{
+        width:44px;height:44px;border-radius:14px;
+        display:grid;place-items:center;
+        background:#fff;border:1px solid var(--border);
+        box-shadow:0 8px 24px rgba(17,24,39,.08);
+        font-size:20px;
+        flex:0 0 auto;
+    }
+    .dash-title{font-weight:950;letter-spacing:-.2px;margin:0;}
+    .dash-sub{
+        color:var(--muted);
+        font-size:.95rem;
+        margin-top:4px;
+        display:flex;
+        gap:10px;
+        align-items:center;
+        flex-wrap:wrap;
+    }
+    .dash-dot{width:6px;height:6px;border-radius:99px;background:rgba(17,24,39,0.25);display:inline-block;}
+
+    .dash-pill{
+        display:inline-flex;align-items:center;gap:10px;
+        padding:10px 12px;border-radius:999px;
+        border:1px solid var(--border);background:#fff;
+        box-shadow:0 8px 18px rgba(17,24,39,.06);
+        color: var(--muted);
+        font-weight:950;
+        font-size:.9rem;
+        user-select:none;
+        white-space:nowrap;
+    }
+    .pill-dot{width:10px;height:10px;border-radius:99px;background:#22c55e;box-shadow:0 0 0 4px rgba(34,197,94,0.18);}
+
+    /* ===== KPI ===== */
+    .kpi{
+        border-radius:18px;
+        border:1px solid var(--border);
+        background:#fff;
+        box-shadow: var(--shadow);
+        padding:14px 16px;
+        transition: transform .18s ease, box-shadow .18s ease;
+        height:100%;
+    }
+    .kpi:hover{transform:translateY(-2px);box-shadow: var(--shadow2);}
+
+    .kpi-top{display:flex;align-items:center;gap:12px;justify-content:space-between;}
+    .kpi-left{display:flex;align-items:center;gap:12px;}
+    .kpi-icon{
+        width:44px;height:44px;border-radius:16px;
+        display:grid;place-items:center;
+        background: rgba(17,24,39,0.04);
+        border: 1px solid var(--border);
+        font-size:18px;
+        flex:0 0 auto;
+    }
+    .kpi-label{color:var(--muted);font-weight:900;font-size:.92rem;}
+    .kpi-value{font-weight:950;font-size:1.6rem;letter-spacing:-.4px;margin-top:2px;}
+    .kpi-foot{
+        margin-top:12px;
+        padding-top:10px;
+        border-top:1px dashed rgba(17,24,39,0.12);
+        display:flex;align-items:center;justify-content:space-between;gap:10px;
+        color:var(--muted);
+        font-weight:800;
+        font-size:.88rem;
+        flex-wrap:wrap;
+    }
+    .kpi-badge{
+        padding:6px 10px;border-radius:999px;
+        border:1px solid var(--border);
+        background: rgba(17,24,39,0.03);
+        color:#111827;
+        font-weight:900;
+        font-size:.86rem;
+        white-space:nowrap;
+    }
+    .kpi-primary{border-left:6px solid rgba(13,110,253,.80);}
+    .kpi-success{border-left:6px solid rgba(40,167,69,.80);}
+    .kpi-danger{border-left:6px solid rgba(220,53,69,.80);}
+    .kpi-warning{border-left:6px solid rgba(255,193,7,.85);}
+
+    /* ===== Panel ===== */
+    .panel{
+        border-radius:18px;
+        border:1px solid var(--border);
+        background:#fff;
+        box-shadow: var(--shadow);
+        overflow:hidden;
+        transition: transform .18s ease, box-shadow .18s ease;
+        height:100%;
+    }
+    .panel:hover{transform:translateY(-2px);box-shadow: var(--shadow2);}
+    .panel-head{
+        padding:14px 16px;
+        border-bottom: 1px solid rgba(17, 24, 39, 0.08);
+        background: linear-gradient(180deg, rgba(17, 24, 39, 0.03), rgba(17, 24, 39, 0.01));
+        display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    }
+    .panel-title{font-weight:950;letter-spacing:-.2px;}
+    .panel-sub{color:var(--muted);font-size:.92rem;margin-top:4px;}
+    .panel-body{padding:14px 16px 16px 16px;}
+
+    /* ===== Filter ===== */
+    .dash-filter{display:flex;align-items:end;gap:10px;flex-wrap:wrap;}
+    .filter-group{display:grid;gap:4px;}
+    .filter-label{font-size:.78rem;color:var(--muted);font-weight:900;}
+    .filter-btn{white-space:nowrap;border-radius:999px !important;font-weight:900;padding:.55rem .95rem;}
+
+    .btn-pill{border-radius:999px !important;font-weight:900;padding:.55rem .95rem;white-space:nowrap;}
+    .btn-ghost{
+        border-radius:999px !important;
+        font-weight:900;
+        padding:.55rem .95rem;
+        background:#fff;
+        border:1px solid rgba(17,24,39,0.14);
+        color:#111827;
+        text-decoration:none;
+    }
+
+    /* ===== Tables ===== */
+    .table-clean thead th{
+        background:#f8f9fa !important;
+        font-weight:950;
+        color:#495057;
+        border-bottom: 1px solid rgba(17,24,39,0.10) !important;
+        white-space:nowrap;
+    }
+    .table-clean td, .table-clean th{
+        padding:.8rem .9rem;
+        vertical-align:middle;
+        border-color: rgba(17,24,39,0.06);
+    }
+    .table-clean tbody tr:hover{background: rgba(13,110,253,.04);}
+
+    /* ===== Chart wrap ===== */
+    .chart-wrap{
+        border:1px solid rgba(17,24,39,0.08);
+        border-radius:16px;
+        padding:10px;
+        background:#fff;
+    }
+
+    @@media (max-width: 992px){
+        .dash-head{align-items:flex-start;}
+    }
+</style>
+
+<div class="dash container-fluid py-3">
+
+    <!-- Header -->
+    <div class="dash-head">
+        <div class="dash-left">
+            <div class="dash-avatar">📊</div>
+            <div>
+                <h2 class="dash-title">Báo cáo & Thống kê</h2>
+                <div class="dash-sub">
+                    Tổng hợp theo khoảng thời gian lọc
+                    <span class="dash-dot"></span>
+                    <span class="text-muted">
+                        @Model.FromDate.ToString("dd/MM/yyyy") - @Model.ToDate.ToString("dd/MM/yyyy")
+                    </span>
+                </div>
+            </div>
         </div>
 
-        <div class="col-md-3">
-            <!-- Xem báo cáo: gửi GET tới /AdminReports/Overview?from=...&to=... -->
-            <button type="submit" class="btn btn-primary mt-4">
-                Xem báo cáo
-            </button>
+        <div class="dash-pill">
+            <span class="pill-dot"></span>
+            <span>Reports</span>
+        </div>
+    </div>
 
-            <!-- Xuất Excel (CSV): dùng cùng from/to hiện nhập, nhưng gọi action ExportOrders -->
-            <button type="submit"
-                    formaction="@Url.Action("ExportOrders", "AdminReports")"
-                    class="btn btn-success mt-4 ms-2">
-                Xuất Excel (CSV)
-            </button>
+    <!-- Filter panel -->
+    <div class="panel mb-3">
+        <div class="panel-head">
+            <div>
+                <div class="panel-title"><i class="fas fa-filter me-1"></i> Bộ lọc ngày</div>
+                <div class="panel-sub">Chọn khoảng thời gian để xem thống kê và xuất CSV.</div>
+            </div>
+
+            <form asp-action="Overview" asp-controller="AdminReports" method="get" class="dash-filter">
+                <div class="filter-group">
+                    <label class="filter-label">Từ ngày</label>
+                    <input type="date" name="from" class="form-control form-control-sm"
+                           value="@Model.FromDate.ToString("yyyy-MM-dd")" />
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Đến ngày</label>
+                    <input type="date" name="to" class="form-control form-control-sm"
+                           value="@Model.ToDate.ToString("yyyy-MM-dd")" />
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-pill">
+                    <i class="fas fa-search me-1"></i> Xem báo cáo
+                </button>
+
+                <button type="submit"
+                        formaction="@Url.Action("ExportOrders", "AdminReports")"
+                        class="btn btn-success btn-pill">
+                    <i class="fas fa-file-export me-1"></i> Xuất Excel (CSV)
+                </button>
+            </form>
         </div>
 
-        <div class="col-md-3 text-end">
-            <span class="text-muted">
-                Khoảng thời gian:
-                @Model.FromDate.ToString("dd/MM/yyyy")
-                -
-                @Model.ToDate.ToString("dd/MM/yyyy")
-            </span>
-        </div>
-    </div>
-</form>
-
-<!-- Tổng quan KPIs -->
-<div class="row g-3 mb-3">
-    <div class="col-md-3">
-        <div class="card shadow-sm border-0">
-            <div class="card-body">
-                <h6 class="text-muted">Tổng số đơn</h6>
-                <h3 class="fw-bold">@Model.TotalOrders</h3>
-                <small class="text-muted">
-                    Pending: @Model.PendingOrders |
-                    Shipping: @Model.ShippingOrders
-                </small>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card shadow-sm border-0">
-            <div class="card-body">
-                <h6 class="text-muted">Đơn thành công</h6>
-                <h3 class="fw-bold text-success">@Model.DoneOrders</h3>
-                <small class="text-muted">Thất bại: @Model.FailedOrders</small>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card shadow-sm border-0">
-            <div class="card-body">
-                <h6 class="text-muted">Tỷ lệ giao thành công</h6>
-                <h3 class="fw-bold">@Model.SuccessRate %</h3>
-                <small class="text-muted">Trong các đơn đã xử lý</small>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card shadow-sm border-0">
-            <div class="card-body">
-                <h6 class="text-muted">Doanh thu (COD + ship)</h6>
-                <h3 class="fw-bold text-primary">
-                    @Model.TotalRevenue.ToString("N0") đ
-                </h3>
-                <small class="text-muted">
-                    Ship: @Model.TotalShipFee.ToString("N0") đ |
-                    COD: @Model.TotalCod.ToString("N0") đ
-                </small>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row g-3 mb-3">
-    <div class="col-md-3">
-        <div class="card shadow-sm border-0">
-            <div class="card-body">
-                <h6 class="text-muted">Số khách hàng</h6>
-                <h3 class="fw-bold">@Model.TotalCustomers</h3>
-                <small class="text-muted">Trong khoảng thời gian chọn</small>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card shadow-sm border-0">
-            <div class="card-body">
-                <h6 class="text-muted">Điểm đánh giá trung bình</h6>
-                <h3 class="fw-bold text-warning">@Model.AverageRating</h3>
-                <small class="text-muted">Từ 1 đến 5 sao</small>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Biểu đồ -->
-<div class="row g-3 mb-4">
-    <div class="col-md-6">
-        <div class="card shadow-sm border-0 h-100">
-            <div class="card-body">
-                <h6 class="card-title">Số đơn theo ngày</h6>
-                <canvas id="ordersPerDayChart"></canvas>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6">
-        <div class="card shadow-sm border-0 h-100">
-            <div class="card-body">
-                <h6 class="card-title">Đơn theo khu vực (Top 10)</h6>
-                <canvas id="areaChart"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row g-3">
-    <div class="col-md-6">
-        <div class="card shadow-sm border-0">
-            <div class="card-body">
-                <h6 class="card-title">Hiệu suất tài xế (Top 5)</h6>
-                <table class="table table-sm table-hover mb-0">
-                    <thead>
-                        <tr>
-                            <th>Tài xế</th>
-                            <th class="text-end">Đơn thành công</th>
-                            <th class="text-end">Rating TB</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    @if (Model.DriverStats.Any())
-                    {
-                        foreach (var d in Model.DriverStats)
-                        {
-                            <tr>
-                                <td>@d.DriverName (#@d.DriverId)</td>
-                                <td class="text-end">@d.TotalDone</td>
-                                <td class="text-end">@d.AvgRating</td>
-                            </tr>
-                        }
-                    }
-                    else
-                    {
-                        <tr>
-                            <td colspan="3" class="text-center text-muted">
-                                Chưa có dữ liệu.
-                            </td>
-                        </tr>
-                    }
-                    </tbody>
-                </table>
+        <div class="panel-body">
+            <div class="text-muted small">
+                Khoảng thời gian hiện tại:
+                <b>@Model.FromDate.ToString("dd/MM/yyyy")</b> – <b>@Model.ToDate.ToString("dd/MM/yyyy")</b>
             </div>
         </div>
     </div>
 
-    <div class="col-md-6">
-        <div class="card shadow-sm border-0">
-            <div class="card-body">
-                <h6 class="card-title">Phân bố điểm đánh giá</h6>
-                <canvas id="ratingChart" class="mb-3"></canvas>
-                <table class="table table-sm table-bordered mb-0">
-                    <thead>
-                        <tr>
-                            <th>Điểm</th>
-                            <th class="text-end">Số lượt</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    @foreach (var r in Model.RatingStats)
-                    {
-                        <tr>
-                            <td>@r.Score ★</td>
-                            <td class="text-end">@r.Count</td>
-                        </tr>
-                    }
-                    </tbody>
-                </table>
+    <!-- KPI row 1 -->
+    <div class="row g-3 mb-3">
+        <div class="col-lg-3 col-md-6">
+            <div class="kpi kpi-primary">
+                <div class="kpi-top">
+                    <div class="kpi-left">
+                        <div class="kpi-icon">📦</div>
+                        <div>
+                            <div class="kpi-label">Tổng số đơn</div>
+                            <div class="kpi-value">@Model.TotalOrders</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="kpi-foot">
+                    <span>Pending: <b>@Model.PendingOrders</b> | Shipping: <b>@Model.ShippingOrders</b></span>
+                    <span class="kpi-badge">Total</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <div class="kpi kpi-success">
+                <div class="kpi-top">
+                    <div class="kpi-left">
+                        <div class="kpi-icon">✅</div>
+                        <div>
+                            <div class="kpi-label">Đơn thành công</div>
+                            <div class="kpi-value text-success">@Model.DoneOrders</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="kpi-foot">
+                    <span>Thất bại: <b>@Model.FailedOrders</b></span>
+                    <span class="kpi-badge">Done</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <div class="kpi kpi-warning">
+                <div class="kpi-top">
+                    <div class="kpi-left">
+                        <div class="kpi-icon">🎯</div>
+                        <div>
+                            <div class="kpi-label">Tỷ lệ giao thành công</div>
+                            <div class="kpi-value">@Model.SuccessRate %</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="kpi-foot">
+                    <span>Trong các đơn đã xử lý</span>
+                    <span class="kpi-badge">Rate</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <div class="kpi kpi-primary">
+                <div class="kpi-top">
+                    <div class="kpi-left">
+                        <div class="kpi-icon">💰</div>
+                        <div>
+                            <div class="kpi-label">Doanh thu (COD + ship)</div>
+                            <div class="kpi-value text-primary">@Model.TotalRevenue.ToString("N0") đ</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="kpi-foot">
+                    <span>Ship: <b>@Model.TotalShipFee.ToString("N0") đ</b> | COD: <b>@Model.TotalCod.ToString("N0") đ</b></span>
+                    <span class="kpi-badge">Revenue</span>
+                </div>
             </div>
         </div>
     </div>
+
+    <!-- KPI row 2 -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="kpi kpi-primary">
+                <div class="kpi-top">
+                    <div class="kpi-left">
+                        <div class="kpi-icon">👥</div>
+                        <div>
+                            <div class="kpi-label">Số khách hàng</div>
+                            <div class="kpi-value">@Model.TotalCustomers</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="kpi-foot">
+                    <span>Trong khoảng thời gian chọn</span>
+                    <span class="kpi-badge">Customers</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <div class="kpi kpi-warning">
+                <div class="kpi-top">
+                    <div class="kpi-left">
+                        <div class="kpi-icon">⭐</div>
+                        <div>
+                            <div class="kpi-label">Điểm đánh giá TB</div>
+                            <div class="kpi-value text-warning">@Model.AverageRating</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="kpi-foot">
+                    <span>Từ 1 đến 5 sao</span>
+                    <span class="kpi-badge">Rating</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-6">
+            <div class="panel">
+                <div class="panel-head">
+                    <div>
+                        <div class="panel-title"><i class="fas fa-chart-line me-1"></i> Số đơn theo ngày</div>
+                        <div class="panel-sub">Diễn biến số đơn phát sinh theo từng ngày.</div>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div class="chart-wrap">
+                        <canvas id="ordersPerDayChart" height="140"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="panel">
+                <div class="panel-head">
+                    <div>
+                        <div class="panel-title"><i class="fas fa-chart-bar me-1"></i> Đơn theo khu vực (Top 10)</div>
+                        <div class="panel-sub">Phân bổ theo tỉnh/thành để nhìn nhanh khu vực đóng góp.</div>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div class="chart-wrap">
+                        <canvas id="areaChart" height="140"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tables + rating -->
+    <div class="row g-3">
+        <div class="col-lg-6">
+            <div class="panel">
+                <div class="panel-head">
+                    <div>
+                        <div class="panel-title"><i class="fas fa-bolt me-1"></i> Hiệu suất tài xế (Top 5)</div>
+                        <div class="panel-sub">Số đơn thành công và rating trung bình theo tài xế.</div>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div class="table-responsive">
+                        <table class="table table-clean table-hover table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Tài xế</th>
+                                    <th class="text-end">Đơn thành công</th>
+                                    <th class="text-end">Rating TB</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            @if (Model.DriverStats.Any())
+                            {
+                                foreach (var d in Model.DriverStats)
+                                {
+                                    <tr>
+                                        <td class="fw-semibold">@d.DriverName (#@d.DriverId)</td>
+                                        <td class="text-end fw-bold">@d.TotalDone</td>
+                                        <td class="text-end">@d.AvgRating</td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted py-3">
+                                        Chưa có dữ liệu.
+                                    </td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="panel">
+                <div class="panel-head">
+                    <div>
+                        <div class="panel-title"><i class="fas fa-star me-1"></i> Phân bố điểm đánh giá</div>
+                        <div class="panel-sub">Biểu đồ và bảng tổng hợp theo số sao.</div>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div class="chart-wrap mb-3">
+                        <canvas id="ratingChart" height="140"></canvas>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-clean table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Điểm</th>
+                                    <th class="text-end">Số lượt</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            @foreach (var r in Model.RatingStats)
+                            {
+                                <tr>
+                                    <td class="fw-semibold">@r.Score ★</td>
+                                    <td class="text-end fw-bold">@r.Count</td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        const dayLabels   = @Html.Raw(JsonSerializer.Serialize(dayLabels));
-        const dayCounts   = @Html.Raw(JsonSerializer.Serialize(dayCounts));
+        const dayLabels    = @Html.Raw(JsonSerializer.Serialize(dayLabels));
+        const dayCounts    = @Html.Raw(JsonSerializer.Serialize(dayCounts));
 
-        const areaLabels  = @Html.Raw(JsonSerializer.Serialize(areaLabels));
-        const areaCounts  = @Html.Raw(JsonSerializer.Serialize(areaCounts));
+        const areaLabels   = @Html.Raw(JsonSerializer.Serialize(areaLabels));
+        const areaCounts   = @Html.Raw(JsonSerializer.Serialize(areaCounts));
 
         const ratingLabels = @Html.Raw(JsonSerializer.Serialize(ratingLabels));
         const ratingCounts = @Html.Raw(JsonSerializer.Serialize(ratingCounts));
 
-        // Biểu đồ đơn theo ngày
+        // Line: Orders per day
         const ctxDay = document.getElementById('ordersPerDayChart');
         if (ctxDay && dayLabels.length > 0) {
             new Chart(ctxDay, {
@@ -242,9 +516,8 @@
                     }]
                 },
                 options: {
-                    plugins: {
-                        legend: { display: false }
-                    },
+                    responsive: true,
+                    plugins: { legend: { display: false } },
                     scales: {
                         x: { title: { display: true, text: 'Ngày' } },
                         y: {
@@ -257,7 +530,7 @@
             });
         }
 
-        // Biểu đồ đơn theo khu vực
+        // Bar: Orders by area
         const ctxArea = document.getElementById('areaChart');
         if (ctxArea && areaLabels.length > 0) {
             new Chart(ctxArea, {
@@ -270,6 +543,7 @@
                     }]
                 },
                 options: {
+                    responsive: true,
                     plugins: { legend: { display: false } },
                     scales: {
                         x: { title: { display: true, text: 'Khu vực' } },
@@ -283,7 +557,7 @@
             });
         }
 
-        // Biểu đồ phân bố điểm đánh giá
+        // Bar: Rating distribution
         const ctxRating = document.getElementById('ratingChart');
         if (ctxRating && ratingLabels.length > 0) {
             new Chart(ctxRating, {
@@ -296,6 +570,7 @@
                     }]
                 },
                 options: {
+                    responsive: true,
                     plugins: { legend: { display: false } },
                     scales: {
                         x: { title: { display: true, text: 'Điểm' } },

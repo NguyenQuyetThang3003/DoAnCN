@@ -3,66 +3,194 @@
 @{
     ViewData["Title"] = "Sửa mã giảm giá";
     Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
-
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h3 class="mb-0">Sửa mã giảm giá</h3>
-    <a class="btn btn-outline-secondary" asp-action="Index">Quay lại</a>
-</div>
+<div class="promo-edit container-fluid px-4 py-3">
 
-<div class="card shadow-sm">
-    <div class="card-body">
-        <form method="post">
-            @Html.AntiForgeryToken()
-            <input type="hidden" asp-for="Magiamgia" />
-
-            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <label class="form-label fw-bold">Mã (Code)</label>
-                    <input asp-for="Code" class="form-control" />
-                    <span asp-validation-for="Code" class="text-danger"></span>
+    <!-- Header Dashboard -->
+    <div class="dash-head mb-3">
+        <div class="dash-head__left">
+            <div class="dash-avatar">✏️</div>
+            <div>
+                <div class="dash-title">Sửa mã giảm giá</div>
+                <div class="dash-sub">
+                    Cập nhật thông tin mã <strong>@Model.Code</strong>
+                    <span class="dash-dot"></span>
+                    <span class="text-muted">Promotion</span>
                 </div>
+            </div>
+        </div>
 
-                <div class="col-md-4">
-                    <label class="form-label fw-bold">% Giảm</label>
-                    <input asp-for="Giatriphantram" class="form-control" type="number" min="1" max="100" />
-                    <span asp-validation-for="Giatriphantram" class="text-danger"></span>
+        <div class="dash-head__right d-flex gap-2 flex-wrap">
+            <div class="dash-pill">
+                <span class="pill-dot"></span>
+                <span>Edit</span>
+            </div>
+
+            <a class="btn btn-outline-secondary btn-soft" asp-action="Index">
+                <i class="fas fa-arrow-left"></i> Quay lại
+            </a>
+        </div>
+    </div>
+
+    <!-- Panel -->
+    <div class="panel">
+        <div class="panel-head">
+            <div>
+                <div class="panel-title">
+                    <i class="fas fa-pen me-1"></i> Thông tin mã giảm giá
                 </div>
-
-                <div class="col-md-4">
-                    <label class="form-label fw-bold">Trạng thái</label>
-                    <select asp-for="Trangthai" class="form-select">
-                        <option value="true">Hoạt động</option>
-                        <option value="false">Khóa</option>
-                    </select>
-                </div>
-
-                <div class="col-md-6">
-                    <label class="form-label fw-bold">Ngày bắt đầu</label>
-                    <input asp-for="Ngaybatdau" class="form-control" type="date" />
-                    <span asp-validation-for="Ngaybatdau" class="text-danger"></span>
-                </div>
-
-                <div class="col-md-6">
-                    <label class="form-label fw-bold">Ngày kết thúc</label>
-                    <input asp-for="Ngayketthuc" class="form-control" type="date" />
-                    <span asp-validation-for="Ngayketthuc" class="text-danger"></span>
+                <div class="panel-sub">
+                    Thay đổi % giảm, trạng thái hoặc thời gian hiệu lực.
                 </div>
             </div>
 
-            <div class="mt-4 d-flex gap-2">
-                <button class="btn btn-danger" type="submit">
-                    <i class="fas fa-save me-1"></i> Cập nhật
-                </button>
-                <a class="btn btn-outline-secondary" asp-action="Index">Hủy</a>
+            <div class="panel-meta">
+                <span class="badge bg-primary badge-pill">
+                    <span class="role-dot bg-primary"></span>
+                    ID #@Model.Magiamgia
+                </span>
             </div>
-        </form>
+        </div>
+
+        <div class="panel-body">
+            <form method="post" class="form-wrap">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Magiamgia" />
+
+                <div asp-validation-summary="ModelOnly"
+                     class="alert alert-danger py-2 mb-3 d-none"
+                     id="summaryBox"></div>
+
+                <div class="row g-3">
+
+                    <!-- Code -->
+                    <div class="col-lg-4 col-md-6">
+                        <label class="form-label fw-bold">Mã (Code)</label>
+                        <input asp-for="Code"
+                               class="form-control input-soft text-uppercase"
+                               placeholder="VD: FREESHIP10"
+                               readonly />
+                        <div class="form-hint">
+                            Mã không thể thay đổi sau khi tạo.
+                        </div>
+                        <span asp-validation-for="Code" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Percent -->
+                    <div class="col-lg-4 col-md-6">
+                        <label class="form-label fw-bold">% Giảm</label>
+                        <div class="input-group">
+                            <input asp-for="Giatriphantram"
+                                   class="form-control input-soft"
+                                   type="number" min="1" max="100" />
+                            <span class="input-group-text bg-white">%</span>
+                        </div>
+                        <span asp-validation-for="Giatriphantram" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="col-lg-4 col-md-12">
+                        <label class="form-label fw-bold">Trạng thái</label>
+                        <select asp-for="Trangthai" class="form-select input-soft">
+                            <option value="true">Hoạt động</option>
+                            <option value="false">Khóa</option>
+                        </select>
+                        <div class="form-hint">
+                            Khóa = mã không thể áp dụng.
+                        </div>
+                    </div>
+
+                    <!-- Dates -->
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Ngày bắt đầu</label>
+                        <input asp-for="Ngaybatdau"
+                               class="form-control input-soft"
+                               type="date" />
+                        <span asp-validation-for="Ngaybatdau" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Ngày kết thúc</label>
+                        <input asp-for="Ngayketthuc"
+                               class="form-control input-soft"
+                               type="date" />
+                        <span asp-validation-for="Ngayketthuc" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Preview -->
+                    <div class="col-12">
+                        <div class="preview-card">
+                            <div>
+                                <div class="preview-title">Xem trước</div>
+                                <div class="preview-sub">
+                                    Trạng thái hiển thị trong danh sách
+                                </div>
+                            </div>
+                            <div class="preview-right">
+                                <span class="badge bg-primary badge-pill">
+                                    <span class="role-dot bg-primary"></span>
+                                    @Model.Code
+                                </span>
+                                <span class="badge bg-info text-dark badge-pill">
+                                    <span class="role-dot bg-info"></span>
+                                    <span id="pvPercent">@Model.Giatriphantram%</span>
+                                </span>
+                                <span id="pvStatus"
+                                      class="badge badge-pill @(Model.Trangthai ? "bg-success" : "bg-secondary")">
+                                    <span class="role-dot @(Model.Trangthai ? "bg-success" : "bg-secondary")"></span>
+                                    @(Model.Trangthai ? "Hoạt động" : "Khóa")
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="form-actions mt-4">
+                    <a class="btn btn-outline-secondary btn-action" asp-action="Index">
+                        Hủy
+                    </a>
+
+                    <button class="btn btn-primary btn-action" type="submit">
+                        <i class="fas fa-save me-1"></i> Cập nhật
+                    </button>
+                </div>
+
+                <div class="note mt-3">
+                    Lưu ý: Nếu ngày kết thúc nhỏ hơn ngày hiện tại,
+                    mã sẽ tự động bị coi là hết hạn khi áp dụng.
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        // cập nhật preview % + status
+        (function () {
+            const percent = document.querySelector("[name='Giatriphantram']");
+            const status = document.querySelector("[name='Trangthai']");
+
+            const pvPercent = document.getElementById("pvPercent");
+            const pvStatus = document.getElementById("pvStatus");
+
+            function sync() {
+                const p = parseInt(percent?.value || "0", 10) || 0;
+                pvPercent.textContent = `${p}%`;
+
+                const isActive = status?.value === "true";
+                pvStatus.className = "badge badge-pill " + (isActive ? "bg-success" : "bg-secondary");
+                pvStatus.innerHTML =
+                    `<span class="role-dot ${isActive ? "bg-success" : "bg-secondary"}"></span>` +
+                    (isActive ? "Hoạt động" : "Khóa");
+            }
+
+            percent?.addEventListener("input", sync);
+            status?.addEventListener("change", sync);
+        })();
+    </script>
 }

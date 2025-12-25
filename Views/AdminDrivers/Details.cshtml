@@ -1,0 +1,290 @@
+@using WedNightFury.Models.ViewModels
+@model AdminDriverEditViewModel
+
+@{
+    ViewData["Title"] = "Chi tiết tài xế";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+
+    var location = string.Join(" - ", new[] { Model.Ward, Model.District, Model.City }
+        .Where(x => !string.IsNullOrWhiteSpace(x)));
+}
+
+<style>
+    /* ===== Match your Dashboard style (dash) ===== */
+    .dash {
+        --text: #111827;
+        --muted: #6b7280;
+        --border: rgba(17, 24, 39, 0.10);
+        --shadow: 0 10px 30px rgba(17, 24, 39, 0.08);
+        --shadow2: 0 14px 40px rgba(17, 24, 39, 0.10);
+        font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+        color: var(--text);
+    }
+
+    /* ===== Header like dashboard ===== */
+    .dash-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 14px 16px;
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        background: linear-gradient(180deg, rgba(13,110,253,.08), rgba(13,110,253,.02));
+        box-shadow: var(--shadow);
+        margin-bottom: 14px;
+        flex-wrap: wrap;
+    }
+
+    .dash-left { display: flex; gap: 12px; align-items: center; }
+    .dash-avatar {
+        width: 44px; height: 44px; border-radius: 14px;
+        display: grid; place-items: center;
+        background: #fff; border: 1px solid var(--border);
+        box-shadow: 0 8px 24px rgba(17,24,39,.08);
+        font-size: 20px;
+        flex: 0 0 auto;
+    }
+
+    .dash-title { font-weight: 900; letter-spacing: -0.2px; margin: 0; }
+    .dash-sub {
+        color: var(--muted);
+        font-size: .95rem;
+        margin-top: 4px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    .dash-dot { width: 6px; height: 6px; border-radius: 99px; background: rgba(17,24,39,0.25); display: inline-block; }
+
+    .dash-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: #fff;
+        box-shadow: 0 8px 18px rgba(17,24,39,.06);
+        color: var(--muted);
+        font-weight: 900;
+        font-size: .9rem;
+        user-select: none;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+    .pill-dot {
+        width: 10px; height: 10px; border-radius: 99px;
+        background: #22c55e;
+        box-shadow: 0 0 0 4px rgba(34,197,94,0.18);
+    }
+
+    /* ===== KPI mini cards ===== */
+    .kpi {
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background: #fff;
+        box-shadow: var(--shadow);
+        padding: 14px 16px;
+        transition: transform .18s ease, box-shadow .18s ease;
+        height: 100%;
+    }
+    .kpi:hover { transform: translateY(-2px); box-shadow: var(--shadow2); }
+    .kpi-label { color: var(--muted); font-weight: 900; font-size: .85rem; text-transform: uppercase; letter-spacing: .04em; }
+    .kpi-value { font-weight: 950; font-size: 1.25rem; margin-top: 6px; }
+    .kpi-icon {
+        width: 44px; height: 44px; border-radius: 16px;
+        display: grid; place-items: center;
+        border: 1px solid var(--border);
+        background: rgba(17,24,39,0.03);
+        font-weight: 950;
+    }
+    .kpi-primary { border-left: 6px solid rgba(13,110,253,.80); }
+    .kpi-info    { border-left: 6px solid rgba(13,202,240,.80); }
+    .kpi-success { border-left: 6px solid rgba(40,167,69,.80); }
+
+    .kpi-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+
+    /* ===== Panel ===== */
+    .panel {
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background: #fff;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        transition: transform .18s ease, box-shadow .18s ease;
+    }
+    .panel:hover { transform: translateY(-2px); box-shadow: var(--shadow2); }
+
+    .panel-head {
+        padding: 14px 16px;
+        border-bottom: 1px solid rgba(17,24,39,0.08);
+        background: linear-gradient(180deg, rgba(17,24,39,0.03), rgba(17,24,39,0.01));
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    .panel-title { font-weight: 950; letter-spacing: -0.2px; }
+    .panel-sub { color: var(--muted); font-size: .92rem; margin-top: 4px; }
+    .panel-body { padding: 14px 16px 16px 16px; }
+
+    /* ===== DL ===== */
+    .info-dl dt {
+        color: var(--muted);
+        font-weight: 900;
+    }
+    .info-dl dd {
+        color: var(--text);
+        font-weight: 650;
+        margin-bottom: .75rem;
+        word-break: break-word;
+    }
+
+    /* ===== Footer action bar ===== */
+    .action-bar {
+        padding: 12px 16px;
+        border-top: 1px solid rgba(17,24,39,0.08);
+        background: #fff;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    .btn-pill {
+        border-radius: 999px !important;
+        font-weight: 900;
+        padding: .55rem .95rem;
+        white-space: nowrap;
+    }
+    .btn-ghost {
+        border-radius: 999px !important;
+        font-weight: 900;
+        padding: .55rem .95rem;
+        background: #fff;
+        border: 1px solid rgba(17,24,39,0.14);
+    }
+
+    .container-narrow { max-width: 1100px; }
+    .muted { color: var(--muted); }
+</style>
+
+<div class="dash container container-narrow py-3">
+
+    <!-- Header -->
+    <div class="dash-head">
+        <div class="dash-left">
+            <div class="dash-avatar">👤</div>
+            <div>
+                <h2 class="dash-title">Chi tiết tài xế</h2>
+                <div class="dash-sub">
+                    Xem thông tin hồ sơ và khu vực hoạt động
+                    <span class="dash-dot"></span>
+                    <span class="text-muted">ID: <b>@Model.UserId</b></span>
+                </div>
+            </div>
+        </div>
+
+        <a asp-action="Index" class="dash-pill">
+            <span class="pill-dot"></span>
+            <span><i class="fas fa-arrow-left me-1"></i> Quay lại danh sách</span>
+        </a>
+    </div>
+
+    <!-- Mini KPI -->
+    <div class="row g-3 mb-3">
+        <div class="col-md-4">
+            <div class="kpi kpi-primary">
+                <div class="kpi-top">
+                    <div>
+                        <div class="kpi-label">Username</div>
+                        <div class="kpi-value">@Model.UserName</div>
+                    </div>
+                    <div class="kpi-icon text-primary">ID</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="kpi kpi-info">
+                <div class="kpi-top">
+                    <div>
+                        <div class="kpi-label">SĐT</div>
+                        <div class="kpi-value">@Model.Phone</div>
+                    </div>
+                    <div class="kpi-icon text-info">☎</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="kpi kpi-success">
+                <div class="kpi-top">
+                    <div>
+                        <div class="kpi-label">Khu vực</div>
+                        <div class="kpi-value">@(!string.IsNullOrWhiteSpace(location) ? location : "—")</div>
+                    </div>
+                    <div class="kpi-icon text-success">📍</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main panel -->
+    <div class="panel">
+        <div class="panel-head">
+            <div>
+                <div class="panel-title"><i class="fas fa-id-card me-1"></i> Thông tin chi tiết</div>
+                <div class="panel-sub">Thông tin hiển thị từ hệ thống (read-only).</div>
+            </div>
+
+            <div class="d-flex gap-2 flex-wrap">
+                <a asp-action="Edit" asp-route-id="@Model.UserId" class="btn btn-outline-primary btn-sm btn-pill">
+                    <i class="fas fa-pen me-1"></i> Sửa
+                </a>
+                <a asp-action="Delete" asp-route-id="@Model.UserId" class="btn btn-outline-danger btn-sm btn-pill">
+                    <i class="fas fa-trash me-1"></i> Xóa
+                </a>
+            </div>
+        </div>
+
+        <div class="panel-body">
+            <dl class="row mb-0 info-dl">
+                <dt class="col-sm-3">UserName</dt>
+                <dd class="col-sm-9">@Model.UserName</dd>
+
+                <dt class="col-sm-3">Họ tên</dt>
+                <dd class="col-sm-9">@Model.FullName</dd>
+
+                <dt class="col-sm-3">Email</dt>
+                <dd class="col-sm-9">@(!string.IsNullOrWhiteSpace(Model.Email) ? Model.Email : "—")</dd>
+
+                <dt class="col-sm-3">SĐT</dt>
+                <dd class="col-sm-9">@(!string.IsNullOrWhiteSpace(Model.Phone) ? Model.Phone : "—")</dd>
+
+                <dt class="col-sm-3">CMND/CCCD</dt>
+                <dd class="col-sm-9">@(!string.IsNullOrWhiteSpace(Model.CitizenId) ? Model.CitizenId : "—")</dd>
+
+                <dt class="col-sm-3">Khu vực</dt>
+                <dd class="col-sm-9">@(!string.IsNullOrWhiteSpace(location) ? location : "—")</dd>
+
+                <dt class="col-sm-3">Địa chỉ chi tiết</dt>
+                <dd class="col-sm-9">@(!string.IsNullOrWhiteSpace(Model.Address) ? Model.Address : "—")</dd>
+
+                <dt class="col-sm-3">Đơn vị / Đối tác</dt>
+                <dd class="col-sm-9">@(!string.IsNullOrWhiteSpace(Model.CompanyName) ? Model.CompanyName : "—")</dd>
+            </dl>
+        </div>
+
+        <div class="action-bar">
+            <a asp-action="Index" class="btn btn-ghost btn-pill">
+                <i class="fas fa-arrow-left me-1"></i> Quay lại
+            </a>
+            <a asp-action="Edit" asp-route-id="@Model.UserId" class="btn btn-primary btn-pill">
+                <i class="fas fa-pen me-1"></i> Chỉnh sửa
+            </a>
+        </div>
+    </div>
+</div>

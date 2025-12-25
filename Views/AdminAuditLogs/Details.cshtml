@@ -1,46 +1,148 @@
 @model WedNightFury.Models.AuditLog
+
 @{
     ViewData["Title"] = "Chi tiết nhật ký";
     Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+
+    string actionClass = Model.Action switch
+    {
+        "login"  => "bg-info",
+        "create" => "bg-success",
+        "update" => "bg-warning text-dark",
+        "delete" => "bg-danger",
+        _ => "bg-secondary"
+    };
 }
 
-<h3 class="mb-3 text-danger fw-bold">Chi tiết nhật ký thao tác</h3>
+<div class="container-fluid px-4 py-3">
 
-<div class="card shadow-sm mb-3">
-    <div class="card-body">
-        <dl class="row mb-0">
-            <dt class="col-sm-3">Thời gian</dt>
-            <dd class="col-sm-9">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss")</dd>
+    <!-- HEADER -->
+    <div class="dash-head mb-3">
+        <div class="dash-head__left">
+            <div class="dash-avatar">🕵️</div>
+            <div>
+                <div class="dash-title">Chi tiết nhật ký thao tác</div>
+                <div class="dash-sub">
+                    Ghi nhận hành động của admin trong hệ thống
+                </div>
+            </div>
+        </div>
+        <span class="badge @actionClass badge-pill fs-6 px-3 py-2">
+            @Model.Action.ToUpper()
+        </span>
+    </div>
 
-            <dt class="col-sm-3">Admin</dt>
-            <dd class="col-sm-9">@Model.AdminName (#@Model.AdminId)</dd>
+    <!-- INFO PANEL -->
+    <div class="panel mb-3">
+        <div class="panel-head">
+            <div class="panel-title">
+                <i class="fas fa-info-circle me-1"></i> Thông tin chung
+            </div>
+        </div>
 
-            <dt class="col-sm-3">Hành động</dt>
-            <dd class="col-sm-9">@Model.Action</dd>
+        <div class="panel-body">
+            <div class="row g-3">
 
-            <dt class="col-sm-3">Đối tượng</dt>
-            <dd class="col-sm-9">
-                @Model.EntityType
-                @(Model.EntityId.HasValue ? $" #{Model.EntityId.Value}" : "")
-            </dd>
+                <div class="col-md-4">
+                    <div class="info-box">
+                        <div class="info-label">Thời gian</div>
+                        <div class="info-value">
+                            @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss")
+                        </div>
+                    </div>
+                </div>
 
-            <dt class="col-sm-3">Mô tả</dt>
-            <dd class="col-sm-9">@Model.Description</dd>
+                <div class="col-md-4">
+                    <div class="info-box">
+                        <div class="info-label">Admin</div>
+                        <div class="info-value">
+                            @Model.AdminName
+                            <span class="text-muted">(#@Model.AdminId)</span>
+                        </div>
+                    </div>
+                </div>
 
-            <dt class="col-sm-3">IP</dt>
-            <dd class="col-sm-9">@Model.IpAddress</dd>
+                <div class="col-md-4">
+                    <div class="info-box">
+                        <div class="info-label">IP</div>
+                        <div class="info-value text-muted">
+                            @Model.IpAddress
+                        </div>
+                    </div>
+                </div>
 
-            <dt class="col-sm-3">Giá trị cũ</dt>
-            <dd class="col-sm-9">
-                <pre class="mb-0">@Model.OldValue</pre>
-            </dd>
+                <div class="col-md-6">
+                    <div class="info-box">
+                        <div class="info-label">Đối tượng tác động</div>
+                        <div class="info-value">
+                            <span class="badge bg-light text-dark badge-pill">
+                                @Model.EntityType
+                                @(Model.EntityId.HasValue ? $"#{Model.EntityId}" : "")
+                            </span>
+                        </div>
+                    </div>
+                </div>
 
-            <dt class="col-sm-3">Giá trị mới</dt>
-            <dd class="col-sm-9">
-                <pre class="mb-0">@Model.NewValue</pre>
-            </dd>
-        </dl>
+                <div class="col-md-6">
+                    <div class="info-box">
+                        <div class="info-label">Mô tả</div>
+                        <div class="info-value">
+                            @Model.Description
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- DIFF PANEL -->
+    <div class="panel mb-3">
+        <div class="panel-head">
+            <div class="panel-title">
+                <i class="fas fa-exchange-alt me-1"></i> Thay đổi dữ liệu
+            </div>
+        </div>
+
+        <div class="panel-body">
+            <div class="row g-3">
+
+                <!-- OLD -->
+                <div class="col-md-6">
+                    <div class="diff-box diff-old">
+                        <div class="diff-title">
+                            <i class="fas fa-minus-circle me-1"></i> Giá trị cũ
+                        </div>
+                        <pre class="diff-content">
+@(string.IsNullOrWhiteSpace(Model.OldValue) ? "(Không có)" : Model.OldValue)
+                        </pre>
+                    </div>
+                </div>
+
+                <!-- NEW -->
+                <div class="col-md-6">
+                    <div class="diff-box diff-new">
+                        <div class="diff-title">
+                            <i class="fas fa-plus-circle me-1"></i> Giá trị mới
+                        </div>
+                        <pre class="diff-content">
+@(string.IsNullOrWhiteSpace(Model.NewValue) ? "(Không có)" : Model.NewValue)
+                        </pre>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ACTIONS -->
+    <div class="d-flex justify-content-between">
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            ← Quay lại danh sách
+        </a>
+
+        <span class="text-muted small">
+            Audit ID: @Model.Id
+        </span>
     </div>
 </div>
-
-<a asp-action="Index" class="btn btn-secondary">Quay lại danh sách</a>

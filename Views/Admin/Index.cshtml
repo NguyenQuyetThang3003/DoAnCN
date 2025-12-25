@@ -5,87 +5,374 @@
     Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
 }
 
+<style>
+    :root{
+        --radius-xl: 20px;
+        --radius-lg: 16px;
+        --radius-md: 14px;
+
+        --ink: #0f172a;
+        --muted: #64748b;
+        --line: rgba(15,23,42,.10);
+
+        --bg-0: #f6f8fb;
+        --bg-1: #ffffff;
+        --bg-2: rgba(255,255,255,.72);
+
+        --shadow-1: 0 8px 26px rgba(15,23,42,.08);
+        --shadow-2: 0 16px 44px rgba(15,23,42,.12);
+
+        --ring: 0 0 0 4px rgba(13,110,253,.14);
+    }
+
+    /* Page background (soft) */
+    .container-fluid{
+        position: relative;
+    }
+    .dash-bg{
+        position:absolute;
+        inset: -40px -24px auto -24px;
+        height: 240px;
+        background:
+            radial-gradient(700px 200px at 10% 30%, rgba(13,110,253,.16), transparent 55%),
+            radial-gradient(700px 240px at 70% 10%, rgba(25,135,84,.14), transparent 60%),
+            radial-gradient(520px 240px at 92% 45%, rgba(255,193,7,.16), transparent 55%);
+        pointer-events:none;
+        filter: blur(.2px);
+    }
+
+    /* ===== Page header ===== */
+    .page-head{
+        display:flex;
+        align-items:flex-end;
+        justify-content:space-between;
+        gap: 12px;
+        margin-bottom: 14px;
+        position: relative;
+    }
+    .title-wrap{
+        display:flex;
+        flex-direction:column;
+        gap:6px;
+    }
+    .dashboard-title{
+        margin:0;
+        font-weight: 900;
+        letter-spacing: -0.03em;
+        color: var(--ink);
+        line-height: 1.05;
+    }
+    .dashboard-subtitle{
+        margin: 0;
+        color: var(--muted);
+        font-size:.95rem;
+    }
+
+    .btn-soft{
+        background: linear-gradient(180deg, rgba(13,110,253,.12), rgba(13,110,253,.06));
+        border: 1px solid rgba(13,110,253,.22);
+        color: #0d6efd;
+        border-radius: 999px;
+        padding: .48rem .92rem;
+        font-weight: 800;
+        text-decoration: none;
+        transition: transform .14s ease, box-shadow .14s ease, background .14s ease;
+        display:inline-flex;
+        align-items:center;
+        gap:.55rem;
+        white-space:nowrap;
+        box-shadow: 0 10px 22px rgba(13,110,253,.08);
+    }
+    .btn-soft:hover{
+        transform: translateY(-1px);
+        background: linear-gradient(180deg, rgba(13,110,253,.16), rgba(13,110,253,.08));
+        box-shadow: 0 16px 30px rgba(13,110,253,.14);
+        color:#0d6efd;
+        text-decoration:none;
+    }
+    .btn-soft:active{ transform: translateY(0px); }
+
+    /* ===== Cards ===== */
+    .dash-card{
+        border: 1px solid rgba(15,23,42,.10) !important;
+        border-radius: var(--radius-xl) !important;
+        box-shadow: var(--shadow-1);
+        background: linear-gradient(180deg, var(--bg-2), rgba(255,255,255,.92));
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        overflow:hidden;
+        transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+    }
+    .dash-card:hover{
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-2);
+        border-color: rgba(15,23,42,.14) !important;
+    }
+
+    .card-head{
+        padding: 14px 16px;
+        background:
+            linear-gradient(180deg, rgba(248,250,252,.92), rgba(255,255,255,1));
+        border-bottom: 1px solid rgba(15,23,42,.08);
+    }
+    .card-head strong{
+        font-weight: 900;
+        letter-spacing: -0.02em;
+        color: var(--ink);
+    }
+    .card-head .hint{
+        margin-top: 4px;
+        color: var(--muted);
+        font-size:.86rem;
+    }
+
+    /* ===== Metric cards ===== */
+    .metric{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap: 14px;
+    }
+    .metric .label{
+        color: var(--muted);
+        font-size:.86rem;
+        margin-bottom: 6px;
+        font-weight: 700;
+    }
+    .metric .value{
+        font-size: 1.85rem;
+        font-weight: 900;
+        line-height: 1.1;
+        margin: 0;
+        letter-spacing: -0.03em;
+        color: var(--ink);
+    }
+    .stat-icon{
+        width: 46px;
+        height: 46px;
+        border-radius: 16px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        box-shadow: inset 0 0 0 1px rgba(15,23,42,.08);
+        position: relative;
+        overflow:hidden;
+    }
+    .stat-icon:before{
+        content:"";
+        position:absolute;
+        inset:-14px;
+        background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.65), transparent 55%);
+        opacity:.6;
+        pointer-events:none;
+    }
+    .stat-foot{
+        margin-top: 10px;
+        color: var(--muted);
+        font-size:.86rem;
+    }
+
+    /* Accent chips (optional) */
+    .mini-chip{
+        display:inline-flex;
+        align-items:center;
+        gap:6px;
+        padding:.28rem .55rem;
+        border-radius:999px;
+        border: 1px solid rgba(15,23,42,.10);
+        background: rgba(255,255,255,.75);
+        color: var(--muted);
+        font-weight: 700;
+        font-size:.78rem;
+    }
+
+    /* ===== Tables ===== */
+    .table-clean{
+        margin:0;
+    }
+    .table-clean thead th{
+        background: #f8fafc !important;
+        font-weight: 900;
+        color: #334155;
+        border-bottom: 1px solid rgba(15,23,42,.10) !important;
+        padding: .9rem .95rem;
+        white-space: nowrap;
+    }
+    .table-clean td, .table-clean th{
+        padding: .9rem .95rem;
+        vertical-align: middle;
+        border-color: rgba(15,23,42,.06);
+    }
+    .table-clean tbody tr{
+        transition: background .12s ease, transform .12s ease;
+    }
+    .table-clean tbody tr:hover{
+        background: rgba(13,110,253,.05);
+    }
+
+    /* ===== Badges ===== */
+    .badge-pill{
+        border-radius: 999px;
+        padding: .42rem .72rem;
+        font-weight: 900;
+        letter-spacing: .01em;
+        text-transform: capitalize;
+    }
+
+    /* ===== Status row dot ===== */
+    .status-row{
+        display:flex;
+        align-items:center;
+        gap: 10px;
+        font-weight: 800;
+        color: #334155;
+    }
+    .status-dot{
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        box-shadow: 0 0 0 4px rgba(2,6,23,.04);
+        flex: 0 0 auto;
+    }
+
+    /* ===== Warning placeholder ===== */
+    .warning-box{
+        border: 1px dashed rgba(255,193,7,.62);
+        background: linear-gradient(180deg, rgba(255,193,7,.10), rgba(255,193,7,.06));
+        border-radius: var(--radius-lg);
+        padding: 14px;
+    }
+
+    /* ===== Small helpers ===== */
+    .soft-divider{
+        height:1px;
+        background: rgba(15,23,42,.08);
+        margin: 12px 0;
+    }
+    .card-body{
+        padding: 16px;
+    }
+
+    /* Responsive minor tweak */
+    @@media (max-width: 576px){
+        .dashboard-title{ font-size: 1.45rem; }
+        .btn-soft{ width:100%; justify-content:center; }
+        .page-head{ align-items:flex-start; flex-direction:column; }
+    }
+</style>
+
 <div class="container-fluid">
+    <div class="dash-bg"></div>
+
+    <!-- Page Header -->
+    <div class="page-head">
+        <div class="title-wrap">
+            <h2 class="dashboard-title">Admin Dashboard</h2>
+            <p class="dashboard-subtitle">
+                Tổng quan vận hành đơn hàng, trạng thái và các cảnh báo quan trọng.
+            </p>
+        </div>
+
+        <a asp-controller="AdminOrders" asp-action="Index" class="btn-soft">
+            <i class="fas fa-list"></i>
+            Quản lý đơn hàng
+        </a>
+    </div>
+
     <!-- Hàng 4 ô thống kê -->
     <div class="row g-3 mb-4">
+
         <div class="col-md-3">
-            <div class="card shadow-sm border-0">
+            <div class="dash-card">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
+                    <div class="metric">
                         <div>
-                            <div class="text-muted small">Tổng đơn</div>
-                            <h3 class="mb-0">@Model.TotalOrders</h3>
+                            <div class="label">Tổng đơn</div>
+                            <h3 class="value">@Model.TotalOrders</h3>
                         </div>
-                        <div class="rounded-circle bg-primary bg-opacity-10 p-3">
+                        <div class="stat-icon bg-primary bg-opacity-10">
                             <i class="fas fa-boxes-stacked text-primary"></i>
                         </div>
                     </div>
+                    <div class="stat-foot">Tổng số đơn phát sinh trong hệ thống.</div>
                 </div>
             </div>
         </div>
 
         <div class="col-md-3">
-            <div class="card shadow-sm border-0">
+            <div class="dash-card">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
+                    <div class="metric">
                         <div>
-                            <div class="text-muted small">Giao thành công</div>
-                            <h3 class="mb-0 text-success">@Model.SuccessOrders</h3>
+                            <div class="label">Giao thành công</div>
+                            <h3 class="value text-success">@Model.SuccessOrders</h3>
                         </div>
-                        <div class="rounded-circle bg-success bg-opacity-10 p-3">
+                        <div class="stat-icon bg-success bg-opacity-10">
                             <i class="fas fa-circle-check text-success"></i>
                         </div>
                     </div>
+                    <div class="stat-foot">Đơn đã hoàn tất/đã giao thành công.</div>
                 </div>
             </div>
         </div>
 
         <div class="col-md-3">
-            <div class="card shadow-sm border-0">
+            <div class="dash-card">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
+                    <div class="metric">
                         <div>
-                            <div class="text-muted small">Thất bại / Hoàn</div>
-                            <h3 class="mb-0 text-danger">@Model.FailedOrders</h3>
+                            <div class="label">Thất bại / Hoàn</div>
+                            <h3 class="value text-danger">@Model.FailedOrders</h3>
                         </div>
-                        <div class="rounded-circle bg-danger bg-opacity-10 p-3">
+                        <div class="stat-icon bg-danger bg-opacity-10">
                             <i class="fas fa-circle-xmark text-danger"></i>
                         </div>
                     </div>
+                    <div class="stat-foot">Bao gồm các đơn bị hoàn hoặc giao thất bại.</div>
                 </div>
             </div>
         </div>
 
         <div class="col-md-3">
-            <div class="card shadow-sm border-0">
+            <div class="dash-card">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
+                    <div class="metric">
                         <div>
-                            <div class="text-muted small">Khiếu nại chờ xử lý</div>
-                            <h3 class="mb-0 text-warning">@Model.PendingComplaints</h3>
+                            <div class="label">Khiếu nại chờ xử lý</div>
+                            <h3 class="value text-warning">@Model.PendingComplaints</h3>
                         </div>
-                        <div class="rounded-circle bg-warning bg-opacity-10 p-3">
+                        <div class="stat-icon bg-warning bg-opacity-10">
                             <i class="fas fa-triangle-exclamation text-warning"></i>
                         </div>
                     </div>
+                    <div class="stat-foot">Các khiếu nại đang ở trạng thái pending.</div>
                 </div>
             </div>
         </div>
+
     </div>
 
-    <!-- Hàng dưới: Đơn theo trạng thái + Đơn có nguy cơ trễ (sau này có thể thêm chart) -->
+    <!-- Hàng dưới: Đơn theo trạng thái + Đơn có nguy cơ trễ -->
     <div class="row g-3 mb-4">
+
         <div class="col-lg-8">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-header bg-white border-0">
-                    <strong>Đơn hàng theo trạng thái</strong>
-                    <span class="text-muted small d-block">
+            <div class="dash-card h-100">
+                <div class="card-head">
+                    <div class="d-flex align-items-center justify-content-between gap-2">
+                        <strong>Đơn hàng theo trạng thái</strong>
+                        <span class="mini-chip">
+                            <i class="fas fa-chart-simple"></i>
+                            Chart-ready
+                        </span>
+                    </div>
+                    <div class="hint">
                         Sau này bạn có thể gắn biểu đồ (Chart.js) theo pending / delivering / delivered / failed.
-                    </span>
+                    </div>
                 </div>
+
                 <div class="card-body">
-                    <table class="table table-sm mb-0">
-                        <thead class="table-light">
+                    <table class="table table-clean table-sm mb-0">
+                        <thead>
                             <tr>
                                 <th>Trạng thái</th>
                                 <th class="text-end">Số đơn</th>
@@ -93,57 +380,99 @@
                         </thead>
                         <tbody>
                             <tr>
-                                <td>Đang chờ xử lý</td>
-                                <td class="text-end">
+                                <td>
+                                    <div class="status-row">
+                                        <span class="status-dot bg-warning"></span>
+                                        Đang chờ xử lý
+                                    </div>
+                                </td>
+                                <td class="text-end fw-bold">
                                     @(@Model.TotalOrders - @Model.SuccessOrders - @Model.FailedOrders)
                                 </td>
                             </tr>
                             <tr>
-                                <td>Đang giao</td>
-                                <td class="text-end">
+                                <td>
+                                    <div class="status-row">
+                                        <span class="status-dot bg-info"></span>
+                                        Đang giao
+                                    </div>
+                                </td>
+                                <td class="text-end fw-bold">
                                     <!-- Nếu có cột Status cụ thể 'delivering' thì sau này query đúng -->
                                     -
                                 </td>
                             </tr>
                             <tr>
-                                <td>Đã giao</td>
-                                <td class="text-end">@Model.SuccessOrders</td>
+                                <td>
+                                    <div class="status-row">
+                                        <span class="status-dot bg-success"></span>
+                                        Đã giao
+                                    </div>
+                                </td>
+                                <td class="text-end fw-bold">@Model.SuccessOrders</td>
                             </tr>
                             <tr>
-                                <td>Hoàn / Thất bại</td>
-                                <td class="text-end">@Model.FailedOrders</td>
+                                <td>
+                                    <div class="status-row">
+                                        <span class="status-dot bg-danger"></span>
+                                        Hoàn / Thất bại
+                                    </div>
+                                </td>
+                                <td class="text-end fw-bold">@Model.FailedOrders</td>
                             </tr>
                         </tbody>
                     </table>
+
+                    <div class="soft-divider"></div>
+                    <div class="text-muted small">
+                        Gợi ý: thêm % tỉ lệ giao thành công, hoặc sparkline theo ngày (không đổi logic hiện tại).
+                    </div>
                 </div>
+
             </div>
         </div>
 
         <div class="col-lg-4">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-header bg-white border-0">
+            <div class="dash-card h-100">
+                <div class="card-head">
                     <strong>Đơn có nguy cơ trễ</strong>
+                    <div class="hint">Theo SLA / thời gian giao dự kiến (placeholder).</div>
                 </div>
+
                 <div class="card-body">
-                    <p class="text-muted small mb-0">
-                        Placeholder: Sau này bạn có thể query các đơn đang giao quá X giờ so với SLA để hiển thị ở đây.
-                    </p>
+                    <div class="warning-box">
+                        <div class="d-flex align-items-start gap-2">
+                            <i class="fas fa-clock mt-1 text-warning"></i>
+                            <p class="text-muted small mb-0">
+                                Placeholder: Sau này bạn có thể query các đơn đang giao quá X giờ so với SLA để hiển thị ở đây.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="mt-3 text-muted small">
+                        Gợi ý UI: hiển thị top 5 đơn gần trễ, có progress bar % SLA.
+                    </div>
                 </div>
             </div>
         </div>
+
     </div>
 
     <!-- Bảng Đơn mới nhất -->
-    <div class="card shadow-sm border-0">
-        <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
-            <strong>Đơn mới nhất</strong>
-            <a asp-controller="AdminOrders" asp-action="Index" class="btn btn-link btn-sm">
-                Xem tất cả
+    <div class="dash-card">
+        <div class="card-head d-flex justify-content-between align-items-center">
+            <div>
+                <strong>Đơn mới nhất</strong>
+                <div class="hint">Danh sách cập nhật gần đây (theo LatestOrders).</div>
+            </div>
+            <a asp-controller="AdminOrders" asp-action="Index" class="btn-soft">
+                Xem tất cả <i class="fas fa-arrow-right"></i>
             </a>
         </div>
-        <div class="card-body p-0">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
+
+        <div class="table-responsive">
+            <table class="table table-clean table-hover mb-0">
+                <thead>
                     <tr>
                         <th>Mã đơn</th>
                         <th>Khách hàng</th>
@@ -169,12 +498,12 @@
                         };
 
                         <tr>
-                            <td>@o.Code</td>
+                            <td class="fw-bold">@o.Code</td>
                             <td>@o.CustomerName</td>
                             <td>@o.DriverName</td>
-                            <td class="text-end">@o.Amount.ToString("#,0") đ</td>
+                            <td class="text-end fw-bold">@o.Amount.ToString("#,0") đ</td>
                             <td>
-                                <span class="badge bg-@badgeClass">
+                                <span class="badge bg-@badgeClass badge-pill">
                                     @o.Status
                                 </span>
                             </td>
@@ -193,4 +522,5 @@
             </table>
         </div>
     </div>
+
 </div>

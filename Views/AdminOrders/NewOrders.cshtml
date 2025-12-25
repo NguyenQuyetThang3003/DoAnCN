@@ -13,347 +13,677 @@
     int? filterHubId = Model.HubId;
 }
 
-<h3 class="fw-bold text-primary mb-3">ĐƠN MỚI / CHỜ PHÂN CÔNG</h3>
+<style>
+    /* ===== Match your Dashboard style (dash) ===== */
+    .dash {
+        --text: #111827;
+        --muted: #6b7280;
+        --border: rgba(17, 24, 39, 0.10);
+        --shadow: 0 10px 30px rgba(17, 24, 39, 0.08);
+        --shadow2: 0 14px 40px rgba(17, 24, 39, 0.10);
+        font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+        color: var(--text);
+    }
 
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger">@TempData["Error"]</div>
-}
-@if (TempData["Success"] != null)
-{
-    <div class="alert alert-success">@TempData["Success"]</div>
-}
-@if (TempData["Warning"] != null)
-{
-    <div class="alert alert-warning">@TempData["Warning"]</div>
-}
+    /* ===== Header like dashboard ===== */
+    .dash-head{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:14px;
+        padding:14px 16px;
+        border-radius:16px;
+        border:1px solid var(--border);
+        background: linear-gradient(180deg, rgba(13,110,253,.08), rgba(13,110,253,.02));
+        box-shadow: var(--shadow);
+        margin-bottom: 14px;
+        flex-wrap: wrap;
+    }
+    .dash-left{display:flex;gap:12px;align-items:center;}
+    .dash-avatar{
+        width:44px;height:44px;border-radius:14px;
+        display:grid;place-items:center;
+        background:#fff;border:1px solid var(--border);
+        box-shadow:0 8px 24px rgba(17, 24, 39, 0.08);
+        font-size:20px;
+        flex:0 0 auto;
+    }
+    .dash-title{font-weight:900;letter-spacing:-.2px;margin:0;}
+    .dash-sub{
+        color:var(--muted);
+        font-size:.95rem;
+        margin-top:4px;
+        display:flex;
+        gap:10px;
+        align-items:center;
+        flex-wrap:wrap;
+    }
+    .dash-dot{width:6px;height:6px;border-radius:99px;background:rgba(17,24,39,0.25);display:inline-block;}
 
-<!-- ✅ FORM GET: lọc keyword/date + lọc hub phụ trách -->
-<form method="get" class="row g-2 mb-3">
-    <div class="col-md-3">
-        <input type="text" name="keyword" value="@Model.Keyword" class="form-control"
-               placeholder="Mã đơn / người gửi / người nhận..." />
-    </div>
+    .dash-pill{
+        display:inline-flex;align-items:center;gap:10px;
+        padding:10px 12px;border-radius:999px;
+        border:1px solid var(--border);background:#fff;
+        box-shadow:0 8px 18px rgba(17, 24, 39, 0.06);
+        color: var(--muted);
+        font-weight:900;
+        font-size:.9rem;
+        user-select:none;
+        text-decoration:none;
+        white-space:nowrap;
+    }
+    .pill-dot{
+        width:10px;height:10px;border-radius:99px;
+        background:#22c55e;
+        box-shadow:0 0 0 4px rgba(34,197,94,0.18);
+    }
 
-    <div class="col-md-2">
-        <input type="date" name="fromDate" value="@(Model.FromDate?.ToString("yyyy-MM-dd"))" class="form-control" />
-    </div>
+    /* ===== Toast-like alerts ===== */
+    .notice{
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        box-shadow: 0 8px 18px rgba(17,24,39,.06);
+        padding: 10px 12px;
+        display:flex;
+        gap:10px;
+        align-items:flex-start;
+        margin-bottom: 10px;
+        background:#fff;
+    }
+    .notice .ic{
+        width:34px;height:34px;border-radius:14px;
+        display:grid;place-items:center;
+        border: 1px solid var(--border);
+        background:#fff;
+        flex:0 0 auto;
+    }
+    .notice .title{font-weight:950;margin:0;}
+    .notice .msg{margin:2px 0 0;color:var(--muted);}
+    .notice-danger{background: linear-gradient(180deg, rgba(220,53,69,.08), rgba(255,255,255,1)); border-color: rgba(220,53,69,.22);}
+    .notice-success{background: linear-gradient(180deg, rgba(25,135,84,.08), rgba(255,255,255,1)); border-color: rgba(25,135,84,.22);}
+    .notice-warning{background: linear-gradient(180deg, rgba(255,193,7,.12), rgba(255,255,255,1)); border-color: rgba(255,193,7,.28);}
 
-    <div class="col-md-2">
-        <input type="date" name="toDate" value="@(Model.ToDate?.ToString("yyyy-MM-dd"))" class="form-control" />
-    </div>
+    /* ===== Panel ===== */
+    .panel{
+        border-radius:18px;
+        border:1px solid var(--border);
+        background:#fff;
+        box-shadow: var(--shadow);
+        overflow:hidden;
+        transition: transform .18s ease, box-shadow .18s ease;
+    }
+    .panel:hover{transform:translateY(-2px);box-shadow:var(--shadow2);}
 
-    <div class="col-md-3">
-        <select id="hubFilterSelect" name="hubId" class="form-select">
-            <option value="">-- Lọc theo Hub phụ trách --</option>
-            @foreach (var h in hubs)
-            {
-                var label = string.IsNullOrWhiteSpace(h.Address) ? h.Name : $"{h.Name} - {h.Address}";
-                if (filterHubId.HasValue && filterHubId.Value == h.Id)
-                {
-                    <option value="@h.Id" selected="selected">@label</option>
-                }
-                else
-                {
-                    <option value="@h.Id">@label</option>
-                }
-            }
-        </select>
-        <div class="form-text">Chỉ hiển thị đơn có <b>HandlingHubId</b> = hub đã chọn.</div>
-    </div>
+    .panel-head{
+        padding:14px 16px;
+        border-bottom: 1px solid rgba(17, 24, 39, 0.08);
+        background: linear-gradient(180deg, rgba(17, 24, 39, 0.03), rgba(17, 24, 39, 0.01));
+        display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    }
+    .panel-title{font-weight:950;letter-spacing:-.2px;}
+    .panel-sub{color:var(--muted);font-size:.92rem;margin-top:4px;}
+    .panel-body{padding:14px 16px 16px 16px;}
 
-    <div class="col-md-2">
-        <button type="submit" class="btn btn-outline-primary w-100">Lọc</button>
-    </div>
+    /* ===== Filter bar ===== */
+    .filter-grid{
+        display:grid;
+        grid-template-columns: 1.2fr .8fr .8fr 1.2fr .7fr;
+        gap: 10px;
+        align-items:end;
+    }
+    .filter-actions{
+        display:flex;
+        justify-content:flex-end;
+        gap:10px;
+        flex-wrap:wrap;
+        margin-top:10px;
+    }
+    .form-label{font-weight:900;color:var(--text);font-size:.92rem;}
+    .form-control, .form-select{
+        border-radius:12px;
+        padding:.55rem .75rem;
+        border-color: rgba(17,24,39,0.12);
+    }
+    .form-control:focus, .form-select:focus{
+        box-shadow: 0 0 0 .2rem rgba(13,110,253,.12);
+        border-color: rgba(13,110,253,.35);
+    }
+    .btn-pill{
+        border-radius:999px !important;
+        font-weight:900;
+        padding:.55rem .95rem;
+        white-space:nowrap;
+    }
+    .btn-ghost{
+        border-radius:999px !important;
+        font-weight:900;
+        padding:.55rem .95rem;
+        background:#fff;
+        border: 1px solid rgba(17,24,39,0.14);
+    }
+    .help-text{color:var(--muted);font-size:.9rem;margin-top:6px;}
 
-    <div class="col-md-12 text-end">
-        <a asp-action="NewOrders" class="btn btn-outline-secondary">Bỏ lọc</a>
-        <a asp-action="Index" class="btn btn-outline-secondary ms-2">Xem tất cả đơn</a>
-    </div>
-</form>
+    /* ===== Assignment block ===== */
+    .assign-grid{
+        display:grid;
+        grid-template-columns: 1fr 1.35fr .8fr;
+        gap: 12px;
+        align-items:end;
+    }
+    .soft-box{
+        border:1px solid rgba(17,24,39,0.10);
+        background: rgba(17,24,39,0.02);
+        border-radius: 16px;
+        padding: 12px;
+    }
+    .warn-inline{
+        border-radius: 14px;
+        padding: 10px 12px;
+        border: 1px solid rgba(245,158,11,0.28);
+        background: rgba(245,158,11,0.08);
+        color:#92400e;
+        font-weight:700;
+        font-size:.92rem;
+    }
 
-@if (Model.Items == null || !Model.Items.Any())
-{
-    <div class="alert alert-info">Hiện không có đơn nào đang chờ phân công.</div>
-}
-else
-{
-    <!-- ✅ FORM POST: Optimize + Assign single -->
-    <form id="assignRouteForm"
-          asp-action="PreviewAssignRoute"
-          asp-controller="AdminOrders"
-          method="post"
-          asp-antiforgery="true">
+    /* ===== Table ===== */
+    .table-clean{margin:0;}
+    .table-clean thead th{
+        background: rgba(17,24,39,0.03) !important;
+        font-weight:950;
+        color: var(--text);
+        border-bottom: 1px solid rgba(17,24,39,0.10) !important;
+        white-space: nowrap;
+    }
+    .table-clean td, .table-clean th{
+        padding:.85rem .95rem;
+        vertical-align:middle;
+        border-color: rgba(17,24,39,0.06);
+    }
+    .table-clean tbody tr{transition: background .12s ease;}
+    .table-clean tbody tr:hover{background: rgba(13,110,253,.04);}
+    .truncate{
+        max-width: 260px;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        white-space:nowrap;
+    }
 
-        @Html.AntiForgeryToken()
+    /* ===== Selected count ===== */
+    .count-pill{
+        display:inline-flex;
+        align-items:center;
+        gap:8px;
+        padding:8px 10px;
+        border-radius:999px;
+        border: 1px solid var(--border);
+        background:#fff;
+        box-shadow:0 8px 18px rgba(17,24,39,.06);
+        color: var(--muted);
+        font-weight:900;
+        font-size:.9rem;
+        white-space:nowrap;
+    }
+    .count-badge{
+        display:inline-flex;
+        min-width:26px;
+        height:26px;
+        border-radius:999px;
+        align-items:center;
+        justify-content:center;
+        background: rgba(13,110,253,.10);
+        color:#0d6efd;
+        font-weight:950;
+    }
 
-        <div class="row mb-3 align-items-end">
-            <!-- Tài xế -->
-            <div class="col-md-4">
-                <label class="form-label fw-bold">Chọn tài xế</label>
-                <select id="driverSelect" name="driverId" class="form-select" required>
-                    <option value="">-- Chọn tài xế --</option>
-                    @foreach (var d in drivers)
-                    {
-                        var name = string.IsNullOrWhiteSpace(d.UserName) ? $"Tài xế #{d.Id}" : d.UserName;
-                        <option value="@d.Id">@name</option>
-                    }
-                </select>
-            </div>
+    /* ===== Action buttons in table ===== */
+    .btn-group .btn{
+        border-radius:999px !important;
+        font-weight:900;
+        padding:.35rem .75rem;
+    }
+    .btn-group .btn + .btn{ margin-left: 6px; }
 
-            <!-- Hub xuất phát -->
-            <div class="col-md-5">
-                <label class="form-label fw-bold">Điểm xuất phát (Hub lấy hàng)</label>
+    /* ===== Responsive ===== */
+    @@media (max-width: 992px){
+        .filter-grid{grid-template-columns: 1fr 1fr; }
+        .assign-grid{grid-template-columns: 1fr; }
+    }
+</style>
 
-                <div class="form-check mb-2">
-                    <input class="form-check-input" type="checkbox" id="useFilterAsOrigin"
-                           @(filterHubId.HasValue ? "checked" : "") />
-                    <label class="form-check-label" for="useFilterAsOrigin">
-                        Dùng Hub đang lọc làm điểm xuất phát
-                    </label>
-                </div>
+<div class="dash container-fluid py-3">
 
-                <!-- name="hubId" => controller dùng hubId làm origin -->
-                <select id="hubOriginSelect" name="hubId" class="form-select">
-                    <option value="">-- Chọn hub làm điểm xuất phát --</option>
-                    @foreach (var h in hubs)
-                    {
-                        var label = string.IsNullOrWhiteSpace(h.Address) ? h.Name : $"{h.Name} - {h.Address}";
-                        if (filterHubId.HasValue && filterHubId.Value == h.Id)
-                        {
-                            <option value="@h.Id" selected="selected">@label</option>
-                        }
-                        else
-                        {
-                            <option value="@h.Id">@label</option>
-                        }
-                    }
-                </select>
-
-                <div class="form-text">
-                    Nếu bật “Dùng Hub đang lọc…”, Hub xuất phát sẽ tự bám theo Hub lọc để tránh nhầm.
-                </div>
-
-                <div class="text-warning small mt-1 d-none" id="hubMismatchWarn">
-                    ⚠️ Bạn đang chọn Hub xuất phát khác Hub đang lọc.
-                </div>
-
-                <!-- fallback -->
-                <div class="mt-2">
-                    <button type="button" class="btn btn-sm btn-outline-secondary" id="toggleManualOrigin">
-                        Nhập thủ công địa chỉ xuất phát (fallback)
-                    </button>
-                </div>
-
-                <div id="manualOriginWrap" class="mt-2 d-none">
-                    <input type="text" name="driverOriginAddress" class="form-control"
-                           placeholder="VD: 595 Nguyễn Tri Phương, Thủ Đức, TP.HCM hoặc lat,lng"
-                           autocomplete="street-address" />
-                    <small class="text-muted">
-                        Nếu đã chọn Hub thì hệ thống ưu tiên Hub, field này chỉ dùng khi không chọn Hub.
-                    </small>
-                </div>
-            </div>
-
-            <!-- nút optimize -->
-            <div class="col-md-3 text-end">
-                <button id="btnOptimize" type="submit" class="btn btn-primary mt-3 mt-md-0" disabled>
-                    Tối ưu tuyến &amp; phân công các đơn đã chọn
-                </button>
-
-                <div class="text-danger small mt-1 d-none" id="selectWarn">
-                    Vui lòng chọn ít nhất 1 đơn để tối ưu tuyến.
-                </div>
-
-                <div class="text-danger small mt-1 d-none" id="driverWarn">
-                    Vui lòng chọn tài xế.
+    <!-- Header -->
+    <div class="dash-head">
+        <div class="dash-left">
+            <div class="dash-avatar">📦</div>
+            <div>
+                <h2 class="dash-title">Đơn mới / Chờ phân công</h2>
+                <div class="dash-sub">
+                    Lọc đơn theo keyword / thời gian / hub phụ trách và phân công nhanh
+                    <span class="dash-dot"></span>
+                    <span class="text-muted">Đang hiển thị: <b>@(Model.Items?.Count() ?? 0)</b> đơn</span>
                 </div>
             </div>
         </div>
 
-        <div class="card shadow-sm">
-            <div class="card-header fw-bold d-flex align-items-center justify-content-between">
-                <span>Danh sách đơn chờ phân công</span>
-                <small class="text-muted">Đã chọn: <span id="selectedCount">0</span></small>
+        <a asp-action="Index" class="dash-pill">
+            <span class="pill-dot"></span>
+            <span><i class="fas fa-list me-1"></i> Tất cả đơn</span>
+        </a>
+    </div>
+
+    <!-- Notices -->
+    @if (TempData["Error"] != null)
+    {
+        <div class="notice notice-danger">
+            <div class="ic">⛔</div>
+            <div>
+                <p class="title mb-0">Có lỗi</p>
+                <p class="msg mb-0">@TempData["Error"]</p>
+            </div>
+        </div>
+    }
+    @if (TempData["Success"] != null)
+    {
+        <div class="notice notice-success">
+            <div class="ic">✅</div>
+            <div>
+                <p class="title mb-0">Thành công</p>
+                <p class="msg mb-0">@TempData["Success"]</p>
+            </div>
+        </div>
+    }
+    @if (TempData["Warning"] != null)
+    {
+        <div class="notice notice-warning">
+            <div class="ic">⚠️</div>
+            <div>
+                <p class="title mb-0">Lưu ý</p>
+                <p class="msg mb-0">@TempData["Warning"]</p>
+            </div>
+        </div>
+    }
+
+    <!-- Filter panel (GET) -->
+    <div class="panel mb-3">
+        <div class="panel-head">
+            <div>
+                <div class="panel-title"><i class="fas fa-filter me-1"></i> Bộ lọc</div>
+                <div class="panel-sub">Lọc theo mã đơn/người gửi/người nhận, thời gian và Hub phụ trách (HandlingHubId).</div>
             </div>
 
-            <div class="card-body p-0">
-                <table class="table table-striped table-hover mb-0 align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th style="width:40px;"><input id="selectAll" type="checkbox" /></th>
-                            <th>Mã đơn</th>
-                            <th>Khách hàng</th>
-                            <th>Người nhận</th>
-                            <th>SĐT nhận</th>
-                            <th>Địa chỉ nhận</th>
-                            <th>Thành phố</th>
-                            <th>Tiền COD</th>
-                            <th>Phí ship</th>
-                            <th>Ngày tạo</th>
-                            <th style="width:120px;">Thao tác</th>
-                        </tr>
-                    </thead>
+            <div class="d-flex gap-2 flex-wrap">
+                <a asp-action="NewOrders" class="btn btn-outline-secondary btn-pill">
+                    <i class="fas fa-eraser me-1"></i> Bỏ lọc
+                </a>
+                <a asp-action="Index" class="btn btn-outline-secondary btn-pill">
+                    <i class="fas fa-list me-1"></i> Xem tất cả
+                </a>
+            </div>
+        </div>
 
-                    <tbody>
+        <div class="panel-body">
+            <form method="get">
+                <div class="filter-grid">
+                    <div>
+                        <label class="form-label">Từ khóa</label>
+                        <input type="text" name="keyword" value="@Model.Keyword" class="form-control"
+                               placeholder="Mã đơn / người gửi / người nhận..." />
+                    </div>
+
+                    <div>
+                        <label class="form-label">Từ ngày</label>
+                        <input type="date" name="fromDate" value="@(Model.FromDate?.ToString("yyyy-MM-dd"))" class="form-control" />
+                    </div>
+
+                    <div>
+                        <label class="form-label">Đến ngày</label>
+                        <input type="date" name="toDate" value="@(Model.ToDate?.ToString("yyyy-MM-dd"))" class="form-control" />
+                    </div>
+
+                    <div>
+                        <label class="form-label">Hub phụ trách</label>
+                        <select id="hubFilterSelect" name="hubId" class="form-select">
+                            <option value="">-- Lọc theo Hub phụ trách --</option>
+                            @foreach (var h in hubs)
+                            {
+                                var label = string.IsNullOrWhiteSpace(h.Address) ? h.Name : $"{h.Name} - {h.Address}";
+                                if (filterHubId.HasValue && filterHubId.Value == h.Id)
+                                {
+                                    <option value="@h.Id" selected="selected">@label</option>
+                                }
+                                else
+                                {
+                                    <option value="@h.Id">@label</option>
+                                }
+                            }
+                        </select>
+                        <div class="help-text">Chỉ hiển thị đơn có <b>HandlingHubId</b> = hub đã chọn.</div>
+                    </div>
+
+                    <div>
+                        <button type="submit" class="btn btn-primary btn-pill w-100">
+                            <i class="fas fa-filter me-1"></i> Lọc
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (Model.Items == null || !Model.Items.Any())
+    {
+        <div class="panel">
+            <div class="panel-body">
+                <div class="warn-inline">
+                    Hiện không có đơn nào đang chờ phân công.
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- POST assign form -->
+        <form id="assignRouteForm"
+              asp-action="PreviewAssignRoute"
+              asp-controller="AdminOrders"
+              method="post"
+              asp-antiforgery="true">
+
+            @Html.AntiForgeryToken()
+
+            <!-- Assign panel -->
+            <div class="panel mb-3">
+                <div class="panel-head">
+                    <div>
+                        <div class="panel-title"><i class="fas fa-route me-1"></i> Phân công & tối ưu tuyến</div>
+                        <div class="panel-sub">Chọn tài xế, hub xuất phát và các đơn cần tối ưu tuyến.</div>
+                    </div>
+
+                    <div class="count-pill">
+                        <span>Đã chọn</span>
+                        <span class="count-badge" id="selectedCount">0</span>
+                        <span class="text-muted">đơn</span>
+                    </div>
+                </div>
+
+                <div class="panel-body">
+                    <div class="assign-grid">
+                        <!-- Driver -->
+                        <div class="soft-box">
+                            <label class="form-label">Chọn tài xế</label>
+                            <select id="driverSelect" name="driverId" class="form-select" required>
+                                <option value="">-- Chọn tài xế --</option>
+                                @foreach (var d in drivers)
+                                {
+                                    var name = string.IsNullOrWhiteSpace(d.UserName) ? $"Tài xế #{d.Id}" : d.UserName;
+                                    <option value="@d.Id">@name</option>
+                                }
+                            </select>
+                            <div class="text-danger small mt-2 d-none" id="driverWarn">
+                                Vui lòng chọn tài xế.
+                            </div>
+                        </div>
+
+                        <!-- Origin hub / fallback -->
+                        <div class="soft-box">
+                            <label class="form-label">Điểm xuất phát (Hub lấy hàng)</label>
+
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="useFilterAsOrigin"
+                                       @(filterHubId.HasValue ? "checked" : "") />
+                                <label class="form-check-label" for="useFilterAsOrigin">
+                                    Dùng Hub đang lọc làm điểm xuất phát
+                                </label>
+                            </div>
+
+                            <select id="hubOriginSelect" name="hubId" class="form-select">
+                                <option value="">-- Chọn hub làm điểm xuất phát --</option>
+                                @foreach (var h in hubs)
+                                {
+                                    var label = string.IsNullOrWhiteSpace(h.Address) ? h.Name : $"{h.Name} - {h.Address}";
+                                    if (filterHubId.HasValue && filterHubId.Value == h.Id)
+                                    {
+                                        <option value="@h.Id" selected="selected">@label</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@h.Id">@label</option>
+                                    }
+                                }
+                            </select>
+
+                            <div class="help-text">
+                                Nếu bật “Dùng Hub đang lọc…”, Hub xuất phát sẽ tự bám theo Hub lọc để tránh nhầm.
+                            </div>
+
+                            <div class="text-warning small mt-1 d-none" id="hubMismatchWarn">
+                                ⚠️ Bạn đang chọn Hub xuất phát khác Hub đang lọc.
+                            </div>
+
+                            <div class="mt-2">
+                                <button type="button" class="btn btn-outline-secondary btn-pill" id="toggleManualOrigin">
+                                    <i class="fas fa-keyboard me-1"></i> Nhập thủ công địa chỉ xuất phát (fallback)
+                                </button>
+                            </div>
+
+                            <div id="manualOriginWrap" class="mt-2 d-none">
+                                <input type="text" name="driverOriginAddress" class="form-control"
+                                       placeholder="VD: 595 Nguyễn Tri Phương, Thủ Đức, TP.HCM hoặc lat,lng"
+                                       autocomplete="street-address" />
+                                <small class="text-muted">
+                                    Nếu đã chọn Hub thì hệ thống ưu tiên Hub, field này chỉ dùng khi không chọn Hub.
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Optimize button -->
+                        <div class="soft-box">
+                            <button id="btnOptimize" type="submit" class="btn btn-primary btn-pill w-100" disabled>
+                                <i class="fas fa-wand-magic-sparkles me-1"></i> Tối ưu tuyến & phân công
+                            </button>
+
+                            <div class="text-danger small mt-2 d-none" id="selectWarn">
+                                Vui lòng chọn ít nhất 1 đơn để tối ưu tuyến.
+                            </div>
+
+                            <div class="help-text mt-2">
+                                Gợi ý: dùng “Chọn tất cả” để phân công nhanh khi đơn cùng Hub phụ trách.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Orders table panel -->
+            <div class="panel">
+                <div class="panel-head">
+                    <div>
+                        <div class="panel-title"><i class="fas fa-inbox me-1"></i> Danh sách đơn chờ phân công</div>
+                        <div class="panel-sub">Chọn các đơn cần tối ưu tuyến hoặc gán lẻ từng đơn.</div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-clean table-hover mb-0 align-middle">
+                        <thead>
+                            <tr>
+                                <th style="width:40px;"><input id="selectAll" type="checkbox" /></th>
+                                <th>Mã đơn</th>
+                                <th>Khách hàng</th>
+                                <th>Người nhận</th>
+                                <th>SĐT nhận</th>
+                                <th>Địa chỉ nhận</th>
+                                <th>Thành phố</th>
+                                <th class="text-end">Tiền COD</th>
+                                <th class="text-end">Phí ship</th>
+                                <th>Ngày tạo</th>
+                                <th style="width:140px;" class="text-end">Thao tác</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
                         @foreach (var o in Model.Items)
                         {
                             <tr>
                                 <td>
                                     <input class="order-checkbox" type="checkbox" name="orderIds" value="@o.Id" />
                                 </td>
-                                <td>@o.Code</td>
+                                <td class="fw-bold">@o.Code</td>
                                 <td>@o.CustomerName</td>
                                 <td>@o.ReceiverName</td>
                                 <td>@o.ReceiverPhone</td>
-                                <td>@o.ReceiverAddress</td>
+                                <td class="truncate">@o.ReceiverAddress</td>
                                 <td>@o.Province</td>
-                                <td>@o.CodAmount.ToString("N0")</td>
-                                <td>@o.ShipFee.ToString("N0")</td>
-                                <td>@(o.CreatedAt?.ToString("dd/MM/yyyy HH:mm"))</td>
+                                <td class="text-end fw-bold">@o.CodAmount.ToString("N0")</td>
+                                <td class="text-end">@o.ShipFee.ToString("N0")</td>
+                                <td class="text-nowrap">@(o.CreatedAt?.ToString("dd/MM/yyyy HH:mm"))</td>
 
-                                <td>
-                                    <!-- Gán lẻ -->
-                                    <button type="submit"
-                                            class="btn btn-sm btn-outline-secondary"
-                                            data-mode="single"
-                                            formaction="@Url.Action("AssignDriverSimple", "AdminOrders")"
-                                            formmethod="post"
-                                            name="orderId"
-                                            value="@o.Id"
-                                            onclick="return confirmAssignSingle();">
-                                        Gán lẻ
-                                    </button>
+                                <td class="text-end">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button type="submit"
+                                                class="btn btn-outline-secondary"
+                                                data-mode="single"
+                                                formaction="@Url.Action("AssignDriverSimple", "AdminOrders")"
+                                                formmethod="post"
+                                                name="orderId"
+                                                value="@o.Id"
+                                                onclick="return confirmAssignSingle();">
+                                            <i class="fas fa-user-check me-1"></i> Gán lẻ
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         }
-                    </tbody>
-                </table>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        </div>
-    </form>
+        </form>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const form = document.getElementById("assignRouteForm");
-            const btnOptimize = document.getElementById("btnOptimize");
-            const selectWarn = document.getElementById("selectWarn");
-            const driverWarn = document.getElementById("driverWarn");
-            const countEl = document.getElementById("selectedCount");
-            const selectAll = document.getElementById("selectAll");
-            const driverSelect = document.getElementById("driverSelect");
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const form = document.getElementById("assignRouteForm");
+                const btnOptimize = document.getElementById("btnOptimize");
+                const selectWarn = document.getElementById("selectWarn");
+                const driverWarn = document.getElementById("driverWarn");
+                const countEl = document.getElementById("selectedCount");
+                const selectAll = document.getElementById("selectAll");
+                const driverSelect = document.getElementById("driverSelect");
 
-            const btnToggle = document.getElementById("toggleManualOrigin");
-            const manualWrap = document.getElementById("manualOriginWrap");
+                const btnToggle = document.getElementById("toggleManualOrigin");
+                const manualWrap = document.getElementById("manualOriginWrap");
 
-            const hubFilter = document.getElementById("hubFilterSelect");
-            const hubOrigin = document.getElementById("hubOriginSelect");
-            const useFilterAsOrigin = document.getElementById("useFilterAsOrigin");
-            const hubMismatchWarn = document.getElementById("hubMismatchWarn");
+                const hubFilter = document.getElementById("hubFilterSelect");
+                const hubOrigin = document.getElementById("hubOriginSelect");
+                const useFilterAsOrigin = document.getElementById("useFilterAsOrigin");
+                const hubMismatchWarn = document.getElementById("hubMismatchWarn");
 
-            function getOrderCheckboxes() {
-                return Array.from(document.querySelectorAll(".order-checkbox"));
-            }
-
-            function syncOriginWithFilterIfNeeded() {
-                if (!hubOrigin) return;
-
-                const filterVal = hubFilter ? hubFilter.value : "";
-                const originVal = hubOrigin.value;
-
-                if (useFilterAsOrigin && useFilterAsOrigin.checked) {
-                    if (filterVal) hubOrigin.value = filterVal;
-                    hubOrigin.disabled = true;
-                } else {
-                    hubOrigin.disabled = false;
+                function getOrderCheckboxes() {
+                    return Array.from(document.querySelectorAll(".order-checkbox"));
                 }
 
-                const shouldWarn = !!filterVal && !!hubOrigin.value && (hubOrigin.value !== filterVal);
-                if (hubMismatchWarn) hubMismatchWarn.classList.toggle("d-none", !shouldWarn);
-            }
+                function syncOriginWithFilterIfNeeded() {
+                    if (!hubOrigin) return;
 
-            function updateUI() {
-                const cbs = getOrderCheckboxes();
-                const checked = cbs.filter(x => x.checked).length;
+                    const filterVal = hubFilter ? hubFilter.value : "";
+                    const originVal = hubOrigin.value;
 
-                countEl.textContent = checked.toString();
+                    if (useFilterAsOrigin && useFilterAsOrigin.checked) {
+                        if (filterVal) hubOrigin.value = filterVal;
+                        hubOrigin.disabled = true;
+                    } else {
+                        hubOrigin.disabled = false;
+                    }
 
-                const hasDriver = !!(driverSelect && driverSelect.value);
-                btnOptimize.disabled = !(checked > 0 && hasDriver);
+                    const shouldWarn = !!filterVal && !!hubOrigin.value && (hubOrigin.value !== filterVal);
+                    if (hubMismatchWarn) hubMismatchWarn.classList.toggle("d-none", !shouldWarn);
+                }
 
-                selectWarn.classList.toggle("d-none", checked !== 0);
-                driverWarn.classList.toggle("d-none", hasDriver);
-
-                if (checked === 0) selectAll.checked = false;
-                else selectAll.checked = (checked === cbs.length);
-
-                syncOriginWithFilterIfNeeded();
-            }
-
-            if (selectAll) {
-                selectAll.addEventListener("change", function () {
+                function updateUI() {
                     const cbs = getOrderCheckboxes();
-                    cbs.forEach(cb => cb.checked = selectAll.checked);
-                    updateUI();
-                });
-            }
+                    const checked = cbs.filter(x => x.checked).length;
 
-            getOrderCheckboxes().forEach(cb => cb.addEventListener("change", updateUI));
-            if (driverSelect) driverSelect.addEventListener("change", updateUI);
-
-            if (useFilterAsOrigin) useFilterAsOrigin.addEventListener("change", updateUI);
-            if (hubOrigin) hubOrigin.addEventListener("change", updateUI);
-
-            if (form) {
-                form.addEventListener("submit", function (e) {
-                    const submitter = e.submitter;
-                    const mode = submitter?.getAttribute("data-mode");
+                    countEl.textContent = checked.toString();
 
                     const hasDriver = !!(driverSelect && driverSelect.value);
-                    const checked = getOrderCheckboxes().filter(x => x.checked).length;
+                    btnOptimize.disabled = !(checked > 0 && hasDriver);
 
-                    if (mode === "single") {
-                        if (!hasDriver) {
+                    selectWarn.classList.toggle("d-none", checked !== 0);
+                    driverWarn.classList.toggle("d-none", hasDriver);
+
+                    if (checked === 0) selectAll.checked = false;
+                    else selectAll.checked = (checked === cbs.length);
+
+                    syncOriginWithFilterIfNeeded();
+                }
+
+                if (selectAll) {
+                    selectAll.addEventListener("change", function () {
+                        const cbs = getOrderCheckboxes();
+                        cbs.forEach(cb => cb.checked = selectAll.checked);
+                        updateUI();
+                    });
+                }
+
+                getOrderCheckboxes().forEach(cb => cb.addEventListener("change", updateUI));
+                if (driverSelect) driverSelect.addEventListener("change", updateUI);
+
+                if (useFilterAsOrigin) useFilterAsOrigin.addEventListener("change", updateUI);
+                if (hubOrigin) hubOrigin.addEventListener("change", updateUI);
+
+                if (form) {
+                    form.addEventListener("submit", function (e) {
+                        const submitter = e.submitter;
+                        const mode = submitter?.getAttribute("data-mode");
+
+                        const hasDriver = !!(driverSelect && driverSelect.value);
+                        const checked = getOrderCheckboxes().filter(x => x.checked).length;
+
+                        if (mode === "single") {
+                            if (!hasDriver) {
+                                e.preventDefault();
+                                updateUI();
+                                alert("Vui lòng chọn tài xế trước khi gán lẻ.");
+                            }
+                            return;
+                        }
+
+                        if (checked === 0 || !hasDriver) {
                             e.preventDefault();
                             updateUI();
-                            alert("Vui lòng chọn tài xế trước khi gán lẻ.");
+                            window.scrollTo({ top: 0, behavior: "smooth" });
+                            return;
                         }
-                        return;
-                    }
+                    });
+                }
 
-                    if (checked === 0 || !hasDriver) {
-                        e.preventDefault();
-                        updateUI();
-                        window.scrollTo({ top: 0, behavior: "smooth" });
-                        return;
-                    }
-                });
+                if (btnToggle && manualWrap) {
+                    btnToggle.addEventListener("click", function () {
+                        manualWrap.classList.toggle("d-none");
+                    });
+                }
+
+                if (hubOrigin && manualWrap) {
+                    hubOrigin.addEventListener("change", function () {
+                        if (hubOrigin.value && !manualWrap.classList.contains("d-none")) {
+                            manualWrap.classList.add("d-none");
+                        }
+                    });
+                }
+
+                updateUI();
+            });
+
+            function confirmAssignSingle() {
+                const driverSelect = document.getElementById("driverSelect");
+                if (!driverSelect || !driverSelect.value) {
+                    alert("Vui lòng chọn tài xế trước khi gán lẻ.");
+                    return false;
+                }
+                return confirm("Xác nhận gán đơn này cho tài xế đã chọn?");
             }
-
-            if (btnToggle && manualWrap) {
-                btnToggle.addEventListener("click", function () {
-                    manualWrap.classList.toggle("d-none");
-                });
-            }
-
-            if (hubOrigin && manualWrap) {
-                hubOrigin.addEventListener("change", function () {
-                    if (hubOrigin.value && !manualWrap.classList.contains("d-none")) {
-                        manualWrap.classList.add("d-none");
-                    }
-                });
-            }
-
-            updateUI();
-        });
-
-        function confirmAssignSingle() {
-            const driverSelect = document.getElementById("driverSelect");
-            if (!driverSelect || !driverSelect.value) {
-                alert("Vui lòng chọn tài xế trước khi gán lẻ.");
-                return false;
-            }
-            return confirm("Xác nhận gán đơn này cho tài xế đã chọn?");
-        }
-    </script>
-}
+        </script>
+    }
+</div>

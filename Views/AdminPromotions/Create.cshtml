@@ -3,64 +3,299 @@
 @{
     ViewData["Title"] = "Tạo mã giảm giá";
     Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
-
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h3 class="mb-0">Tạo mã giảm giá</h3>
-    <a class="btn btn-outline-secondary" asp-action="Index">Quay lại</a>
-</div>
+<div class="promo-create container-fluid px-4 py-3">
 
-<div class="card shadow-sm">
-    <div class="card-body">
-        <form method="post">
-            @Html.AntiForgeryToken()
-            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <label class="form-label fw-bold">Mã (Code)</label>
-                    <input asp-for="Code" class="form-control" placeholder="VD: FREESHIP10" />
-                    <span asp-validation-for="Code" class="text-danger"></span>
-                </div>
-
-                <div class="col-md-4">
-                    <label class="form-label fw-bold">% Giảm</label>
-                    <input asp-for="Giatriphantram" class="form-control" type="number" min="1" max="100" />
-                    <span asp-validation-for="Giatriphantram" class="text-danger"></span>
-                </div>
-
-                <div class="col-md-4">
-                    <label class="form-label fw-bold">Trạng thái</label>
-                    <select asp-for="Trangthai" class="form-select">
-                        <option value="true">Hoạt động</option>
-                        <option value="false">Khóa</option>
-                    </select>
-                </div>
-
-                <div class="col-md-6">
-                    <label class="form-label fw-bold">Ngày bắt đầu</label>
-                    <input asp-for="Ngaybatdau" class="form-control" type="date" />
-                    <span asp-validation-for="Ngaybatdau" class="text-danger"></span>
-                </div>
-
-                <div class="col-md-6">
-                    <label class="form-label fw-bold">Ngày kết thúc</label>
-                    <input asp-for="Ngayketthuc" class="form-control" type="date" />
-                    <span asp-validation-for="Ngayketthuc" class="text-danger"></span>
+    <!-- Header giống Dashboard -->
+    <div class="dash-head mb-3">
+        <div class="dash-head__left">
+            <div class="dash-avatar">🏷️</div>
+            <div>
+                <div class="dash-title">Tạo mã giảm giá</div>
+                <div class="dash-sub">
+                    Nhập thông tin mã, % giảm và thời gian hiệu lực
+                    <span class="dash-dot"></span>
+                    <span class="text-muted">Admin</span>
                 </div>
             </div>
+        </div>
 
-            <div class="mt-4 d-flex gap-2">
-                <button class="btn btn-danger" type="submit">
-                    <i class="fas fa-save me-1"></i> Lưu
-                </button>
-                <a class="btn btn-outline-secondary" asp-action="Index">Hủy</a>
+        <div class="dash-head__right d-flex gap-2 flex-wrap">
+            <div class="dash-pill">
+                <span class="pill-dot"></span>
+                <span>Promotion</span>
             </div>
-        </form>
+
+            <a class="btn btn-outline-secondary btn-soft" asp-action="Index">
+                <i class="fas fa-arrow-left"></i> Quay lại
+            </a>
+        </div>
+    </div>
+
+    <!-- Form panel -->
+    <div class="panel">
+        <div class="panel-head">
+            <div>
+                <div class="panel-title">
+                    <i class="fas fa-plus-circle me-1"></i> Thông tin mã giảm giá
+                </div>
+                <div class="panel-sub">Kiểm tra ngày bắt đầu/kết thúc để tránh mã hết hạn ngay.</div>
+            </div>
+
+            <div class="panel-meta">
+                <span class="badge bg-info text-dark badge-pill">
+                    <span class="role-dot bg-info"></span> Create
+                </span>
+            </div>
+        </div>
+
+        <div class="panel-body">
+            <form method="post" class="form-wrap">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 mb-3 d-none" id="summaryBox"></div>
+
+                <div class="row g-3">
+                    <div class="col-lg-4 col-md-6">
+                        <label class="form-label fw-bold">Mã (Code)</label>
+                        <input asp-for="Code" class="form-control input-soft" placeholder="VD: FREESHIP10" />
+                        <div class="form-hint">Nên viết hoa, không dấu cách.</div>
+                        <span asp-validation-for="Code" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-lg-4 col-md-6">
+                        <label class="form-label fw-bold">% Giảm</label>
+                        <div class="input-group">
+                            <input asp-for="Giatriphantram" class="form-control input-soft" type="number" min="1" max="100" placeholder="10" />
+                            <span class="input-group-text bg-white">%</span>
+                        </div>
+                        <div class="form-hint">Giá trị 1–100.</div>
+                        <span asp-validation-for="Giatriphantram" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-lg-4 col-md-12">
+                        <label class="form-label fw-bold">Trạng thái</label>
+                        <select asp-for="Trangthai" class="form-select input-soft">
+                            <option value="true">Hoạt động</option>
+                            <option value="false">Khóa</option>
+                        </select>
+                        <div class="form-hint">Nếu “Khóa”, mã sẽ không áp dụng được.</div>
+                        <span asp-validation-for="Trangthai" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Ngày bắt đầu</label>
+                        <input asp-for="Ngaybatdau" class="form-control input-soft" type="date" />
+                        <span asp-validation-for="Ngaybatdau" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Ngày kết thúc</label>
+                        <input asp-for="Ngayketthuc" class="form-control input-soft" type="date" />
+                        <span asp-validation-for="Ngayketthuc" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Quick preview card -->
+                    <div class="col-12">
+                        <div class="preview-card">
+                            <div class="preview-left">
+                                <div class="preview-title">Xem trước</div>
+                                <div class="preview-sub">Mã sẽ hiển thị dạng badge trong danh sách.</div>
+                            </div>
+                            <div class="preview-right">
+                                <span class="badge bg-primary badge-pill">
+                                    <span class="role-dot bg-primary"></span>
+                                    <span id="pvCode">CODE</span>
+                                </span>
+                                <span class="badge bg-info text-dark badge-pill">
+                                    <span class="role-dot bg-info"></span>
+                                    <span id="pvPercent">0%</span>
+                                </span>
+                                <span class="badge bg-success badge-pill" id="pvStatus">
+                                    <span class="role-dot bg-success"></span>
+                                    Hoạt động
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions mt-4">
+                    <a class="btn btn-outline-secondary btn-action" asp-action="Index">
+                        Hủy
+                    </a>
+
+                    <button class="btn btn-primary btn-action" type="submit">
+                        <i class="fas fa-save me-1"></i> Lưu mã
+                    </button>
+                </div>
+
+                <div class="note mt-3">
+                    Gợi ý: Nếu bạn muốn tự động khóa mã khi hết hạn, hãy xử lý ở backend khi validate mã.
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        // nhỏ gọn: preview code/%/status
+        (function () {
+            const code = document.getElementById("Code") || document.querySelector("[name='Code']");
+            const percent = document.getElementById("Giatriphantram") || document.querySelector("[name='Giatriphantram']");
+            const status = document.getElementById("Trangthai") || document.querySelector("[name='Trangthai']");
+
+            const pvCode = document.getElementById("pvCode");
+            const pvPercent = document.getElementById("pvPercent");
+            const pvStatus = document.getElementById("pvStatus");
+
+            function sync() {
+                const c = (code?.value || "").trim();
+                pvCode.textContent = c ? c.toUpperCase() : "CODE";
+
+                const p = parseInt(percent?.value || "0", 10) || 0;
+                pvPercent.textContent = `${p}%`;
+
+                const isActive = (status?.value || "true") === "true";
+                pvStatus.className = "badge badge-pill " + (isActive ? "bg-success" : "bg-secondary");
+                pvStatus.innerHTML = `<span class="role-dot ${isActive ? "bg-success" : "bg-secondary"}"></span>${isActive ? "Hoạt động" : "Khóa"}`;
+            }
+
+            ["input", "change"].forEach(evt => {
+                code?.addEventListener(evt, sync);
+                percent?.addEventListener(evt, sync);
+                status?.addEventListener(evt, sync);
+            });
+
+            sync();
+        })();
+    </script>
 }
+
+<style>
+    .promo-create{
+        --text:#111827;
+        --muted:#6b7280;
+        --border:rgba(17,24,39,0.10);
+        --shadow:0 10px 30px rgba(17,24,39,0.08);
+        --shadow2:0 14px 40px rgba(17,24,39,0.10);
+        color:var(--text);
+        font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;
+    }
+
+    /* ===== Header dashboard ===== */
+    .dash-head{
+        display:flex;align-items:center;justify-content:space-between;gap:14px;
+        padding:14px 16px;border-radius:16px;border:1px solid var(--border);
+        background:linear-gradient(180deg, rgba(13,110,253,0.08), rgba(13,110,253,0.02));
+        box-shadow:var(--shadow);
+    }
+    .dash-head__left{display:flex;gap:12px;align-items:center;}
+    .dash-avatar{
+        width:44px;height:44px;border-radius:14px;display:grid;place-items:center;
+        background:#fff;border:1px solid var(--border);
+        box-shadow:0 8px 24px rgba(17,24,39,0.08);
+        font-size:20px;flex:0 0 auto;
+    }
+    .dash-title{font-weight:950;letter-spacing:-0.2px;font-size:1.15rem;}
+    .dash-sub{margin-top:4px;color:var(--muted);font-size:.95rem;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+    .dash-dot{width:6px;height:6px;border-radius:99px;background:rgba(17,24,39,0.25);display:inline-block;}
+
+    .dash-pill{
+        display:inline-flex;align-items:center;gap:10px;padding:10px 12px;border-radius:999px;
+        border:1px solid var(--border);background:#fff;
+        box-shadow:0 8px 18px rgba(17,24,39,0.06);
+        color:var(--muted);font-weight:850;font-size:.9rem;user-select:none;
+    }
+    .pill-dot{width:10px;height:10px;border-radius:99px;background:#22c55e;box-shadow:0 0 0 4px rgba(34,197,94,0.18);}
+
+    .btn-soft{border-radius:999px;font-weight:850;padding:.45rem .9rem;display:inline-flex;align-items:center;gap:.5rem;}
+
+    /* ===== Panel ===== */
+    .panel{
+        border-radius:18px;border:1px solid var(--border);
+        background:#fff;box-shadow:var(--shadow);overflow:hidden;
+        transition:transform .18s ease, box-shadow .18s ease;
+    }
+    .panel:hover{transform:translateY(-2px);box-shadow:var(--shadow2);}
+    .panel-head{
+        padding:14px 16px;border-bottom:1px solid rgba(17,24,39,0.08);
+        background:linear-gradient(180deg, rgba(17,24,39,0.03), rgba(17,24,39,0.01));
+        display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    }
+    .panel-title{font-weight:950;letter-spacing:-0.2px;}
+    .panel-sub{color:var(--muted);font-size:.92rem;margin-top:4px;}
+    .panel-meta{font-weight:800;font-size:.9rem;}
+    .panel-body{padding:14px 16px 16px 16px;}
+
+    /* Inputs */
+    .input-soft{
+        border-radius:14px;
+        border:1px solid rgba(17,24,39,0.12);
+        box-shadow:0 6px 18px rgba(17,24,39,0.04);
+    }
+    .input-soft:focus{
+        border-color: rgba(13,110,253,0.35);
+        box-shadow:0 0 0 .2rem rgba(13,110,253,0.12);
+    }
+    .form-hint{color:var(--muted);font-size:.85rem;margin-top:6px;}
+
+    /* Badge pill */
+    .badge-pill{
+        border-radius:999px;padding:.35rem .65rem;font-weight:900;letter-spacing:.01em;
+        display:inline-flex;align-items:center;gap:8px;
+    }
+    .role-dot{
+        width:8px;height:8px;border-radius:50%;
+        box-shadow:0 0 0 4px rgba(0,0,0,.03);
+        display:inline-block;
+    }
+
+    /* Preview */
+    .preview-card{
+        border:1px dashed rgba(17,24,39,0.16);
+        background:rgba(17,24,39,0.02);
+        border-radius:16px;
+        padding:12px 14px;
+        display:flex;align-items:center;justify-content:space-between;gap:12px;
+        flex-wrap:wrap;
+    }
+    .preview-title{font-weight:950;}
+    .preview-sub{color:var(--muted);font-size:.9rem;margin-top:2px;}
+    .preview-right{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
+
+    /* Actions */
+    .form-actions{
+        display:flex;
+        gap:10px;
+        justify-content:flex-end;
+        flex-wrap:wrap;
+    }
+    .btn-action{
+        border-radius:999px;
+        font-weight:900;
+        padding:.5rem 1rem;
+        display:inline-flex;
+        align-items:center;
+        gap:.5rem;
+    }
+
+    .note{
+        font-size:.92rem;
+        color:var(--muted);
+        line-height:1.5;
+        border-left:3px solid rgba(13,110,253,0.35);
+        padding-left:10px;
+    }
+
+    /* Razor needs @@media */
+    @@media (max-width: 576px){
+        .dash-head{padding:12px 12px;}
+        .dash-title{font-size:1.05rem;}
+        .form-actions{justify-content:stretch;}
+        .form-actions .btn{flex:1;}
+    }
+</style>

@@ -1,4 +1,5 @@
 @model IEnumerable<WedNightFury.Models.AuditLog>
+
 @{
     ViewData["Title"] = "Nhật ký thao tác";
     Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
@@ -10,116 +11,152 @@
     string keyword           = ViewBag.Keyword as string ?? "";
 }
 
-<h3 class="mb-3 text-danger fw-bold">Nhật ký thao tác</h3>
+<div class="container-fluid px-4 py-3">
 
-<!-- BỘ LỌC -->
-<form asp-action="Index" asp-controller="AdminAuditLogs" method="get" class="card mb-3 shadow-sm">
-    <div class="card-body row g-3 align-items-end">
-
-        <!-- Từ ngày -->
-        <div class="col-md-3">
-            <label class="form-label">Từ ngày</label>
-            <input type="date"
-                   name="from"
-                   class="form-control"
-                   value="@(fromDate.HasValue ? fromDate.Value.ToString("yyyy-MM-dd") : "")" />
+    <!-- DASH HEADER -->
+    <div class="dash-head mb-3">
+        <div class="dash-head__left">
+            <div class="dash-avatar">📜</div>
+            <div>
+                <div class="dash-title">Nhật ký thao tác</div>
+                <div class="dash-sub">
+                    Theo dõi toàn bộ hành động của admin trong hệ thống
+                </div>
+            </div>
         </div>
-
-        <!-- Đến ngày -->
-        <div class="col-md-3">
-            <label class="form-label">Đến ngày</label>
-            <input type="date"
-                   name="to"
-                   class="form-control"
-                   value="@(toDate.HasValue ? toDate.Value.ToString("yyyy-MM-dd") : "")" />
-        </div>
-
-        <!-- Hành động -->
-        <div class="col-md-2">
-            <label class="form-label">Hành động</label>
-            <select name="action" class="form-select">
-                <option value="all"    selected="@(currentAction == "all")">Tất cả</option>
-                <option value="login"  selected="@(currentAction == "login")">Đăng nhập</option>
-                <option value="create" selected="@(currentAction == "create")">Tạo mới</option>
-                <option value="update" selected="@(currentAction == "update")">Cập nhật</option>
-                <option value="delete" selected="@(currentAction == "delete")">Xóa</option>
-            </select>
-        </div>
-
-        <!-- Đối tượng -->
-        <div class="col-md-2">
-            <label class="form-label">Đối tượng</label>
-            <select name="entityType" class="form-select">
-                <option value="all"       selected="@(currentEntityType == "all")">Tất cả</option>
-                <option value="System"    selected="@(currentEntityType == "System")">System</option>
-                <option value="User"      selected="@(currentEntityType == "User")">User</option>
-                <option value="Driver"    selected="@(currentEntityType == "Driver")">Driver</option>
-                <option value="Order"     selected="@(currentEntityType == "Order")">Order</option>
-                <option value="Promotion" selected="@(currentEntityType == "Promotion")">Promotion</option>
-            </select>
-        </div>
-
-        <!-- Từ khóa -->
-        <div class="col-md-2">
-            <label class="form-label">Từ khóa</label>
-            <input name="keyword"
-                   class="form-control"
-                   placeholder="Tên admin, mô tả, IP..."
-                   value="@keyword" />
-        </div>
-
-        <div class="col-12 text-end">
-            <button type="submit" class="btn btn-primary">
-                Lọc
-            </button>
-            <a asp-action="Index" asp-controller="AdminAuditLogs" class="btn btn-outline-secondary">
-                Xóa lọc
-            </a>
+        <div class="dash-pill">
+            <span class="pill-dot"></span>
+            <span>Audit Log</span>
         </div>
     </div>
-</form>
 
-<!-- DANH SÁCH NHẬT KÝ -->
-<div class="card shadow-sm">
-    <div class="card-body p-0">
-        <table class="table table-hover mb-0">
-            <thead class="table-light">
-                <tr>
-                    <th style="width: 180px;">Thời gian</th>
-                    <th style="width: 160px;">Admin</th>
-                    <th style="width: 90px;">Hành động</th>
-                    <th style="width: 160px;">Đối tượng</th>
-                    <th>Mô tả</th>
-                    <th style="width: 140px;">IP</th>
-                </tr>
-            </thead>
-            <tbody>
-            @if (Model != null && Model.Any())
-            {
-                foreach (var item in Model)
+    <!-- FILTER PANEL -->
+    <div class="panel mb-3">
+        <div class="panel-head">
+            <div class="panel-title">
+                <i class="fas fa-filter me-1"></i> Bộ lọc
+            </div>
+        </div>
+        <div class="panel-body">
+            <form method="get" class="row g-3 align-items-end">
+
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">Từ ngày</label>
+                    <input type="date" name="from" class="form-control"
+                           value="@(fromDate?.ToString("yyyy-MM-dd") ?? "")" />
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">Đến ngày</label>
+                    <input type="date" name="to" class="form-control"
+                           value="@(toDate?.ToString("yyyy-MM-dd") ?? "")" />
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">Hành động</label>
+                    <select name="action" class="form-select">
+                        <option value="all">Tất cả</option>
+                        <option value="login"  selected="@(currentAction=="login")">Login</option>
+                        <option value="create" selected="@(currentAction=="create")">Create</option>
+                        <option value="update" selected="@(currentAction=="update")">Update</option>
+                        <option value="delete" selected="@(currentAction=="delete")">Delete</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">Đối tượng</label>
+                    <select name="entityType" class="form-select">
+                        <option value="all">Tất cả</option>
+                        <option value="User"      selected="@(currentEntityType=="User")">User</option>
+                        <option value="Driver"    selected="@(currentEntityType=="Driver")">Driver</option>
+                        <option value="Order"     selected="@(currentEntityType=="Order")">Order</option>
+                        <option value="Promotion" selected="@(currentEntityType=="Promotion")">Promotion</option>
+                        <option value="System"    selected="@(currentEntityType=="System")">System</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">Từ khóa</label>
+                    <input name="keyword" class="form-control"
+                           placeholder="Admin / mô tả / IP"
+                           value="@keyword" />
+                </div>
+
+                <div class="col-md-1 d-grid">
+                    <button class="btn btn-primary">Lọc</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="panel">
+        <div class="panel-head">
+            <div class="panel-title">
+                <i class="fas fa-list me-1"></i> Danh sách log
+            </div>
+        </div>
+
+        <div class="panel-body p-0">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Thời gian</th>
+                        <th>Admin</th>
+                        <th>Hành động</th>
+                        <th>Đối tượng</th>
+                        <th>Mô tả</th>
+                        <th>IP</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    foreach (var log in Model)
+                    {
+                        string actionClass = log.Action switch
+                        {
+                            "login"  => "bg-info",
+                            "create" => "bg-success",
+                            "update" => "bg-warning text-dark",
+                            "delete" => "bg-danger",
+                            _ => "bg-secondary"
+                        };
+
+                        <tr>
+                            <td class="text-muted small">
+                                @log.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss")
+                            </td>
+                            <td class="fw-semibold">
+                                @log.AdminName
+                                <div class="small text-muted">#@log.AdminId</div>
+                            </td>
+                            <td>
+                                <span class="badge @actionClass badge-pill">
+                                    @log.Action
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark badge-pill">
+                                    @log.EntityType
+                                    @(log.EntityId.HasValue ? $"#{log.EntityId}" : "")
+                                </span>
+                            </td>
+                            <td class="small">@log.Description</td>
+                            <td class="text-muted small">@log.IpAddress</td>
+                        </tr>
+                    }
+                }
+                else
                 {
                     <tr>
-                        <td>@item.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss")</td>
-                        <td>@item.AdminName (#@item.AdminId)</td>
-                        <td>@item.Action</td>
-                        <td>
-                            @item.EntityType
-                            @(item.EntityId.HasValue ? $" #{item.EntityId.Value}" : "")
+                        <td colspan="6" class="text-center text-muted py-4">
+                            Không có log phù hợp điều kiện lọc.
                         </td>
-                        <td>@item.Description</td>
-                        <td>@item.IpAddress</td>
                     </tr>
                 }
-            }
-            else
-            {
-                <tr>
-                    <td colspan="6" class="text-center text-muted py-4">
-                        Chưa có bản ghi nhật ký trong khoảng thời gian / điều kiện lọc.
-                    </td>
-                </tr>
-            }
-            </tbody>
-        </table>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>

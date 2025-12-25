@@ -5,94 +5,354 @@
     ViewData["Title"] = "Quản lý khiếu nại";
     Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
     string currentStatus = (ViewBag.Status as string) ?? "all";
+
+    var total = Model?.Count() ?? 0;
+    var pending = Model?.Count(x => (x.Status ?? "").ToLower() != "replied") ?? 0;
+    var replied = total - pending;
 }
 
-<div class="container py-3">
-    <h2 class="mb-3">Quản lý khiếu nại / hỗ trợ tài xế</h2>
+<style>
+    /* ===== Match your Dashboard style (dash) ===== */
+    .dash {
+        --text: #111827;
+        --muted: #6b7280;
+        --border: rgba(17, 24, 39, 0.10);
+        --shadow: 0 10px 30px rgba(17, 24, 39, 0.08);
+        --shadow2: 0 14px 40px rgba(17, 24, 39, 0.10);
+        font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+        color: var(--text);
+    }
 
-    <form method="get" class="row g-2 mb-3">
-        <div class="col-auto">
-            <select name="status" class="form-select">
-                <option value="all"     selected="@(currentStatus == "all")">Tất cả</option>
-                <option value="pending" selected="@(currentStatus == "pending")">Chờ phản hồi</option>
-                <option value="replied" selected="@(currentStatus == "replied")">Đã trả lời</option>
-            </select>
+    /* ===== Header like dashboard ===== */
+    .dash-head{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:14px;
+        padding:14px 16px;
+        border-radius:16px;
+        border:1px solid var(--border);
+        background: linear-gradient(180deg, rgba(13,110,253,.08), rgba(13,110,253,.02));
+        box-shadow: var(--shadow);
+        margin: 12px 0 14px;
+        flex-wrap: wrap;
+    }
+    .dash-left{display:flex;gap:12px;align-items:center;}
+    .dash-avatar{
+        width:44px;height:44px;border-radius:14px;
+        display:grid;place-items:center;
+        background:#fff;border:1px solid var(--border);
+        box-shadow:0 8px 24px rgba(17,24,39,.08);
+        font-size:20px;
+        flex:0 0 auto;
+    }
+    .dash-title{font-weight:950;letter-spacing:-.2px;margin:0;}
+    .dash-sub{
+        color:var(--muted);
+        font-size:.95rem;
+        margin-top:4px;
+        display:flex;
+        gap:10px;
+        align-items:center;
+        flex-wrap:wrap;
+    }
+    .dash-dot{width:6px;height:6px;border-radius:99px;background:rgba(17,24,39,0.25);display:inline-block;}
+
+    .dash-pill{
+        display:inline-flex;align-items:center;gap:10px;
+        padding:10px 12px;border-radius:999px;
+        border:1px solid var(--border);background:#fff;
+        box-shadow:0 8px 18px rgba(17,24,39,.06);
+        color: var(--muted);
+        font-weight:950;
+        font-size:.9rem;
+        user-select:none;
+        text-decoration:none;
+        white-space:nowrap;
+    }
+    .pill-dot{width:10px;height:10px;border-radius:99px;background:#22c55e;box-shadow:0 0 0 4px rgba(34,197,94,0.18);}
+
+    /* ===== KPI cards ===== */
+    .stat-grid{
+        display:grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+    .kpi{
+        border-radius:18px;
+        border:1px solid var(--border);
+        background:#fff;
+        box-shadow: var(--shadow);
+        padding: 14px 16px;
+        transition: transform .18s ease, box-shadow .18s ease;
+        min-height: 92px;
+    }
+    .kpi:hover{transform:translateY(-2px);box-shadow:var(--shadow2);}
+    .kpi-top{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+    .kpi-label{font-weight:950;color:var(--muted);font-size:.9rem;}
+    .kpi-value{font-weight:950;font-size:1.45rem;letter-spacing:-.3px;margin-top:4px;}
+    .kpi-badge{
+        display:inline-flex;align-items:center;gap:8px;
+        padding:6px 10px;border-radius:999px;
+        border:1px solid rgba(17,24,39,0.12);
+        background: rgba(17,24,39,0.03);
+        font-weight:950;font-size:.86rem;
+        white-space:nowrap;
+    }
+    .kpi-primary{border-left:6px solid rgba(13,110,253,.75);}
+    .kpi-warning{border-left:6px solid rgba(255,193,7,.75);}
+    .kpi-success{border-left:6px solid rgba(25,135,84,.75);}
+
+    /* ===== Panel ===== */
+    .panel{
+        border-radius:18px;
+        border:1px solid var(--border);
+        background:#fff;
+        box-shadow: var(--shadow);
+        overflow:hidden;
+        transition: transform .18s ease, box-shadow .18s ease;
+    }
+    .panel:hover{transform:translateY(-2px);box-shadow:var(--shadow2);}
+    .panel-head{
+        padding:14px 16px;
+        border-bottom: 1px solid rgba(17, 24, 39, 0.08);
+        background: linear-gradient(180deg, rgba(17, 24, 39, 0.03), rgba(17, 24, 39, 0.01));
+        display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    }
+    .panel-title{font-weight:950;letter-spacing:-.2px;}
+    .panel-sub{color:var(--muted);font-size:.92rem;margin-top:4px;}
+    .panel-body{padding:14px 16px 16px 16px;}
+
+    /* ===== Filter row ===== */
+    .dash-filter{display:flex;align-items:end;gap:10px;flex-wrap:wrap;}
+    .filter-group{display:grid;gap:4px;}
+    .filter-label{font-size:.78rem;color:var(--muted);font-weight:950;}
+    .filter-btn{white-space:nowrap;border-radius:999px !important;font-weight:950;}
+    .filter-select{border-radius:12px;}
+    .btn-ghost{
+        border-radius:999px !important;
+        font-weight:950;
+        padding:.55rem .95rem;
+        background:#fff;
+        border: 1px solid rgba(17,24,39,0.14);
+        color:#111827;
+        text-decoration:none;
+    }
+
+    /* ===== Table ===== */
+    .table-clean{margin:0;}
+    .table-clean thead th{
+        background: rgba(17,24,39,0.03) !important;
+        font-weight:950;
+        color: var(--text);
+        border-bottom: 1px solid rgba(17,24,39,0.10) !important;
+        white-space: nowrap;
+    }
+    .table-clean td, .table-clean th{
+        padding:.85rem .95rem;
+        vertical-align:middle;
+        border-color: rgba(17,24,39,0.06);
+    }
+    .table-clean tbody tr{transition: background .12s ease;}
+    .table-clean tbody tr:hover{background: rgba(13,110,253,.04);}
+
+    .truncate{
+        max-width: 360px;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        white-space:nowrap;
+    }
+
+    /* ===== Badges ===== */
+    .badge-pill{
+        border-radius:999px;
+        padding:.35rem .65rem;
+        font-weight:950;
+        display:inline-flex;
+        align-items:center;
+        gap: 6px;
+        white-space:nowrap;
+    }
+    .dot{
+        width:8px;height:8px;border-radius:50%;
+        box-shadow:0 0 0 3px rgba(0,0,0,.03);
+        display:inline-block;
+    }
+
+    @@media (max-width: 992px){
+        .stat-grid{grid-template-columns: 1fr;}
+        .truncate{max-width: 100%;}
+    }
+</style>
+
+<div class="dash container-fluid py-3">
+
+    <!-- Header -->
+    <div class="dash-head">
+        <div class="dash-left">
+            <div class="dash-avatar">🧾</div>
+            <div>
+                <h2 class="dash-title">Quản lý khiếu nại / hỗ trợ tài xế</h2>
+                <div class="dash-sub">
+                    Theo dõi trạng thái, xem hội thoại và phản hồi nhanh
+                    <span class="dash-dot"></span>
+                    <span class="text-muted">Tổng: <b>@total</b></span>
+                </div>
+            </div>
         </div>
-        <div class="col-auto">
-            <button class="btn btn-primary" type="submit">Lọc</button>
+
+        <div class="dash-pill">
+            <span class="pill-dot"></span>
+            <span>Complaints</span>
         </div>
-    </form>
+    </div>
 
-    <table class="table table-hover align-middle">
-        <thead class="table-dark">
-            <tr>
-                <th>#</th>
-                <th>Tài xế</th>
-                <th>Nội dung</th>
-                <th>Trạng thái</th>
-                <th>Tạo lúc</th>
-                <th>Trả lời lúc</th>
-                <th class="text-end">Thao tác</th>
-            </tr>
-        </thead>
-        <tbody>
-        @{
-            int stt = 1;
-        }
-        @foreach (var item in Model)
-        {
-            <tr>
-                <td>@stt</td>
-                <td>
-                    <div class="fw-semibold">@item.DriverUserName</div>
-                    @if (!string.IsNullOrWhiteSpace(item.DriverFullName))
-                    {
-                        <div class="text-muted small">@item.DriverFullName</div>
-                    }
-                </td>
-                <td style="max-width: 320px;">
-                    <div class="text-truncate" title="@item.Message">
-                        @item.Message
-                    </div>
-                    @if (!string.IsNullOrWhiteSpace(item.Reply))
-                    {
-                        <div class="small text-success mt-1">
-                            <span class="fw-semibold">Admin:</span> @item.Reply
-                        </div>
-                    }
-                </td>
-                <td>
-                    @if (item.Status == "replied")
-                    {
-                        <span class="badge bg-success">Đã trả lời</span>
-                    }
-                    else
-                    {
-                        <span class="badge bg-warning text-dark">Chờ phản hồi</span>
-                    }
-                </td>
-                <td>@item.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
-                <td>
-                    @(item.RepliedAt.HasValue
-                        ? item.RepliedAt.Value.ToString("dd/MM/yyyy HH:mm")
-                        : "-")
-                </td>
-                <td class="text-end">
-                    <!-- Nút XEM HỘI THOẠI -->
-                    <a asp-action="ViewThread" asp-route-id="@item.Id"
-                       class="btn btn-sm btn-outline-secondary me-1">
-                        Xem
-                    </a>
+    <!-- KPIs -->
+    <div class="stat-grid">
+        <div class="kpi kpi-primary">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Tất cả</div>
+                    <div class="kpi-value">@total</div>
+                </div>
+                <span class="kpi-badge">All</span>
+            </div>
+        </div>
+        <div class="kpi kpi-warning">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Chờ phản hồi</div>
+                    <div class="kpi-value">@pending</div>
+                </div>
+                <span class="kpi-badge">Pending</span>
+            </div>
+        </div>
+        <div class="kpi kpi-success">
+            <div class="kpi-top">
+                <div>
+                    <div class="kpi-label">Đã trả lời</div>
+                    <div class="kpi-value">@replied</div>
+                </div>
+                <span class="kpi-badge">Replied</span>
+            </div>
+        </div>
+    </div>
 
-                    <!-- Nút TRẢ LỜI như cũ -->
-                    <a asp-action="Reply" asp-route-id="@item.Id"
-                       class="btn btn-sm btn-outline-primary">
-                        Trả lời
-                    </a>
-                </td>
-            </tr>
-            stt++;
-        }
-        </tbody>
-    </table>
+    <!-- List panel -->
+    <div class="panel">
+        <div class="panel-head">
+            <div>
+                <div class="panel-title"><i class="fas fa-inbox me-1"></i> Danh sách khiếu nại</div>
+                <div class="panel-sub">Lọc theo trạng thái để ưu tiên xử lý các yêu cầu đang chờ.</div>
+            </div>
+
+            <form method="get" class="dash-filter">
+                <div class="filter-group">
+                    <label class="filter-label">Trạng thái</label>
+                    <select name="status" class="form-select form-select-sm filter-select">
+                        <option value="all"     selected="@(currentStatus == "all")">Tất cả</option>
+                        <option value="pending" selected="@(currentStatus == "pending")">Chờ phản hồi</option>
+                        <option value="replied" selected="@(currentStatus == "replied")">Đã trả lời</option>
+                    </select>
+                </div>
+
+                <button class="btn btn-sm btn-outline-primary filter-btn" type="submit">
+                    <i class="fas fa-filter me-1"></i> Lọc
+                </button>
+
+                <a class="btn-ghost btn btn-sm" href="@Url.Action("Index")">
+                    Xóa lọc
+                </a>
+            </form>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-clean table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th style="width:70px;">#</th>
+                        <th style="min-width:180px;">Tài xế</th>
+                        <th>Nội dung</th>
+                        <th style="width:150px;">Trạng thái</th>
+                        <th style="width:170px;">Tạo lúc</th>
+                        <th style="width:170px;">Trả lời lúc</th>
+                        <th style="width:190px;" class="text-end">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @{
+                    int stt = 1;
+                }
+                @if (Model != null && Model.Any())
+                {
+                    foreach (var item in Model)
+                    {
+                        var isReplied = (item.Status ?? "").ToLower() == "replied";
+                        var badgeClass = isReplied ? "bg-success" : "bg-warning text-dark";
+                        var dotClass = isReplied ? "bg-success" : "bg-warning";
+                        var badgeText = isReplied ? "Đã trả lời" : "Chờ phản hồi";
+                        <tr>
+                            <td class="text-muted fw-bold">@stt</td>
+                            <td>
+                                <div class="fw-bold">@item.DriverUserName</div>
+                                @if (!string.IsNullOrWhiteSpace(item.DriverFullName))
+                                {
+                                    <div class="text-muted small">@item.DriverFullName</div>
+                                }
+                            </td>
+                            <td>
+                                <div class="truncate" title="@item.Message">
+                                    @item.Message
+                                </div>
+
+                                @if (!string.IsNullOrWhiteSpace(item.Reply))
+                                {
+                                    <div class="small mt-2">
+                                        <span class="badge bg-success-subtle text-success badge-pill" style="border:1px solid rgba(25,135,84,.25); background: rgba(25,135,84,.08);">
+                                            <span class="dot bg-success"></span>
+                                            Admin
+                                        </span>
+                                        <span class="text-success fw-semibold"> @item.Reply</span>
+                                    </div>
+                                }
+                            </td>
+                            <td>
+                                <span class="badge @badgeClass badge-pill">
+                                    <span class="dot @dotClass"></span>
+                                    @badgeText
+                                </span>
+                            </td>
+                            <td class="text-nowrap">@item.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td class="text-nowrap">
+                                @(item.RepliedAt.HasValue ? item.RepliedAt.Value.ToString("dd/MM/yyyy HH:mm") : "-")
+                            </td>
+                            <td class="text-end">
+                                <div class="d-inline-flex gap-2">
+                                    <a asp-action="ViewThread" asp-route-id="@item.Id"
+                                       class="btn btn-sm btn-outline-secondary" style="border-radius:999px;font-weight:950;">
+                                        Xem
+                                    </a>
+                                    <a asp-action="Reply" asp-route-id="@item.Id"
+                                       class="btn btn-sm btn-outline-primary" style="border-radius:999px;font-weight:950;">
+                                        Trả lời
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        stt++;
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            Chưa có khiếu nại nào.
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>

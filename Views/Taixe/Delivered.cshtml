@@ -1,95 +1,138 @@
 @model WedNightFury.Models.ViewModels.DeliveredViewModel
 
 @{
-    Layout = "_LayoutDriver";
+    Layout = "~/Views/Shared/_LayoutDriver.cshtml";
     ViewData["Title"] = "Xác nhận giao thành công";
 
     bool hasCod = Model.CodAmount > 0;
 }
 
-<div class="container py-4">
-    <h2 class="fw-bold mb-4 text-success">
-        ✔ Xác nhận giao thành công
-    </h2>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 
-    <div class="row g-4">
-        <!-- Cột trái: Form nhập -->
+<div class="delivered-page container py-4">
+    <!-- Header -->
+    <div class="hero mb-3">
+        <div class="hero-left">
+            <div class="hero-ic"><i class="fa-solid fa-circle-check"></i></div>
+            <div>
+                <div class="hero-title">Xác nhận giao thành công</div>
+                <div class="hero-sub">
+                    <span class="text-muted">Mã đơn:</span> <b>@Model.Code</b>
+                    <span class="sep">•</span>
+                    <span class="text-muted">Người nhận:</span> <b>@Model.ReceiverName</b>
+                </div>
+                <div class="hero-sub2 text-muted">
+                    <i class="fa-solid fa-location-dot"></i> @Model.ReceiverAddress
+                </div>
+            </div>
+        </div>
+
+        <div class="hero-right">
+            @if (hasCod)
+            {
+                <div class="pill pill-warn">
+                    <div class="pill-label">COD phải thu</div>
+                    <div class="pill-val">@Model.CodAmount.ToString("N0") đ</div>
+                </div>
+            }
+            else
+            {
+                <div class="pill pill-info">
+                    <div class="pill-label">COD</div>
+                    <div class="pill-val">Không COD</div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <!-- LEFT: FORM -->
         <div class="col-lg-7">
-            <form asp-action="Delivered" method="post" enctype="multipart/form-data" id="deliveredForm">
+            <form asp-action="Delivered"
+                  method="post"
+                  enctype="multipart/form-data"
+                  id="deliveredForm"
+                  class="panel">
+
                 <input type="hidden" asp-for="OrderId" />
 
-                <div class="mb-2">
-                    <span class="text-muted">Mã đơn:</span>
-                    <span class="fw-bold">@Model.Code</span>
-                </div>
-                <div class="mb-2">
-                    <span class="text-muted">Người nhận:</span>
-                    <span class="fw-bold">@Model.ReceiverName</span>
-                </div>
-                <div class="mb-3">
-                    <span class="text-muted">Địa chỉ:</span>
-                    <span class="fw-bold">@Model.ReceiverAddress</span>
-                </div>
-
-                @* Thông tin COD *@
+                <!-- COD -->
                 @if (hasCod)
                 {
-                    <div class="alert alert-warning mb-3">
-                        <strong>COD cần thu:</strong>
-                        <span class="fw-bold text-danger">
-                            @Model.CodAmount.ToString("N0") đ
-                        </span>
-                        <br />
-                        <small class="text-muted">
-                            Số tiền tài xế thực tế thu được có thể chỉnh bên dưới.
-                        </small>
+                    <div class="callout callout-warn mb-3">
+                        <div class="d-flex gap-2">
+                            <i class="fa-solid fa-triangle-exclamation mt-1"></i>
+                            <div>
+                                <div class="fw-bold">Đơn có COD</div>
+                                <div class="text-muted">
+                                    Bạn có thể chỉnh “Số tiền đã thu” nếu khách trả thiếu / thừa.
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="fw-bold">Số tiền tài xế đã thu</label>
+                        <label class="form-label fw-bold">Số tiền tài xế đã thu</label>
 
                         <div class="input-group">
-                            <!-- Ô hiển thị tiền có format -->
+                            <span class="input-group-text"><i class="fa-solid fa-money-bill-wave"></i></span>
+
+                            <!-- Display formatted -->
                             <input id="CollectedCodDisplay"
                                    type="text"
                                    class="form-control"
+                                   inputmode="numeric"
                                    value="@Model.CollectedCod.ToString("N0")" />
 
                             <span class="input-group-text">đ</span>
                         </div>
 
-                        <!-- Giá trị numeric thực sự submit về server -->
-                        <input asp-for="CollectedCod"
-                               type="hidden"
-                               id="CollectedCod" />
+                        <!-- Real numeric submit -->
+                        <input asp-for="CollectedCod" type="hidden" id="CollectedCod" />
 
                         <small id="codDiffHint" class="text-muted d-block mt-1">
-                            Mặc định bằng số COD. Nếu khách trả thiếu / thừa thì chỉnh lại.
+                            Mặc định bằng COD. Nếu khác, hệ thống sẽ lưu giá trị bạn nhập.
                         </small>
                         <span asp-validation-for="CollectedCod" class="text-danger"></span>
                     </div>
                 }
                 else
                 {
-                    <div class="alert alert-info mb-3">
-                        Đơn này <strong>không có COD</strong>. Bạn chỉ cần upload ảnh POD và ký tên.
+                    <div class="callout callout-info mb-3">
+                        <div class="d-flex gap-2">
+                            <i class="fa-solid fa-circle-info mt-1"></i>
+                            <div>
+                                <div class="fw-bold">Đơn không có COD</div>
+                                <div class="text-muted">Bạn chỉ cần upload POD và ký xác nhận.</div>
+                            </div>
+                        </div>
                     </div>
                 }
 
+                <!-- POD -->
                 <div class="mb-3">
-                    <label class="fw-bold">Ảnh POD (bắt buộc)</label>
+                    <label class="form-label fw-bold">Ảnh POD (bắt buộc)</label>
                     <input asp-for="PodImage"
                            type="file"
                            accept="image/*"
                            class="form-control"
                            required
                            id="PodImage" />
-                    <small class="text-muted" id="podFileName"></small>
+                    <div class="d-flex justify-content-between mt-2">
+                        <small class="text-muted" id="podFileName"></small>
+                        <small class="text-muted" id="podHint">Chụp rõ mặt hàng / chữ ký khách (nếu có).</small>
+                    </div>
                     <span asp-validation-for="PodImage" class="text-danger"></span>
+
+                    <!-- Preview -->
+                    <div class="pod-preview d-none mt-2" id="podPreviewWrap">
+                        <img id="podPreviewImg" alt="POD preview" />
+                    </div>
                 </div>
 
+                <!-- NOTE -->
                 <div class="mb-3">
-                    <label class="fw-bold">Ghi chú giao hàng</label>
+                    <label class="form-label fw-bold">Ghi chú giao hàng</label>
                     <textarea asp-for="Note"
                               class="form-control"
                               rows="2"
@@ -97,78 +140,90 @@
                     <span asp-validation-for="Note" class="text-danger"></span>
                 </div>
 
-                <!-- Vẽ chữ ký tài xế -->
+                <!-- SIGNATURE -->
                 <div class="mb-3">
-                    <label class="fw-bold d-block mb-2">Chữ ký tài xế</label>
-
-                    <div class="border rounded bg-white" style="height: 200px;">
-                        <canvas id="signatureCanvas" style="width:100%; height:100%;"></canvas>
-                    </div>
-
-                    <div class="mt-2">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <label class="form-label fw-bold m-0">Chữ ký tài xế (bắt buộc)</label>
                         <button type="button" class="btn btn-sm btn-outline-secondary" id="clearSignature">
-                            Xóa chữ ký
+                            <i class="fa-solid fa-eraser"></i> Xóa
                         </button>
                     </div>
 
-                    <!-- Hidden để gửi base64 về server -->
+                    <div class="signature-wrap">
+                        <canvas id="signatureCanvas"></canvas>
+                    </div>
+
                     <input asp-for="DriverSignature" type="hidden" id="DriverSignature" />
                     <span asp-validation-for="DriverSignature" class="text-danger"></span>
 
                     <small class="text-muted d-block mt-1">
-                        Ký trực tiếp trên khung, hệ thống sẽ lưu lại hình chữ ký.
+                        Ký trực tiếp trên khung. Hệ thống sẽ lưu chữ ký dưới dạng hình ảnh.
                     </small>
                 </div>
 
-                <button type="submit" class="btn btn-success btn-lg mt-2">
-                    ✔ Xác nhận giao hàng & thu COD
+                <button type="submit" class="btn btn-success btn-lg w-100">
+                    <i class="fa-solid fa-circle-check me-2"></i> Xác nhận giao hàng
                 </button>
             </form>
         </div>
 
-        <!-- Cột phải: Tóm tắt thanh toán -->
+        <!-- RIGHT: SUMMARY -->
         <div class="col-lg-5">
-            <div class="card shadow-sm">
-                <div class="card-header bg-light fw-bold">
-                    Tóm tắt thanh toán
+            <div class="panel">
+                <div class="panel-head">
+                    <div class="panel-title"><i class="fa-solid fa-receipt"></i> Tóm tắt</div>
+                    <div class="panel-sub text-muted">Kiểm tra lại trước khi xác nhận</div>
                 </div>
-                <div class="card-body">
-                    <p class="mb-2">
-                        <span class="text-muted">Mã đơn:</span>
-                        <span class="fw-bold">@Model.Code</span>
-                    </p>
-                    <p class="mb-2">
-                        <span class="text-muted">Người nhận:</span>
-                        <span class="fw-bold">@Model.ReceiverName</span>
-                    </p>
+
+                <div class="summary">
+                    <div class="s-row">
+                        <div class="k">Mã đơn</div>
+                        <div class="v">@Model.Code</div>
+                    </div>
+                    <div class="s-row">
+                        <div class="k">Người nhận</div>
+                        <div class="v">@Model.ReceiverName</div>
+                    </div>
+                    <div class="s-row">
+                        <div class="k">Địa chỉ</div>
+                        <div class="v">@Model.ReceiverAddress</div>
+                    </div>
+
+                    <hr class="line" />
 
                     @if (hasCod)
                     {
-                        <hr />
-                        <p class="mb-1">
-                            <span class="text-muted">COD phải thu:</span>
-                            <span class="fw-bold text-danger">
-                                @Model.CodAmount.ToString("N0") đ
-                            </span>
-                        </p>
-                        <p class="mb-1">
-                            <span class="text-muted">Số tiền bạn khai báo đã thu:</span>
-                            <span class="fw-bold" id="summaryCollected">
-                                @Model.CollectedCod.ToString("N0") đ
-                            </span>
-                        </p>
-                        <small class="text-muted">
-                            Sau khi xác nhận, hệ thống sẽ đánh dấu đơn là
-                            <strong>đã giao & đã thu COD</strong> (nếu COD do người nhận trả).
-                        </small>
+                        <div class="s-row">
+                            <div class="k">COD phải thu</div>
+                            <div class="v text-danger fw-bold">@Model.CodAmount.ToString("N0") đ</div>
+                        </div>
+                        <div class="s-row">
+                            <div class="k">Bạn khai báo đã thu</div>
+                            <div class="v fw-bold" id="summaryCollected">@Model.CollectedCod.ToString("N0") đ</div>
+                        </div>
+
+                        <div class="mini-note mt-2">
+                            Sau khi xác nhận, đơn sẽ được đánh dấu <b>đã giao</b>.
+                            Trường “đã thu COD” sẽ theo logic hệ thống của bạn.
+                        </div>
                     }
                     else
                     {
-                        <hr />
-                        <p class="mb-0 text-muted">
-                            Đơn không COD. Chỉ cần xác nhận giao thành công.
-                        </p>
+                        <div class="mini-note">
+                            Đơn không COD. Bạn chỉ cần POD + chữ ký.
+                        </div>
                     }
+
+                    <hr class="line" />
+
+                    <div class="checklist">
+                        <div class="chk" id="chkPod">
+                            <span class="dot"></span> Đã chọn ảnh POD
+                        </div>
+                        <div class="chk" id="chkSig">
+                            <span class="dot"></span> Đã ký chữ ký
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -178,25 +233,38 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
 
-    <!-- Thư viện SignaturePad để vẽ chữ ký -->
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.2.0/dist/signature_pad.umd.min.js"></script>
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            // ===== File POD: hiển thị tên file =====
+            // ===== POD preview =====
             const podInput = document.getElementById("PodImage");
             const podFileName = document.getElementById("podFileName");
-            if (podInput && podFileName) {
+            const podPreviewWrap = document.getElementById("podPreviewWrap");
+            const podPreviewImg = document.getElementById("podPreviewImg");
+            const chkPod = document.getElementById("chkPod");
+
+            if (podInput) {
                 podInput.addEventListener("change", function () {
                     if (this.files && this.files.length > 0) {
-                        podFileName.textContent = "Đã chọn: " + this.files[0].name;
+                        const file = this.files[0];
+                        if (podFileName) podFileName.textContent = "Đã chọn: " + file.name;
+
+                        // preview
+                        const url = URL.createObjectURL(file);
+                        podPreviewImg.src = url;
+                        podPreviewWrap.classList.remove("d-none");
+
+                        chkPod?.classList.add("ok");
                     } else {
-                        podFileName.textContent = "";
+                        if (podFileName) podFileName.textContent = "";
+                        podPreviewWrap.classList.add("d-none");
+                        chkPod?.classList.remove("ok");
                     }
                 });
             }
 
-            // ===== Định dạng tiền & đồng bộ CollectedCod =====
+            // ===== Money formatting & sync =====
             const codAmount = @Model.CodAmount;
             const displayInput = document.getElementById("CollectedCodDisplay");
             const hiddenInput = document.getElementById("CollectedCod");
@@ -204,108 +272,230 @@
             const summaryCollected = document.getElementById("summaryCollected");
 
             function formatCurrency(val) {
-                return val.toLocaleString("vi-VN") + " đ";
+                return (val || 0).toLocaleString("vi-VN") + " đ";
             }
-
             function normalizeMoney(str) {
-                // Lấy toàn bộ chữ số, bỏ dấu phẩy, khoảng trắng, chữ
                 const digits = (str || "").replace(/\D/g, "");
-                if (!digits) return 0;
-                return parseInt(digits, 10);
+                return digits ? parseInt(digits, 10) : 0;
+            }
+            function setHint(raw) {
+                if (!codDiffHint) return;
+                if (!codAmount || codAmount <= 0) {
+                    codDiffHint.textContent = "";
+                    codDiffHint.classList.remove("text-danger");
+                    codDiffHint.classList.add("text-muted");
+                    return;
+                }
+                if (raw === codAmount) {
+                    codDiffHint.textContent = "Số tiền đã thu trùng với COD.";
+                    codDiffHint.classList.remove("text-danger");
+                    codDiffHint.classList.add("text-muted");
+                } else {
+                    codDiffHint.textContent = "Lưu ý: Số tiền đã thu KHÁC số COD. Hãy chắc chắn điều này là đúng.";
+                    codDiffHint.classList.add("text-danger");
+                }
             }
 
             if (displayInput && hiddenInput) {
-                function syncMoney() {
+                const syncMoney = () => {
                     const raw = normalizeMoney(displayInput.value);
                     hiddenInput.value = raw;
-
-                    if (summaryCollected) {
-                        summaryCollected.textContent = formatCurrency(raw);
-                    }
-
-                    if (codDiffHint) {
-                        if (!codAmount || codAmount <= 0) {
-                            codDiffHint.textContent = "";
-                            codDiffHint.classList.remove("text-danger");
-                            codDiffHint.classList.add("text-muted");
-                            return;
-                        }
-
-                        if (raw === codAmount) {
-                            codDiffHint.textContent = "Số tiền đã thu trùng với COD.";
-                            codDiffHint.classList.remove("text-danger");
-                            codDiffHint.classList.add("text-muted");
-                        } else {
-                            codDiffHint.textContent =
-                                "Lưu ý: Số tiền đã thu KHÁC số COD. Hãy chắc chắn điều này là đúng.";
-                            codDiffHint.classList.add("text-danger");
-                        }
-                    }
-
-                    // Cập nhật lại hiển thị theo format VNĐ
-                    if (displayInput === document.activeElement) {
-                        // Khi đang focus cho phép gõ thoải mái
-                        return;
-                    } else {
+                    if (summaryCollected) summaryCollected.textContent = formatCurrency(raw);
+                    setHint(raw);
+                    // format when not typing
+                    if (document.activeElement !== displayInput) {
                         displayInput.value = raw ? raw.toLocaleString("vi-VN") : "";
                     }
-                }
+                };
 
-                // Khởi tạo
                 syncMoney();
-
-                displayInput.addEventListener("blur", syncMoney);
                 displayInput.addEventListener("input", function () {
-                    // Không format ngay để user dễ gõ, chỉ đồng bộ hidden
                     const raw = normalizeMoney(displayInput.value);
                     hiddenInput.value = raw;
-                    if (summaryCollected) {
-                        summaryCollected.textContent = formatCurrency(raw);
-                    }
+                    if (summaryCollected) summaryCollected.textContent = formatCurrency(raw);
+                    setHint(raw);
                 });
+                displayInput.addEventListener("blur", syncMoney);
             }
 
-            // ===== Signature Pad (vẽ chữ ký) =====
+            // ===== SignaturePad =====
             const canvas = document.getElementById("signatureCanvas");
             const clearBtn = document.getElementById("clearSignature");
             const sigHidden = document.getElementById("DriverSignature");
             const form = document.getElementById("deliveredForm");
+            const chkSig = document.getElementById("chkSig");
 
-            if (canvas && clearBtn && sigHidden && form && window.SignaturePad) {
-                // Resize canvas cho sharp trên các màn hình khác nhau
+            if (canvas && sigHidden && form && window.SignaturePad) {
+                const signaturePad = new SignaturePad(canvas, {
+                    backgroundColor: "rgb(255,255,255)"
+                });
+
                 function resizeCanvas() {
                     const ratio = Math.max(window.devicePixelRatio || 1, 1);
                     const rect = canvas.getBoundingClientRect();
                     canvas.width = rect.width * ratio;
                     canvas.height = rect.height * ratio;
                     const ctx = canvas.getContext("2d");
-                    ctx.scale(ratio, ratio);
+                    ctx.setTransform(ratio, 0, 0, ratio, 0, 0); // reset scale
                     signaturePad.clear();
+                    sigHidden.value = "";
+                    chkSig?.classList.remove("ok");
                 }
-
-                const signaturePad = new SignaturePad(canvas, {
-                    backgroundColor: 'rgb(255, 255, 255)'
-                });
 
                 window.addEventListener("resize", resizeCanvas);
                 resizeCanvas();
 
-                clearBtn.addEventListener("click", function () {
+                canvas.addEventListener("pointerup", function () {
+                    if (!signaturePad.isEmpty()) chkSig?.classList.add("ok");
+                });
+
+                clearBtn?.addEventListener("click", function () {
                     signaturePad.clear();
                     sigHidden.value = "";
+                    chkSig?.classList.remove("ok");
                 });
 
                 form.addEventListener("submit", function (e) {
-                    if (!signaturePad.isEmpty()) {
-                        const dataUrl = signaturePad.toDataURL("image/png");
-                        sigHidden.value = dataUrl;
-                    } else {
-                        // Nếu muốn bắt buộc ký, có thể chặn submit:
-                        // e.preventDefault();
-                        // alert("Vui lòng ký vào khung chữ ký.");
+                    // BẮT BUỘC ký
+                    if (signaturePad.isEmpty()) {
+                        e.preventDefault();
+                        alert("Vui lòng ký vào khung chữ ký trước khi xác nhận.");
+                        return;
                     }
+                    sigHidden.value = signaturePad.toDataURL("image/png");
                 });
             }
         });
     </script>
 }
+
+<style>
+    .delivered-page {
+        --border: rgba(17,24,39,.12);
+        --shadow: 0 12px 30px rgba(17,24,39,.08);
+        font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    }
+
+    .hero {
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: linear-gradient(180deg, rgba(34,197,94,.14), rgba(34,197,94,.03));
+        box-shadow: var(--shadow);
+        padding: 16px;
+        display: flex;
+        justify-content: space-between;
+        gap: 14px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    .hero-left { display:flex; gap:12px; align-items:flex-start; }
+    .hero-ic {
+        width: 46px; height: 46px; border-radius: 16px;
+        background:#fff; border:1px solid var(--border);
+        display:grid; place-items:center;
+        box-shadow: 0 10px 24px rgba(17,24,39,.08);
+        color:#16a34a;
+        font-size: 18px;
+        flex: 0 0 auto;
+    }
+    .hero-title { font-weight: 950; color:#166534; text-transform: uppercase; letter-spacing:-.2px; }
+    .hero-sub { margin-top: 6px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .hero-sub2 { margin-top: 6px; }
+    .sep { color:#cbd5e1; }
+
+    .hero-right { display:flex; gap:10px; flex-wrap:wrap; }
+    .pill {
+        background:#fff;
+        border:1px solid var(--border);
+        border-radius: 16px;
+        padding: 10px 12px;
+        box-shadow: 0 10px 22px rgba(17,24,39,.06);
+        min-width: 170px;
+    }
+    .pill-label { font-size:.85rem; color:#6b7280; font-weight:800; }
+    .pill-val { font-size:1.05rem; font-weight:950; }
+    .pill-warn .pill-val { color:#dc2626; }
+    .pill-info .pill-val { color:#0f172a; }
+
+    .panel {
+        background:#fff;
+        border:1px solid var(--border);
+        border-radius: 18px;
+        box-shadow: var(--shadow);
+        padding: 14px;
+    }
+    .panel-head { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap; }
+    .panel-title { font-weight: 950; color:#111827; }
+    .panel-sub { font-size:.9rem; }
+
+    .callout {
+        border-radius: 16px;
+        padding: 12px 12px;
+        border: 1px solid var(--border);
+        background: rgba(17,24,39,.02);
+    }
+    .callout-warn { background: rgba(255,193,7,.10); border-color: rgba(255,193,7,.35); color:#92400e; }
+    .callout-info { background: rgba(59,130,246,.08); border-color: rgba(59,130,246,.25); color:#1e3a8a; }
+
+    .signature-wrap {
+        border: 1px solid rgba(17,24,39,.16);
+        border-radius: 16px;
+        overflow: hidden;
+        background: #fff;
+        height: 220px;
+        box-shadow: 0 12px 26px rgba(17,24,39,.08);
+    }
+    #signatureCanvas { width: 100%; height: 100%; display:block; }
+
+    .pod-preview {
+        border: 1px solid rgba(17,24,39,.12);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 12px 26px rgba(17,24,39,.08);
+    }
+    .pod-preview img {
+        width: 100%;
+        height: 220px;
+        object-fit: cover;
+        display:block;
+    }
+
+    .summary { margin-top: 10px; }
+    .s-row { display:flex; justify-content:space-between; gap:12px; padding: 8px 0; }
+    .s-row .k { width: 120px; color:#6b7280; font-weight: 850; }
+    .s-row .v { flex: 1; text-align:right; font-weight: 850; color:#111827; }
+    .line { margin: 10px 0; opacity:.15; }
+
+    .mini-note {
+        border: 1px dashed rgba(17,24,39,.18);
+        border-radius: 14px;
+        padding: 10px 12px;
+        background: rgba(17,24,39,.02);
+        color:#334155;
+        font-weight: 650;
+        font-size: .92rem;
+    }
+
+    .checklist { margin-top: 10px; display:grid; gap:8px; }
+    .chk {
+        display:flex; align-items:center; gap:10px;
+        padding: 10px 12px;
+        border-radius: 14px;
+        border: 1px solid rgba(17,24,39,.12);
+        background: rgba(17,24,39,.02);
+        font-weight: 800;
+        color:#64748b;
+    }
+    .chk .dot {
+        width: 10px; height: 10px; border-radius: 99px;
+        background: rgba(148,163,184,.9);
+        box-shadow: 0 0 0 4px rgba(148,163,184,.18);
+    }
+    .chk.ok { color:#166534; border-color: rgba(34,197,94,.35); background: rgba(34,197,94,.08); }
+    .chk.ok .dot { background:#22c55e; box-shadow:0 0 0 4px rgba(34,197,94,.18); }
+
+    @@media (max-width: 576px) {
+        .pill { min-width: 0; flex: 1; }
+        .s-row .k { width: 100px; }
+    }
+</style>

@@ -1,0 +1,194 @@
+@using Microsoft.AspNetCore.Html
+@using WedNightFury.Models.ViewModels
+@model ServiceDetailsVm
+
+@{
+    ViewData["Title"] = "Chi tiết dịch vụ";
+    Layout = "~/Views/Shared/_LayoutPublic.cshtml";
+
+    var s = Model.Service;
+}
+
+@section Hero {
+    <header class="nf-hero">
+        <div class="container">
+            <div class="nf-pill mb-3">
+                <span class="dot"></span>
+                <span>Dịch vụ NightFury</span>
+            </div>
+
+            <h1 class="mb-2">@s.Name</h1>
+            <p class="mb-0">
+                @s.ShortDescription
+            </p>
+
+            <div class="cta">
+                <a class="btn btn-danger btn-hero"
+                   asp-controller="Track" asp-action="Index">
+                    <i class="bi bi-search me-1"></i> Tra cứu vận đơn
+                </a>
+
+                <a class="btn btn-hero-outline"
+                   asp-controller="Auth" asp-action="Register">
+                    <i class="bi bi-person-plus me-1"></i> Đăng ký sử dụng
+                </a>
+            </div>
+        </div>
+    </header>
+}
+
+<div class="nf-surface mb-4">
+    <div class="nf-surface-head">
+        <div class="fw-bold">
+            <i class="bi bi-info-circle me-2 text-danger"></i>
+            Thông tin dịch vụ
+        </div>
+        <div class="text-muted small">Cập nhật mô tả, thời gian và giá tham khảo</div>
+    </div>
+
+    <div class="nf-surface-body">
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="nf-card">
+                    <h5 class="mb-2"><i class="bi bi-file-text me-2 text-danger"></i>Mô tả chi tiết</h5>
+
+                    @* DescriptionHtml là HTML: nên render raw *@
+                    <div style="color: #111827; line-height: 1.7;">
+                        @Html.Raw(s.DescriptionHtml ?? "")
+                    </div>
+                </div>
+
+                <div class="nf-card mt-3">
+                    <h5 class="mb-2"><i class="bi bi-diagram-3 me-2 text-danger"></i>Quy trình sử dụng</h5>
+
+                    <div class="row g-3">
+                        <div class="col-md-3 text-center">
+                            <div class="p-3 border rounded-4 h-100">
+                                <div class="fs-3 text-danger"><i class="bi bi-clipboard-check"></i></div>
+                                <div class="fw-bold">1) Tạo đơn</div>
+                                <div class="small text-muted">Nhập gửi/nhận, COD, dịch vụ</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="p-3 border rounded-4 h-100">
+                                <div class="fs-3 text-danger"><i class="bi bi-geo-alt"></i></div>
+                                <div class="fw-bold">2) Phân vùng</div>
+                                <div class="small text-muted">Tính phí theo khu vực/hub</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="p-3 border rounded-4 h-100">
+                                <div class="fs-3 text-danger"><i class="bi bi-truck"></i></div>
+                                <div class="fw-bold">3) Giao nhận</div>
+                                <div class="small text-muted">Tuyến tối ưu, cập nhật trạng thái</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="p-3 border rounded-4 h-100">
+                                <div class="fs-3 text-danger"><i class="bi bi-receipt"></i></div>
+                                <div class="fw-bold">4) Đối soát</div>
+                                <div class="small text-muted">COD + phí ship minh bạch</div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="nf-card">
+                    <h5 class="mb-2"><i class="bi bi-card-checklist me-2 text-danger"></i>Thông số nhanh</h5>
+
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                        <span class="text-muted">Giá từ</span>
+                        <span class="fw-bold">@s.BasePrice.ToString("N0")đ</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                        <span class="text-muted">Thời gian dự kiến</span>
+                        <span class="fw-bold">@s.EstimateTime</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                        <span class="text-muted">Mã dịch vụ</span>
+                        <span class="fw-bold">@s.Slug</span>
+                    </div>
+
+                    <div class="alert alert-warning mt-3 mb-0 small">
+                        Lưu ý: Giá/Thời gian có thể thay đổi theo khu vực, khối lượng, và điều kiện vận hành.
+                    </div>
+
+                    <div class="d-grid gap-2 mt-3">
+                        <a class="btn btn-danger fw-bold"
+                           asp-controller="Auth" asp-action="Register">
+                            <i class="bi bi-person-plus me-1"></i> Đăng ký sử dụng
+                        </a>
+                        <a class="btn btn-outline-secondary fw-bold"
+                           asp-controller="Service" asp-action="Index">
+                            <i class="bi bi-arrow-left me-1"></i> Quay lại danh sách
+                        </a>
+                    </div>
+                </div>
+
+                <div class="nf-card mt-3">
+                    <h5 class="mb-2"><i class="bi bi-question-circle me-2 text-danger"></i>FAQ</h5>
+
+                    <div class="mb-3">
+                        <div class="fw-bold">Có hỗ trợ COD không?</div>
+                        <div class="small text-muted">Có. COD được ghi nhận theo đơn và đối soát minh bạch theo kỳ.</div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="fw-bold">Có theo dõi trạng thái không?</div>
+                        <div class="small text-muted">Có. Bạn có thể tra cứu vận đơn để xem trạng thái hiện tại.</div>
+                    </div>
+                    <div>
+                        <div class="fw-bold">Giao thất bại xử lý thế nào?</div>
+                        <div class="small text-muted">Đơn chuyển trạng thái hoàn/thất bại; hệ thống ghi log để xử lý theo chính sách.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (Model.Related != null && Model.Related.Any())
+{
+    <div class="nf-surface mb-4">
+        <div class="nf-surface-head">
+            <div class="fw-bold">
+                <i class="bi bi-stars me-2 text-danger"></i>
+                Dịch vụ liên quan
+            </div>
+            <div class="text-muted small">Gợi ý để bạn lựa chọn phù hợp</div>
+        </div>
+        <div class="nf-surface-body">
+            <div class="row g-3">
+                @foreach (var r in Model.Related)
+                {
+                    <div class="col-md-6 col-lg-4">
+                        <div class="nf-card h-100">
+                            <h5 class="mb-2">
+                                <i class="bi bi-box-seam me-2 text-danger"></i>@r.Name
+                            </h5>
+                            <p class="mb-2">@r.ShortDescription</p>
+
+                            <div class="d-flex flex-wrap gap-2 small mb-3">
+                                <span class="badge bg-light text-dark border">
+                                    <i class="bi bi-cash-coin me-1 text-danger"></i> Từ @r.BasePrice.ToString("N0")đ
+                                </span>
+                                <span class="badge bg-light text-dark border">
+                                    <i class="bi bi-clock me-1 text-danger"></i> @r.EstimateTime
+                                </span>
+                            </div>
+
+                            <a class="nf-link"
+                               asp-controller="Service"
+                               asp-action="Details"
+                               asp-route-id="@r.Id">
+                                Xem chi tiết &raquo;
+                            </a>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}

@@ -3,61 +3,318 @@
 
 @{
     ViewData["Title"] = "Tất cả đơn hàng";
-    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";   // <<< dùng layout admin
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
 }
 
-<div class="container-fluid py-3">
-    <h2 class="mb-3">Tất cả đơn hàng</h2>
+<style>
+    /* ===== Match your Dashboard style (dash) ===== */
+    .dash {
+        --text: #111827;
+        --muted: #6b7280;
+        --border: rgba(17, 24, 39, 0.10);
+        --shadow: 0 10px 30px rgba(17, 24, 39, 0.08);
+        --shadow2: 0 14px 40px rgba(17, 24, 39, 0.10);
+        font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+        color: var(--text);
+    }
 
-    <!-- Bộ lọc -->
-    <form method="get" asp-action="Index" asp-controller="AdminOrders" class="card mb-3">
-        <div class="card-body row g-3 align-items-end">
-            <div class="col-md-3">
-                <label class="form-label">Trạng thái</label>
-                <select name="status" class="form-select">
-                    @{
-                        string currentStatus = Model.StatusFilter ?? "all";
-                    }
-                    <option value="all" selected="@(currentStatus == "all")">Tất cả</option>
-                    <option value="pending" selected="@(currentStatus == "pending")">Đang chờ xử lý</option>
-                    <option value="shipping" selected="@(currentStatus == "shipping")">Đang giao</option>
-                    <option value="done" selected="@(currentStatus == "done")">Đã giao</option>
-                    <option value="failed" selected="@(currentStatus == "failed")">Thất bại / Hoàn</option>
-                </select>
-            </div>
+    /* ===== Header like dashboard ===== */
+    .dash-head{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:14px;
+        padding:14px 16px;
+        border-radius:16px;
+        border:1px solid var(--border);
+        background: linear-gradient(180deg, rgba(13,110,253,.08), rgba(13,110,253,.02));
+        box-shadow: var(--shadow);
+        margin-bottom: 14px;
+        flex-wrap: wrap;
+    }
+    .dash-left{display:flex;gap:12px;align-items:center;}
+    .dash-avatar{
+        width:44px;height:44px;border-radius:14px;
+        display:grid;place-items:center;
+        background:#fff;border:1px solid var(--border);
+        box-shadow:0 8px 24px rgba(17,24,39,.08);
+        font-size:20px;
+        flex:0 0 auto;
+    }
+    .dash-title{font-weight:950;letter-spacing:-.2px;margin:0;}
+    .dash-sub{
+        color:var(--muted);
+        font-size:.95rem;
+        margin-top:4px;
+        display:flex;
+        gap:10px;
+        align-items:center;
+        flex-wrap:wrap;
+    }
+    .dash-dot{width:6px;height:6px;border-radius:99px;background:rgba(17,24,39,0.25);display:inline-block;}
 
-            <div class="col-md-3">
-                <label class="form-label">Từ ngày</label>
-                <input type="date" name="fromDate"
-                       value="@(Model.FromDate.HasValue ? Model.FromDate.Value.ToString("yyyy-MM-dd") : "")"
-                       class="form-control" />
-            </div>
+    .dash-pill{
+        display:inline-flex;align-items:center;gap:10px;
+        padding:10px 12px;border-radius:999px;
+        border:1px solid var(--border);background:#fff;
+        box-shadow:0 8px 18px rgba(17,24,39,.06);
+        color: var(--muted);
+        font-weight:950;
+        font-size:.9rem;
+        user-select:none;
+        text-decoration:none;
+        white-space:nowrap;
+    }
+    .pill-dot{width:10px;height:10px;border-radius:99px;background:#22c55e;box-shadow:0 0 0 4px rgba(34,197,94,0.18);}
 
-            <div class="col-md-3">
-                <label class="form-label">Đến ngày</label>
-                <input type="date" name="toDate"
-                       value="@(Model.ToDate.HasValue ? Model.ToDate.Value.ToString("yyyy-MM-dd") : "")"
-                       class="form-control" />
-            </div>
+    /* ===== Panel ===== */
+    .panel{
+        border-radius:18px;
+        border:1px solid var(--border);
+        background:#fff;
+        box-shadow: var(--shadow);
+        overflow:hidden;
+        transition: transform .18s ease, box-shadow .18s ease;
+    }
+    .panel:hover{transform:translateY(-2px);box-shadow:var(--shadow2);}
 
-            <div class="col-md-3">
-                <label class="form-label">Từ khóa</label>
-                <input type="text" name="keyword" class="form-control"
-                       value="@Model.Keyword"
-                       placeholder="Mã đơn / tên / SĐT..." />
-            </div>
+    .panel-head{
+        padding:14px 16px;
+        border-bottom: 1px solid rgba(17, 24, 39, 0.08);
+        background: linear-gradient(180deg, rgba(17, 24, 39, 0.03), rgba(17, 24, 39, 0.01));
+        display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    }
+    .panel-title{font-weight:950;letter-spacing:-.2px;}
+    .panel-sub{color:var(--muted);font-size:.92rem;margin-top:4px;}
+    .panel-body{padding:14px 16px 16px 16px;}
 
-            <div class="col-12 d-flex justify-content-end mt-2">
-                <button type="submit" class="btn btn-primary me-2">Lọc</button>
-                <a asp-action="Index" asp-controller="AdminOrders" class="btn btn-outline-secondary">Xóa bộ lọc</a>
+    /* ===== Filter grid ===== */
+    .filter-grid{
+        display:grid;
+        grid-template-columns: 1fr .8fr .8fr 1fr;
+        gap: 12px;
+        align-items:end;
+    }
+    .form-label{font-weight:900;color:var(--text);font-size:.92rem;}
+    .form-control, .form-select{
+        border-radius:12px;
+        padding:.55rem .75rem;
+        border-color: rgba(17,24,39,0.12);
+    }
+    .form-control:focus, .form-select:focus{
+        box-shadow: 0 0 0 .2rem rgba(13,110,253,.12);
+        border-color: rgba(13,110,253,.35);
+    }
+
+    .btn-pill{
+        border-radius:999px !important;
+        font-weight:950;
+        padding:.55rem .95rem;
+        white-space:nowrap;
+    }
+    .btn-ghost{
+        border-radius:999px !important;
+        font-weight:950;
+        padding:.55rem .95rem;
+        background:#fff;
+        border: 1px solid rgba(17,24,39,0.14);
+        color:#111827;
+    }
+
+    /* ===== Stat cards ===== */
+    .stat-grid{
+        display:grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+    .kpi{
+        border-radius:18px;
+        border:1px solid var(--border);
+        background:#fff;
+        box-shadow: var(--shadow);
+        padding: 14px 16px;
+        transition: transform .18s ease, box-shadow .18s ease;
+        min-height: 92px;
+    }
+    .kpi:hover{transform:translateY(-2px);box-shadow:var(--shadow2);}
+    .kpi-top{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+    .kpi-label{
+        font-weight:950;
+        font-size:.9rem;
+        color: var(--muted);
+        display:flex;
+        align-items:center;
+        gap:8px;
+        flex-wrap:wrap;
+    }
+    .kpi-value{font-weight:950;font-size:1.45rem;letter-spacing:-.3px;margin-top:4px;}
+    .kpi-sub{color:var(--muted);font-weight:800;font-size:.9rem;margin-top:6px;}
+    .kpi-badge{
+        display:inline-flex;
+        align-items:center;
+        gap:6px;
+        padding:6px 10px;
+        border-radius:999px;
+        border: 1px solid rgba(17,24,39,0.12);
+        background: rgba(17,24,39,0.03);
+        font-weight:950;
+        font-size:.86rem;
+        white-space:nowrap;
+    }
+    .kpi-success{border-left:6px solid rgba(25,135,84,.75);}
+    .kpi-info{border-left:6px solid rgba(13,202,240,.75);}
+    .kpi-warning{border-left:6px solid rgba(255,193,7,.75);}
+    .kpi-danger{border-left:6px solid rgba(220,53,69,.75);}
+
+    /* ===== Table ===== */
+    .table-clean{margin:0;}
+    .table-clean thead th{
+        background: rgba(17,24,39,0.03) !important;
+        font-weight:950;
+        color: var(--text);
+        border-bottom: 1px solid rgba(17,24,39,0.10) !important;
+        white-space: nowrap;
+    }
+    .table-clean td, .table-clean th{
+        padding:.85rem .95rem;
+        vertical-align:middle;
+        border-color: rgba(17,24,39,0.06);
+    }
+    .table-clean tbody tr{transition: background .12s ease;}
+    .table-clean tbody tr:hover{background: rgba(13,110,253,.04);}
+
+    .truncate{
+        max-width: 320px;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        white-space:nowrap;
+    }
+
+    /* ===== Status badge like pills ===== */
+    .badge-pill{
+        border-radius:999px;
+        padding:.35rem .65rem;
+        font-weight:950;
+        letter-spacing:.01em;
+        display:inline-flex;
+        align-items:center;
+        gap: 6px;
+        white-space:nowrap;
+    }
+    .role-dot{
+        width:8px;height:8px;border-radius:50%;
+        box-shadow:0 0 0 3px rgba(0,0,0,.03);
+        display:inline-block;
+    }
+
+    /* ===== Pagination ===== */
+    .pagination .page-link{
+        border-radius: 12px !important;
+        margin: 0 3px;
+        font-weight: 900;
+        color:#0d6efd;
+        border: 1px solid rgba(13,110,253,.18);
+        background: rgba(13,110,253,.04);
+        transition: transform .12s ease, background .12s ease;
+    }
+    .pagination .page-link:hover{background: rgba(13,110,253,.08);transform: translateY(-1px);}
+    .pagination .page-item.active .page-link{background: #0d6efd;border-color:#0d6efd;color:#fff;}
+    .pagination .page-item.disabled .page-link{opacity:.55;transform:none;}
+
+    @@media (max-width: 992px){
+        .filter-grid{grid-template-columns: 1fr 1fr;}
+        .stat-grid{grid-template-columns: 1fr 1fr;}
+        .truncate{max-width: 100%;}
+    }
+</style>
+
+<div class="dash container-fluid py-3">
+
+    <!-- Header -->
+    <div class="dash-head">
+        <div class="dash-left">
+            <div class="dash-avatar">📦</div>
+            <div>
+                <h2 class="dash-title">Tất cả đơn hàng</h2>
+                <div class="dash-sub">
+                    Tổng hợp danh sách đơn, lọc theo trạng thái và khoảng thời gian
+                    <span class="dash-dot"></span>
+                    <span class="text-muted">Tổng: <b>@Model.TotalItems</b> đơn</span>
+                </div>
             </div>
         </div>
-    </form>
 
-    <!-- Thống kê trạng thái -->
-    <div class="row g-3 mb-3">
+        <a asp-action="NewOrders" asp-controller="AdminOrders" class="dash-pill">
+            <span class="pill-dot"></span>
+            <span><i class="fas fa-inbox me-1"></i> Đơn chờ phân công</span>
+        </a>
+    </div>
+
+    <!-- Filter -->
+    <div class="panel mb-3">
+        <div class="panel-head">
+            <div>
+                <div class="panel-title"><i class="fas fa-filter me-1"></i> Bộ lọc</div>
+                <div class="panel-sub">Chọn trạng thái, khoảng ngày và từ khóa để thu hẹp kết quả.</div>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+                <button type="submit" form="filterForm" class="btn btn-primary btn-pill">
+                    <i class="fas fa-filter me-1"></i> Lọc
+                </button>
+                <a asp-action="Index" asp-controller="AdminOrders" class="btn btn-ghost btn-pill">
+                    <i class="fas fa-eraser me-1"></i> Xóa bộ lọc
+                </a>
+            </div>
+        </div>
+
+        <div class="panel-body">
+            <form id="filterForm" method="get" asp-action="Index" asp-controller="AdminOrders">
+                <div class="filter-grid">
+                    <div>
+                        <label class="form-label">Trạng thái</label>
+                        <select name="status" class="form-select">
+                            @{
+                                string currentStatus = Model.StatusFilter ?? "all";
+                            }
+                            <option value="all" selected="@(currentStatus == "all")">Tất cả</option>
+                            <option value="pending" selected="@(currentStatus == "pending")">Đang chờ xử lý</option>
+                            <option value="shipping" selected="@(currentStatus == "shipping")">Đang giao</option>
+                            <option value="done" selected="@(currentStatus == "done")">Đã giao</option>
+                            <option value="failed" selected="@(currentStatus == "failed")">Thất bại / Hoàn</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="form-label">Từ ngày</label>
+                        <input type="date" name="fromDate"
+                               value="@(Model.FromDate.HasValue ? Model.FromDate.Value.ToString("yyyy-MM-dd") : "")"
+                               class="form-control" />
+                    </div>
+
+                    <div>
+                        <label class="form-label">Đến ngày</label>
+                        <input type="date" name="toDate"
+                               value="@(Model.ToDate.HasValue ? Model.ToDate.Value.ToString("yyyy-MM-dd") : "")"
+                               class="form-control" />
+                    </div>
+
+                    <div>
+                        <label class="form-label">Từ khóa</label>
+                        <input type="text" name="keyword" class="form-control"
+                               value="@Model.Keyword"
+                               placeholder="Mã đơn / tên / SĐT..." />
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Status stats -->
+    <div class="stat-grid">
         @{
             int total = Model.StatusStats.Sum(s => s.Count);
+
             Func<string, string> statusLabel = s => s switch
             {
                 "pending" => "Đang chờ xử lý",
@@ -66,59 +323,82 @@
                 "failed" => "Thất bại / Hoàn",
                 _ => s
             };
-            Func<string, string> statusBadgeClass = s => s switch
+
+            Func<string, string> statusCardClass = s => s switch
             {
-                "pending" => "bg-warning text-dark",
-                "shipping" => "bg-info text-dark",
-                "done" => "bg-success",
-                "failed" => "bg-danger",
-                _ => "bg-secondary"
+                "pending" => "kpi kpi-warning",
+                "shipping" => "kpi kpi-info",
+                "done" => "kpi kpi-success",
+                "failed" => "kpi kpi-danger",
+                _ => "kpi"
+            };
+
+            Func<string, (string badge, string dot)> statusPill = s => s switch
+            {
+                "pending" => ("bg-warning text-dark", "bg-warning"),
+                "shipping" => ("bg-info text-dark", "bg-info"),
+                "done" => ("bg-success", "bg-success"),
+                "failed" => ("bg-danger", "bg-danger"),
+                _ => ("bg-secondary", "bg-secondary")
             };
         }
 
         @foreach (var s in Model.StatusStats)
         {
             var percent = total > 0 ? (s.Count * 100.0 / total) : 0;
-            <div class="col-md-3">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="badge @statusBadgeClass(s.Status)">@statusLabel(s.Status)</span>
-                            <span class="fw-bold">@s.Count</span>
+            var pill = statusPill(s.Status);
+
+            <div class="@statusCardClass(s.Status)">
+                <div class="kpi-top">
+                    <div>
+                        <div class="kpi-label">
+                            <span class="badge @pill.badge badge-pill">
+                                <span class="role-dot @pill.dot"></span>
+                                @statusLabel(s.Status)
+                            </span>
                         </div>
-                        <div class="small text-muted mt-1">
-                            @(percent.ToString("0.0"))%
-                        </div>
+                        <div class="kpi-value">@s.Count</div>
                     </div>
+
+                    <span class="kpi-badge">@percent.ToString("0.0")%</span>
+                </div>
+
+                <div class="kpi-sub">
+                    Tỷ lệ theo tổng đơn trong bộ lọc
                 </div>
             </div>
         }
     </div>
 
-    <!-- Bảng đơn hàng -->
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <span>
-                Danh sách đơn hàng
-                <span class="text-muted small">
-                    (Trang @Model.PageIndex / @Model.TotalPages – @Model.TotalItems đơn)
-                </span>
+    <!-- Table -->
+    <div class="panel">
+        <div class="panel-head">
+            <div>
+                <div class="panel-title"><i class="fas fa-table me-1"></i> Danh sách đơn hàng</div>
+                <div class="panel-sub">
+                    Trang @Model.PageIndex / @Model.TotalPages – @Model.TotalItems đơn
+                </div>
+            </div>
+
+            <span class="tag-like text-muted small">
+                Hiển thị @Model.Items.Count / @Model.TotalItems
             </span>
         </div>
+
         <div class="table-responsive">
-            <table class="table table-hover mb-0 align-middle">
-                <thead class="table-light">
+            <table class="table table-clean table-hover mb-0 align-middle">
+                <thead>
                     <tr>
-                        <th>#</th>
+                        <th style="width:70px;">#</th>
                         <th>Mã đơn</th>
                         <th>Khách hàng</th>
                         <th>Người nhận</th>
                         <th>SĐT nhận</th>
                         <th>Địa chỉ nhận</th>
-                        <th>Giá trị COD</th>
-                        <th>Phí ship</th>
+                        <th class="text-end">Giá trị COD</th>
+                        <th class="text-end">Phí ship</th>
                         <th>Trạng thái</th>
-                        <th>Ngày tạo</th>
+                        <th class="text-nowrap">Ngày tạo</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -127,29 +407,31 @@
                     int stt = (Model.PageIndex - 1) * Model.PageSize + 1;
                     foreach (var item in Model.Items)
                     {
+                        var pill = item.Status switch
+                        {
+                            "pending" => ("bg-warning text-dark", "bg-warning"),
+                            "shipping" => ("bg-info text-dark", "bg-info"),
+                            "done" => ("bg-success", "bg-success"),
+                            "failed" => ("bg-danger", "bg-danger"),
+                            _ => ("bg-secondary", "bg-secondary")
+                        };
+
                         <tr>
-                            <td>@stt</td>
-                            <td>@item.Code</td>
+                            <td class="text-muted fw-bold">@stt</td>
+                            <td class="fw-bold">@item.Code</td>
                             <td>@item.CustomerName</td>
                             <td>@item.ReceiverName</td>
                             <td>@item.ReceiverPhone</td>
-                            <td>@item.ReceiverAddress</td>
-                            <td>@item.CodAmount.ToString("N0") đ</td>
-                            <td>@item.ShipFee.ToString("N0") đ</td>
+                            <td class="truncate">@item.ReceiverAddress</td>
+                            <td class="text-end fw-bold">@item.CodAmount.ToString("N0") đ</td>
+                            <td class="text-end">@item.ShipFee.ToString("N0") đ</td>
                             <td>
-                                @{
-                                    string badgeClass = item.Status switch
-                                    {
-                                        "pending" => "badge bg-warning text-dark",
-                                        "shipping" => "badge bg-info text-dark",
-                                        "done" => "badge bg-success",
-                                        "failed" => "badge bg-danger",
-                                        _ => "badge bg-secondary"
-                                    };
-                                }
-                                <span class="@badgeClass">@item.Status</span>
+                                <span class="badge @pill.Item1 badge-pill">
+                                    <span class="role-dot @pill.Item2"></span>
+                                    @item.Status
+                                </span>
                             </td>
-                            <td>@(item.CreatedAt.HasValue ? item.CreatedAt.Value.ToString("dd/MM/yyyy HH:mm") : "")</td>
+                            <td class="text-nowrap">@(item.CreatedAt.HasValue ? item.CreatedAt.Value.ToString("dd/MM/yyyy HH:mm") : "")</td>
                         </tr>
                         stt++;
                     }
@@ -157,7 +439,7 @@
                 else
                 {
                     <tr>
-                        <td colspan="10" class="text-center text-muted">
+                        <td colspan="10" class="text-center text-muted py-4">
                             Không có đơn hàng nào phù hợp bộ lọc.
                         </td>
                     </tr>
@@ -166,20 +448,19 @@
             </table>
         </div>
 
-        <!-- Phân trang -->
+        <!-- Pagination -->
         @if (Model.TotalPages > 1)
         {
-            <div class="card-footer d-flex justify-content-between align-items-center">
+            <div class="panel-body d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <span class="small text-muted">
                     Hiển thị @Model.Items.Count / @Model.TotalItems đơn
                 </span>
+
                 <nav>
-                    <ul class="pagination mb-0">
+                    <ul class="pagination mb-0 flex-wrap">
                         @{
                             int current = Model.PageIndex;
                             int last = Model.TotalPages;
-                            int prev = current - 1;
-                            int next = current + 1;
                         }
 
                         <li class="page-item @(current == 1 ? "disabled" : "")">

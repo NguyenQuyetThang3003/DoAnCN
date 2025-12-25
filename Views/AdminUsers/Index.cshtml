@@ -5,19 +5,230 @@
     Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
 }
 
-<div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 class="mb-0">Quản lý người dùng</h4>
+<style>
+    /* ===== Match style with your Customer Dashboard (dash) ===== */
+    .dash {
+        --bg: #ffffff;
+        --text: #111827;
+        --muted: #6b7280;
+        --border: rgba(17, 24, 39, 0.10);
+        --shadow: 0 10px 30px rgba(17, 24, 39, 0.08);
+        --shadow2: 0 14px 40px rgba(17, 24, 39, 0.10);
+        color: var(--text);
+        font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    }
+
+    /* Header block like dashboard */
+    .dash-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 14px 16px;
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        background: linear-gradient(180deg, rgba(13, 110, 253, 0.08), rgba(13, 110, 253, 0.02));
+        box-shadow: var(--shadow);
+        margin-bottom: 14px;
+    }
+    .dash-head__left { display:flex; gap: 12px; align-items:center; }
+    .dash-avatar{
+        width: 44px; height: 44px; border-radius: 14px;
+        display: grid; place-items: center;
+        background: #fff; border: 1px solid var(--border);
+        box-shadow: 0 8px 24px rgba(17, 24, 39, 0.08);
+        font-size: 20px;
+        flex: 0 0 auto;
+    }
+    .dash-title{ font-weight: 900; letter-spacing: -0.2px; font-size: 1.15rem; margin:0; }
+    .dash-sub{
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 0.95rem;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    .dash-dot{
+        width: 6px; height: 6px;
+        border-radius: 99px;
+        background: rgba(17,24,39,0.25);
+        display: inline-block;
+    }
+
+    .dash-pill{
+        display: inline-flex; align-items: center; gap: 10px;
+        padding: 10px 12px; border-radius: 999px;
+        border: 1px solid var(--border); background: #fff;
+        box-shadow: 0 8px 18px rgba(17, 24, 39, 0.06);
+        color: var(--muted); font-weight: 800; font-size: 0.9rem;
+        user-select: none;
+        white-space: nowrap;
+    }
+    .pill-dot{
+        width: 10px; height: 10px; border-radius: 99px;
+        background: #22c55e;
+        box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.18);
+    }
+
+    /* Panels */
+    .panel{
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background: #fff;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        transition: transform .18s ease, box-shadow .18s ease;
+    }
+    .panel:hover{ transform: translateY(-2px); box-shadow: var(--shadow2); }
+
+    .panel-head{
+        padding: 14px 16px;
+        border-bottom: 1px solid rgba(17, 24, 39, 0.08);
+        background: linear-gradient(180deg, rgba(17, 24, 39, 0.03), rgba(17, 24, 39, 0.01));
+        display:flex; align-items:center; justify-content:space-between;
+        gap: 12px; flex-wrap: wrap;
+    }
+    .panel-title{ font-weight: 950; letter-spacing: -0.2px; }
+    .panel-sub{ color: var(--muted); font-size: 0.92rem; margin-top: 4px; }
+
+    .panel-body{ padding: 14px 16px 16px 16px; }
+
+    /* Filter look */
+    .filter-box .form-label{
+        font-weight: 800;
+        color: var(--text);
+        font-size: .9rem;
+    }
+    .filter-actions .btn{
+        border-radius: 999px;
+        font-weight: 800;
+        padding: .55rem .85rem;
+    }
+    .filter-actions .btn-light{
+        background: #fff;
+    }
+
+    .stat-mini{
+        border: 1px dashed rgba(17,24,39,0.16);
+        background: rgba(17,24,39,0.02);
+        border-radius: 14px;
+        padding: 12px;
+    }
+    .stat-mini .title{
+        font-weight: 950;
+        margin-bottom: 6px;
+        color: var(--text);
+    }
+
+    /* Table style like dashboard */
+    .table-clean{
+        margin:0;
+    }
+    .table-clean thead th{
+        background: rgba(17,24,39,0.03) !important;
+        font-weight: 900;
+        color: var(--text);
+        border-bottom: 1px solid rgba(17,24,39,0.10) !important;
+        white-space: nowrap;
+    }
+    .table-clean td, .table-clean th{
+        padding: .85rem .95rem;
+        vertical-align: middle;
+        border-color: rgba(17,24,39,0.06);
+    }
+    .table-clean tbody tr{
+        transition: background .12s ease;
+    }
+    .table-clean tbody tr:hover{
+        background: rgba(13,110,253,.04);
+    }
+
+    /* Badges like dashboard pills */
+    .badge-pill{
+        border-radius: 999px;
+        padding: .35rem .65rem;
+        font-weight: 900;
+        letter-spacing: .01em;
+        display:inline-flex;
+        align-items:center;
+        gap: 6px;
+    }
+    .role-dot{
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        box-shadow: 0 0 0 3px rgba(0,0,0,.03);
+    }
+
+    /* Pagination */
+    .pagination .page-link{
+        border-radius: 999px !important;
+        margin: 0 3px;
+        font-weight: 900;
+        color:#0d6efd;
+        border: 1px solid rgba(13,110,253,.18);
+        background: rgba(13,110,253,.04);
+        transition: transform .12s ease, background .12s ease;
+    }
+    .pagination .page-link:hover{
+        background: rgba(13,110,253,.08);
+        transform: translateY(-1px);
+    }
+    .pagination .page-item.active .page-link{
+        background: #0d6efd;
+        border-color: #0d6efd;
+        color:#fff;
+    }
+    .pagination .page-item.disabled .page-link{
+        opacity: .55;
+        transform:none;
+    }
+
+    /* Responsive */
+    @@media (max-width: 992px){
+        .dash-head{ align-items:flex-start; }
+    }
+</style>
+
+<div class="dash container-fluid">
+
+    <!-- Header giống Dashboard -->
+    <div class="dash-head">
+        <div class="dash-head__left">
+            <div class="dash-avatar">👥</div>
+            <div>
+                <h2 class="dash-title">Quản lý người dùng</h2>
+                <div class="dash-sub">
+                    Lọc theo vai trò, tìm kiếm nhanh và quản lý danh sách tài khoản
+                    <span class="dash-dot"></span>
+                    <span class="text-muted">Tổng: <b>@Model.TotalCount</b></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="dash-head__right">
+            <a asp-action="CreateDriver" class="dash-pill" style="text-decoration:none;">
+                <span class="pill-dot"></span>
+                <span><i class="fas fa-plus me-1"></i> Tạo tài khoản tài xế</span>
+            </a>
+        </div>
     </div>
 
     <div class="row g-3 mb-3">
+
         <!-- Bộ lọc -->
         <div class="col-lg-3">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white border-0">
-                    <strong>Bộ lọc</strong>
+            <div class="panel filter-box">
+                <div class="panel-head">
+                    <div>
+                        <div class="panel-title"><i class="fas fa-filter me-1"></i> Bộ lọc</div>
+                        <div class="panel-sub">Chọn vai trò hoặc nhập từ khóa để thu hẹp kết quả.</div>
+                    </div>
                 </div>
-                <div class="card-body">
+
+                <div class="panel-body">
                     <form method="get" asp-action="Index">
                         <div class="mb-3">
                             <label class="form-label">Vai trò</label>
@@ -41,7 +252,7 @@
                                    placeholder="Tên / Email / SĐT / Công ty" />
                         </div>
 
-                        <div class="d-grid gap-2">
+                        <div class="d-grid gap-2 filter-actions">
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-filter me-1"></i> Lọc
                             </button>
@@ -53,11 +264,14 @@
                         @if (Model.RoleStats.Any())
                         {
                             <hr />
-                            <div class="small text-muted">
-                                <div><strong>Thống kê vai trò</strong></div>
+                            <div class="stat-mini small text-muted">
+                                <div class="title">Thống kê vai trò</div>
                                 @foreach (var kv in Model.RoleStats.OrderBy(k => k.Key))
                                 {
-                                    <div>@kv.Key: @kv.Value</div>
+                                    <div class="d-flex justify-content-between">
+                                        <span>@kv.Key</span>
+                                        <strong class="text-dark">@kv.Value</strong>
+                                    </div>
                                 }
                             </div>
                         }
@@ -68,28 +282,29 @@
 
         <!-- Danh sách người dùng -->
         <div class="col-lg-9">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+            <div class="panel">
+                <div class="panel-head">
                     <div>
-                        <strong>Danh sách người dùng</strong>
-                        <span class="text-muted small ms-2">Tổng: @Model.TotalCount</span>
+                        <div class="panel-title"><i class="fas fa-users me-1"></i> Danh sách người dùng</div>
+                        <div class="panel-sub">Tổng số bản ghi: <b>@Model.TotalCount</b></div>
                     </div>
-                    <a asp-action="CreateDriver" class="btn btn-sm btn-primary">
+
+                    <a asp-action="CreateDriver" class="btn btn-primary btn-sm" style="border-radius:999px;font-weight:900;">
                         <i class="fas fa-plus me-1"></i> Tạo tài khoản tài xế
                     </a>
                 </div>
 
                 <div class="table-responsive">
-                    <table class="table table-hover mb-0 align-middle">
-                        <thead class="table-light">
+                    <table class="table table-clean table-hover mb-0 align-middle">
+                        <thead>
                             <tr>
-                                <th>#</th>
+                                <th style="width:70px;">#</th>
                                 <th>Tài khoản</th>
                                 <th>Email</th>
                                 <th>SĐT</th>
                                 <th>Vai trò</th>
                                 <th>Công ty</th>
-                                <th>Ngày tạo</th>
+                                <th class="text-nowrap">Ngày tạo</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -99,8 +314,8 @@
                             foreach (var u in Model.Users)
                             {
                                 <tr>
-                                    <td>@index</td>
-                                    <td>@u.UserName</td>
+                                    <td class="text-muted fw-bold">@index</td>
+                                    <td class="fw-bold">@u.UserName</td>
                                     <td>@u.Email</td>
                                     <td>@u.Phone</td>
                                     <td>
@@ -112,11 +327,22 @@
                                                 "customer" => "success",
                                                 _          => "secondary"
                                             };
+
+                                            string dotClass = u.Role?.ToLower() switch
+                                            {
+                                                "admin"    => "bg-danger",
+                                                "driver"   => "bg-info",
+                                                "customer" => "bg-success",
+                                                _          => "bg-secondary"
+                                            };
                                         }
-                                        <span class="badge bg-@badgeClass">@u.Role</span>
+                                        <span class="badge bg-@badgeClass badge-pill">
+                                            <span class="role-dot @dotClass"></span>
+                                            @u.Role
+                                        </span>
                                     </td>
                                     <td>@u.CompanyName</td>
-                                    <td>@u.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td class="text-nowrap">@u.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
                                 </tr>
                                 index++;
                             }
@@ -138,7 +364,7 @@
                 {
                     <div class="card-footer bg-white border-0">
                         <nav>
-                            <ul class="pagination mb-0">
+                            <ul class="pagination mb-0 flex-wrap">
                                 <li class="page-item @(Model.Page <= 1 ? "disabled" : "")">
                                     <a class="page-link"
                                        asp-action="Index"

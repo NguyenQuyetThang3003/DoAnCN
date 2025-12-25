@@ -1,0 +1,55 @@
+@model IEnumerable<WedNightFury.Models.Service>
+
+@{
+    ViewData["Title"] = "Dịch vụ";
+    Layout = "~/Views/Shared/_LayoutPublic.cshtml";
+}
+
+<div class="nf-surface mb-4">
+    <div class="nf-surface-head">
+        <div class="fw-bold">
+            <i class="bi bi-box-seam me-2 text-danger"></i>
+            Danh sách dịch vụ
+        </div>
+        <div class="text-muted small">Chọn dịch vụ phù hợp nhu cầu vận chuyển của bạn</div>
+    </div>
+
+    <div class="nf-surface-body">
+        @if (Model == null || !Model.Any())
+        {
+            <div class="alert alert-info mb-0">Chưa có dịch vụ nào.</div>
+        }
+        else
+        {
+            <div class="row g-3">
+                @foreach (var s in Model)
+                {
+                    <div class="col-md-6 col-lg-4">
+                        <div class="nf-card h-100">
+                            <h5 class="mb-2">
+                                <i class="bi bi-lightning-charge me-2 text-danger"></i>@s.Name
+                            </h5>
+                            <p class="mb-2">@s.ShortDescription</p>
+
+                            <div class="d-flex flex-wrap gap-2 small mb-3">
+                                <span class="badge bg-light text-dark border">
+                                    <i class="bi bi-cash-coin me-1 text-danger"></i> Từ @s.BasePrice.ToString("N0")đ
+                                </span>
+                                <span class="badge bg-light text-dark border">
+                                    <i class="bi bi-clock me-1 text-danger"></i> @s.EstimateTime
+                                </span>
+                            </div>
+
+                            <a class="nf-link"
+                               asp-controller="Service"
+                               asp-action="Details"
+                               asp-route-id="@s.Id">
+                                Xem chi tiết &raquo;
+                            </a>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>

@@ -16,54 +16,36 @@
 
         addr = Regex.Replace(addr, @"\s+", " ").Trim();
         var lower = addr.ToLowerInvariant();
-
-        bool hasVN = lower.Contains("việt nam") || lower.Contains("viet nam");
-        if (!hasVN) addr += ", Việt Nam";
+        if (!lower.Contains("việt nam") && !lower.Contains("viet nam"))
+            addr += ", Việt Nam";
 
         return addr;
     }
 
-    // ✅ CHỈ TRẢ VỀ lat,lng nếu có. Không fallback text cho batch route.
     string BuildStopLatLngOnly(WedNightFury.Models.Order o)
     {
         if (o.Lat.HasValue && o.Lng.HasValue)
-        {
-            var lat = o.Lat.Value.ToString(CultureInfo.InvariantCulture);
-            var lng = o.Lng.Value.ToString(CultureInfo.InvariantCulture);
-            return $"{lat},{lng}";
-        }
-        return ""; // thiếu tọa độ
+            return o.Lat.Value.ToString(CultureInfo.InvariantCulture) + "," +
+                   o.Lng.Value.ToString(CultureInfo.InvariantCulture);
+        return "";
     }
 
-    // Map OrderId -> stop lat,lng (hoặc "")
     var stopMap = orders.ToDictionary(o => o.Id, o => BuildStopLatLngOnly(o));
     var stopMapJson = JsonSerializer.Serialize(stopMap);
 
     int activeIndex = 1;
-
-    // nếu muốn xuất phát từ HUB (lat,lng) truyền từ controller
     var hubOrigin = (ViewBag.HubLatLng as string) ?? "";
 }
 
-<style>
-    .order-card { border-radius: 12px; border: none; padding: 20px; transition: .2s; cursor: default; background:#fff; }
-    .order-card:hover { transform: scale(1.01); box-shadow: 0 4px 16px rgba(0,0,0,.1); }
-    .order-card.suggested { border: 2px solid #28a745; }
-    .order-number { font-size:22px;font-weight:700;width:45px;height:45px;border-radius:50%;background:#007bff;color:#fff;display:flex;align-items:center;justify-content:center;margin-right:12px;flex:0 0 auto; }
-    .order-number.inactive { background:#6c757d; }
-    .info-label { font-weight:600; color:#555; }
-    .top-actions { border:1px solid #e9ecef;background:#fff;border-radius:12px;padding:12px 14px; }
-</style>
-
-<div class="container">
+<div class="driver-route container py-4">
     <h3 class="fw-bold mb-3">
         📍 Lộ trình giao hàng hôm nay
-        <span class="badge bg-success ms-2">Sắp xếp theo thứ tự đề xuất</span>
+        <span class="badge bg-success ms-2">Gợi ý thứ tự</span>
     </h3>
 
     @if (!orders.Any())
     {
-        <div class="alert alert-info shadow-sm">Hôm nay bạn chưa có đơn nào cần giao.</div>
+        <div class="alert alert-info">Hôm nay bạn chưa có đơn nào cần giao.</div>
     }
     else
     {
@@ -71,119 +53,116 @@
             @Html.AntiForgeryToken()
         </form>
 
-        <div class="top-actions d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-            <div class="d-flex align-items-center gap-3">
-                <div class="form-check m-0">
+        <!-- ACTION BAR -->
+        <div class="top-actions mb-3">
+            <div class="left">
+                <div class="form-check">
                     <input class="form-check-input" type="checkbox" id="chkAll" />
-                    <label class="form-check-label" for="chkAll">Chọn tất cả</label>
+                    <label class="form-check-label">Chọn tất cả</label>
                 </div>
                 <span class="text-muted">Đã chọn: <b id="selectedCount">0</b></span>
             </div>
 
-            <div class="d-flex align-items-center gap-2">
-                <button type="button" id="btnMapsBatch" class="btn btn-outline-dark btn-sm">🗺 Mở Google Maps</button>
-                <button type="button" id="btnStartMulti" class="btn btn-primary btn-sm">🚀 Bắt đầu giao các đơn đã chọn</button>
+            <div class="right">
+                <button type="button" id="btnMapsBatch" class="btn btn-outline-dark btn-sm">
+                    🗺 Mở Google Maps
+                </button>
+                <button type="button" id="btnStartMulti" class="btn btn-primary btn-sm">
+                    🚀 Bắt đầu giao
+                </button>
 
                 <div class="form-check ms-2">
                     <input class="form-check-input" type="checkbox" id="chkOptimize" />
-                    <label class="form-check-label text-muted" for="chkOptimize">Tối ưu lộ trình</label>
+                    <label class="form-check-label text-muted">Tối ưu lộ trình</label>
                 </div>
             </div>
         </div>
 
+        <!-- ORDERS -->
         @foreach (var o in orders)
         {
-            bool isActiveStatus = o.Status == "pending" || o.Status == "assigned" || o.Status == "shipping";
-            bool isFirstActive = isActiveStatus && (activeIndex == 1);
+            bool isActive = o.Status == "pending" || o.Status == "assigned" || o.Status == "shipping";
+            bool isFirst = isActive && activeIndex == 1;
 
             var stopLatLng = BuildStopLatLngOnly(o);
             var addressText = NormalizeAddressLight(o.ReceiverAddress);
 
-            // ✅ Nút “Bản đồ” đơn lẻ:
-            // - nếu có lat,lng -> đi đúng tuyệt đối
-            // - nếu thiếu -> search theo address (chấp nhận có thể sai, nhưng chỉ 1 điểm)
-            string singleMapUrl;
-            if (!string.IsNullOrWhiteSpace(stopLatLng))
-                singleMapUrl = "https://www.google.com/maps/dir/?api=1&origin=My+Location&destination=" + Uri.EscapeDataString(stopLatLng);
-            else if (!string.IsNullOrWhiteSpace(addressText))
-                singleMapUrl = "https://www.google.com/maps/search/?api=1&query=" + Uri.EscapeDataString(addressText);
-            else
-                singleMapUrl = "https://www.google.com/maps";
+            string singleMapUrl =
+                !string.IsNullOrWhiteSpace(stopLatLng)
+                    ? "https://www.google.com/maps/dir/?api=1&origin=My+Location&destination=" + Uri.EscapeDataString(stopLatLng)
+                    : "https://www.google.com/maps/search/?api=1&query=" + Uri.EscapeDataString(addressText);
 
-            <div class="order-card shadow-sm mb-4 @(isFirstActive ? "suggested" : "")" data-order-id="@o.Id">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center">
-                        <div class="order-number @(isActiveStatus ? "" : "inactive")" style="@(isFirstActive ? "background:#28a745;" : "")">
-                            @(isActiveStatus ? activeIndex : "-")
+            <div class="order-card @(isFirst ? "suggested" : "")">
+                <div class="header">
+                    <div class="left">
+                        <div class="order-number @(isActive ? "" : "inactive")"
+                             style="@(isFirst ? "background:#28a745" : "")">
+                            @(isActive ? activeIndex : "-")
                         </div>
 
-                        <div class="form-check me-2">
-                            <input class="form-check-input order-select"
-                                   type="checkbox"
-                                   value="@o.Id"
-                                   @(isActiveStatus ? "" : "disabled") />
-                        </div>
+                        <input type="checkbox"
+                               class="form-check-input order-select ms-2"
+                               value="@o.Id"
+                               @(isActive ? "" : "disabled") />
 
-                        <h5 class="fw-bold mb-0">
-                            Đơn: @o.Code
-                            @if (isFirstActive)
+                        <h5 class="mb-0 ms-2">
+                            @o.Code
+                            @if (isFirst)
                             {
                                 <span class="badge bg-success ms-2">Gợi ý</span>
                             }
                         </h5>
                     </div>
 
-                    <span class="badge
-                        @(o.Status == "pending"  ? "bg-warning text-dark" :
-                          o.Status == "assigned" ? "bg-danger" :
-                          o.Status == "shipping" ? "bg-primary" :
-                          o.Status == "done"     ? "bg-success" :
-                          o.Status == "failed"   ? "bg-danger"  :
-                          "bg-secondary")">
-                        @o.Status?.ToUpper()
-                    </span>
+                    <span class="badge bg-secondary">@o.Status?.ToUpper()</span>
                 </div>
 
-                <hr />
-
-                <div class="row">
-                    <div class="col-md-6 mb-2">
-                        <p><span class="info-label">👤 Người nhận:</span> @o.ReceiverName</p>
-                        <p><span class="info-label">📞 SĐT:</span> @o.ReceiverPhone</p>
-                        <p><span class="info-label">📍 Địa chỉ:</span> @o.ReceiverAddress</p>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <p><b>👤 Người nhận:</b> @o.ReceiverName</p>
+                        <p><b>📞 SĐT:</b> @o.ReceiverPhone</p>
+                        <p><b>📍 Địa chỉ:</b> @o.ReceiverAddress</p>
 
                         @if (!string.IsNullOrWhiteSpace(stopLatLng))
                         {
-                            <p class="text-muted mb-0"><span class="info-label">🧭 Stop:</span> @stopLatLng</p>
+                            <p class="text-muted mb-0"><b>🧭 Stop:</b> @stopLatLng</p>
                         }
                         else
                         {
-                            <p class="text-danger mb-0"><span class="info-label">🧭 Stop:</span> Chưa có tọa độ (Lat/Lng)</p>
+                            <p class="text-danger mb-0"><b>🧭 Stop:</b> Chưa có tọa độ</p>
                         }
                     </div>
-                    <div class="col-md-6 mb-2">
-                        <p><span class="info-label">📦 Sản phẩm:</span> @o.ProductName</p>
-                        <p><span class="info-label">⚖ Cân nặng:</span> @o.Weight kg</p>
-                        <p><span class="info-label">💰 COD:</span> @o.CodAmount.ToString("N0") đ</p>
+                    <div class="col-md-6">
+                        <p><b>📦 Hàng:</b> @o.ProductName</p>
+                        <p><b>⚖ Cân nặng:</b> @o.Weight kg</p>
+                        <p><b>💰 COD:</b> @o.CodAmount.ToString("N0") đ</p>
                     </div>
                 </div>
 
-                <div class="mt-3 d-flex flex-wrap gap-2">
-                    <a asp-controller="Taixe" asp-action="StopDetail" asp-route-id="@o.Id" class="btn btn-sm btn-primary">
-                        🚀 Bắt đầu giao
+                <div class="actions mt-3">
+                    <a asp-controller="Taixe"
+                       asp-action="StopDetail"
+                       asp-route-id="@o.Id"
+                       class="btn btn-sm btn-primary">
+                        🚀 Giao
                     </a>
 
-                    <a class="btn btn-sm btn-outline-dark" target="_blank" href="@singleMapUrl">
+                    <a class="btn btn-sm btn-outline-dark"
+                       target="_blank"
+                       href="@singleMapUrl">
                         🗺 Bản đồ
                     </a>
 
-                    <a asp-controller="Taixe" asp-action="StopDetail" asp-route-id="@o.Id" class="btn btn-sm btn-outline-secondary">
+                    <a asp-controller="Taixe"
+                       asp-action="StopDetail"
+                       asp-route-id="@o.Id"
+                       class="btn btn-sm btn-outline-secondary">
                         📄 Chi tiết
                     </a>
                 </div>
             </div>
 
-            if (isActiveStatus) { activeIndex++; }
+            if (isActive) { activeIndex++; }
         }
     }
 </div>
@@ -191,160 +170,106 @@
 @section Scripts {
 <script>
     const STOP_MAP = @Html.Raw(stopMapJson);
-    const HUB_ORIGIN = "@hubOrigin".trim();
+    const HUB_ORIGIN = "@hubOrigin";
 
     function getToken() {
         return document.querySelector('#antiForgeryForm input[name="__RequestVerificationToken"]')?.value || "";
     }
 
-    function getCheckboxes() {
-        return Array.from(document.querySelectorAll(".order-select")).filter(x => !x.disabled);
-    }
     function getSelectedIds() {
         return Array.from(document.querySelectorAll(".order-select:checked"))
-            .filter(x => !x.disabled)
-            .map(x => parseInt(x.value, 10))
-            .filter(x => !isNaN(x));
+            .map(x => parseInt(x.value)).filter(x => !isNaN(x));
     }
 
     function refreshSelectedCount() {
-        const ids = getSelectedIds();
-        document.getElementById("selectedCount").textContent = ids.length.toString();
-
-        const all = getCheckboxes();
-        const selected = Array.from(document.querySelectorAll(".order-select:checked")).filter(x => !x.disabled);
-        const chkAll = document.getElementById("chkAll");
-
-        chkAll.checked = (all.length > 0 && selected.length === all.length);
-        chkAll.indeterminate = (selected.length > 0 && selected.length < all.length);
+        document.getElementById("selectedCount").innerText = getSelectedIds().length;
     }
 
-    function chunk(arr, size) {
-        const out = [];
-        for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
-        return out;
-    }
+    document.querySelectorAll(".order-select").forEach(x =>
+        x.addEventListener("change", refreshSelectedCount)
+    );
 
-    function isLatLng(s) {
-        return /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(s);
-    }
-
-    function buildStopsFromIds(ids) {
-        const missing = [];
-        const stops = [];
-
-        for (const id of ids) {
-            const s = (STOP_MAP[id] || "").trim();
-            if (!s || !isLatLng(s)) missing.push(id);
-            else stops.push(s);
-        }
-
-        // loại trùng giữ thứ tự
-        const seen = new Set();
-        const uniq = [];
-        for (const s of stops) {
-            if (!seen.has(s)) { seen.add(s); uniq.push(s); }
-        }
-
-        return { stops: uniq, missingIds: missing };
-    }
-
-    function originParam() {
-        if (HUB_ORIGIN && isLatLng(HUB_ORIGIN)) return encodeURIComponent(HUB_ORIGIN);
-        return "My+Location";
-    }
-
-    function openMapsLatLngOnly(stops, optimize) {
-        if (!stops || stops.length === 0) {
-            alert("Các đơn bạn chọn chưa có tọa độ Lat/Lng nên không thể mở route nhiều điểm.\nHãy vào Chi tiết từng đơn để geocode hoặc nhờ admin cập nhật tọa độ.");
-            return;
-        }
-
-        const ORI = originParam();
-        const MAX = 9;
-
-        chunk(stops, MAX).forEach(group => {
-            if (group.length === 1) {
-                const url = "https://www.google.com/maps/dir/?api=1&origin=" + ORI + "&destination=" + encodeURIComponent(group[0]);
-                window.open(url, "_blank");
-                return;
-            }
-
-            const destination = group[group.length - 1];
-            const waypoints = group.slice(0, group.length - 1);
-
-            const wpString = (optimize ? "optimize:true|" : "") + waypoints.join("|");
-            const url =
-                "https://www.google.com/maps/dir/?api=1" +
-                "&origin=" + ORI +
-                "&travelmode=driving" +
-                "&destination=" + encodeURIComponent(destination) +
-                "&waypoints=" + encodeURIComponent(wpString);
-
-            window.open(url, "_blank");
-        });
-    }
-
-    async function postBatchIfExists(ids) {
-        try {
-            const res = await fetch("/Taixe/UpdateStatusBatch", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "RequestVerificationToken": getToken()
-                },
-                body: JSON.stringify({ orderIds: ids, status: "shipping" })
-            });
-
-            if (res.status === 404) return { ok: false, skipped: true };
-            if (!res.ok) return { ok: false, skipped: false };
-            return { ok: true };
-        } catch {
-            return { ok: false, skipped: true };
-        }
-    }
-
-    document.addEventListener("DOMContentLoaded", function () {
-        document.querySelectorAll(".order-select").forEach(cb => cb.addEventListener("change", refreshSelectedCount));
-
-        document.getElementById("chkAll")?.addEventListener("change", function () {
-            const all = getCheckboxes();
-            all.forEach(x => x.checked = this.checked);
-            refreshSelectedCount();
-        });
-
-        document.getElementById("btnMapsBatch")?.addEventListener("click", function () {
-            const ids = getSelectedIds();
-            if (ids.length === 0) return alert("Vui lòng chọn ít nhất 1 đơn!");
-
-            const optimize = document.getElementById("chkOptimize")?.checked === true;
-            const r = buildStopsFromIds(ids);
-
-            if (r.missingIds.length > 0) {
-                alert("Có " + r.missingIds.length + " đơn chưa có tọa độ Lat/Lng nên sẽ bị bỏ qua khi mở route nhiều điểm.");
-            }
-
-            openMapsLatLngOnly(r.stops, optimize);
-        });
-
-        document.getElementById("btnStartMulti")?.addEventListener("click", async function () {
-            const ids = getSelectedIds();
-            if (ids.length === 0) return alert("Vui lòng chọn ít nhất 1 đơn!");
-
-            const optimize = document.getElementById("chkOptimize")?.checked === true;
-            const r = buildStopsFromIds(ids);
-
-            if (r.missingIds.length > 0) {
-                alert("Có " + r.missingIds.length + " đơn chưa có tọa độ Lat/Lng nên sẽ bị bỏ qua khi mở route nhiều điểm.");
-            }
-
-            openMapsLatLngOnly(r.stops, optimize);
-
-            const p = await postBatchIfExists(ids);
-            if (p.ok) location.reload();
-        });
-
+    document.getElementById("chkAll")?.addEventListener("change", function () {
+        document.querySelectorAll(".order-select:not(:disabled)")
+            .forEach(x => x.checked = this.checked);
         refreshSelectedCount();
     });
 </script>
 }
+
+<style>
+    .driver-route { font-family: "Segoe UI", system-ui, sans-serif; }
+
+    .top-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px;
+        background: #fff;
+        border-radius: 12px;
+        border: 1px solid #e5e7eb;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .top-actions .left,
+    .top-actions .right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .order-card {
+        background: #fff;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 16px;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 6px 18px rgba(0,0,0,.06);
+    }
+
+    .order-card.suggested {
+        border-color: #28a745;
+    }
+
+    .order-card .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .order-card .header .left {
+        display: flex;
+        align-items: center;
+    }
+
+    .order-number {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #0d6efd;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+    }
+
+    .order-number.inactive {
+        background: #6c757d;
+    }
+
+    .actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    /* 🔒 Razor-safe media query */
+    @@media (max-width: 576px) {
+        .top-actions {
+            flex-direction: column;
+            align-items: stretch;
+        }
+    }
+</style>

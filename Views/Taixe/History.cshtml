@@ -2,91 +2,563 @@
 
 @{
     ViewData["Title"] = "Lịch sử giao hàng";
+
+    var day = (string)(ViewBag.Day ?? "");
+    var status = (string)(ViewBag.Status ?? "all");
+
+    int total = Model?.Count() ?? 0;
+    int done = Model?.Count(x => (x.Status ?? "").ToLower() == "done") ?? 0;
+    int failed = Model?.Count(x => (x.Status ?? "").ToLower() == "failed") ?? 0;
 }
 
-<div class="container mt-4">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
 
-    <h3 class="fw-bold text-primary mb-4">📜 LỊCH SỬ GIAO HÀNG</h3>
+<div class="driver-history container-fluid py-4">
 
-    <form method="get" class="row g-3 mb-4">
-
-        <div class="col-md-3">
-            <label class="form-label">Ngày giao</label>
-            <input type="date" name="day" value="@ViewBag.Day" class="form-control" />
+    <!-- HERO -->
+    <div class="h-hero mb-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="h-ic"><i class="bi bi-clock-history"></i></div>
+            <div class="min-w-0">
+                <h2 class="m-0 h-title">Lịch sử giao hàng</h2>
+                <div class="h-sub text-muted">
+                    Tra cứu các đơn đã giao theo ngày và trạng thái. Dữ liệu hiển thị ngay, thao tác nhanh.
+                </div>
+            </div>
         </div>
 
-        <div class="col-md-3">
-            <label class="form-label">Trạng thái</label>
-            <select name="status" class="form-select">
-    <option value="all" selected="@(ViewBag.Status == "all")">Tất cả</option>
-    <option value="done" selected="@(ViewBag.Status == "done")">Giao thành công</option>
-    <option value="failed" selected="@(ViewBag.Status == "failed")">Giao thất bại</option>
-</select>
+        <div class="h-badge">
+            <span class="live-dot"></span>
+            <span>HISTORY</span>
+        </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="row g-3 mb-3">
+        <div class="col-6 col-lg-2">
+            <div class="stat-card">
+                <div class="stat-top">
+                    <div class="stat-ic ic-dark"><i class="bi bi-inboxes"></i></div>
+                    <div class="stat-label">Tổng</div>
+                </div>
+                <div class="stat-value">@total</div>
+            </div>
         </div>
 
-        <div class="col-md-2 d-flex align-items-end">
-            <button class="btn btn-primary w-100">Lọc</button>
+        <div class="col-6 col-lg-2">
+            <div class="stat-card stat-ok">
+                <div class="stat-top">
+                    <div class="stat-ic ic-ok"><i class="bi bi-check2-circle"></i></div>
+                    <div class="stat-label">Thành công</div>
+                </div>
+                <div class="stat-value">@done</div>
+            </div>
         </div>
-    </form>
 
-    @if (Model.Any())
+        <div class="col-6 col-lg-2">
+            <div class="stat-card stat-bad">
+                <div class="stat-top">
+                    <div class="stat-ic ic-bad"><i class="bi bi-x-circle"></i></div>
+                    <div class="stat-label">Thất bại</div>
+                </div>
+                <div class="stat-value">@failed</div>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-6">
+            <div class="tip-card">
+                <div class="tip-ic"><i class="bi bi-lightning-charge"></i></div>
+                <div>
+                    <div class="fw-bold">Mẹo thao tác</div>
+                    <div class="text-muted small">
+                        Dùng bộ lọc để rút gọn danh sách. Bấm “Chi tiết” để mở điểm giao, ảnh POD và timeline.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FILTER -->
+    <div class="cardx mb-3">
+        <div class="cardx-body">
+            <form method="get" class="row g-2 align-items-end">
+                <div class="col-12 col-md-4 col-xl-3">
+                    <label class="form-label fw-bold">Ngày giao</label>
+                    <input type="date" name="day" value="@day" class="form-control input-soft" />
+                </div>
+
+                <div class="col-12 col-md-4 col-xl-3">
+                    <label class="form-label fw-bold">Trạng thái</label>
+                    <select name="status" class="form-select input-soft">
+                        <option value="all" selected="@(status == "all")">Tất cả</option>
+                        <option value="done" selected="@(status == "done")">Giao thành công</option>
+                        <option value="failed" selected="@(status == "failed")">Giao thất bại</option>
+                    </select>
+                </div>
+
+                <div class="col-12 col-md-4 col-xl-3 d-flex gap-2">
+                    <button class="btn btn-primary btn-soft w-100">
+                        <i class="bi bi-funnel me-1"></i> Lọc
+                    </button>
+
+                    <a class="btn btn-outline-dark btn-soft w-100" href="@Url.Action("History", "Taixe", new { status = "all" })">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
+                    </a>
+                </div>
+
+                <div class="col-12 col-xl-3">
+                    <label class="form-label fw-bold">Tìm nhanh</label>
+                    <div class="search-wrap">
+                        <i class="bi bi-search"></i>
+                        <input id="q" class="form-control input-soft"
+                               placeholder="Mã đơn / người nhận / địa chỉ..."
+                               autocomplete="off" />
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (Model != null && Model.Any())
     {
-        <table class="table table-hover table-bordered align-middle">
-            <thead class="table-light">
-                <tr>
-                    <th>Mã đơn</th>
-                    <th>Người nhận</th>
-                    <th>Địa chỉ</th>
-                    <th>COD</th>
-                    <th>Thời gian giao</th>
-                    <th>Trạng thái</th>
-                    <th></th>
-                </tr>
-            </thead>
+        <!-- DESKTOP TABLE -->
+        <div class="cardx d-none d-lg-block">
+            <div class="cardx-head">
+                <div class="fw-bold"><i class="bi bi-table me-2"></i> Danh sách lịch sử</div>
+                <div class="text-muted small">Tổng: @total</div>
+            </div>
 
-            <tbody>
+            <div class="cardx-body p-0">
+                <div class="table-responsive table-wrap">
+                    <table class="table table-hover align-middle m-0">
+                        <thead class="table-head">
+                            <tr>
+                                <th style="width:170px;">Mã đơn</th>
+                                <th style="min-width:160px;">Người nhận</th>
+                                <th>Địa chỉ</th>
+                                <th style="width:140px;" class="text-end">COD</th>
+                                <th style="width:190px;">Thời gian giao</th>
+                                <th style="width:140px;">Trạng thái</th>
+                                <th style="width:130px;"></th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="rows">
+                        @foreach (var o in Model)
+                        {
+                            var st = (o.Status ?? "").ToLower();
+                            var text = $"{o.Code} {o.ReceiverName} {o.ReceiverAddress}".ToLower();
+
+                            <tr class="rowx" data-text="@text">
+                                <td>
+                                    <div class="d-flex align-items-center justify-content-between gap-2">
+                                        <a asp-action="StopDetail" asp-route-id="@o.Id"
+                                           class="fw-bold text-primary text-decoration-none">
+                                            @o.Code
+                                        </a>
+
+                                        <button type="button" class="btn btn-sm btn-light border"
+                                                onclick="copyText('@o.Code')"
+                                                title="Sao chép mã">
+                                            <i class="bi bi-copy"></i>
+                                        </button>
+                                    </div>
+                                    <div class="small text-muted">#@o.Id</div>
+                                </td>
+
+                                <td class="fw-semibold">@o.ReceiverName</td>
+                                <td class="text-muted">@o.ReceiverAddress</td>
+
+                                <td class="text-end fw-bold">
+                                    @o.CodAmount.ToString("N0") đ
+                                </td>
+
+                                <td>
+                                    @if (o.DeliveredAt.HasValue)
+                                    {
+                                        <span class="time-pill">
+                                            <i class="bi bi-clock me-1"></i>
+                                            @o.DeliveredAt.Value.ToString("dd/MM/yyyy HH:mm")
+                                        </span>
+                                    }
+                                </td>
+
+                                <td>
+                                    @if (st == "done")
+                                    {
+                                        <span class="badge badge-soft badge-ok">
+                                            <i class="bi bi-check2-circle me-1"></i> Thành công
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-soft badge-bad">
+                                            <i class="bi bi-x-circle me-1"></i> Thất bại
+                                        </span>
+                                    }
+                                </td>
+
+                                <td class="text-end">
+                                    <a asp-action="StopDetail" asp-route-id="@o.Id"
+                                       class="btn btn-sm btn-outline-primary btn-soft">
+                                        Chi tiết
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- MOBILE CARDS -->
+        <div class="d-lg-none">
+            <div class="row g-3" id="cards">
                 @foreach (var o in Model)
                 {
-                    <tr>
-                        <td class="fw-bold text-primary">#@o.Code</td>
-                        <td>@o.ReceiverName</td>
-                        <td>@o.ReceiverAddress</td>
+                    var st = (o.Status ?? "").ToLower();
+                    var text = $"{o.Code} {o.ReceiverName} {o.ReceiverAddress}".ToLower();
 
-                        <td>@o.CodAmount.ToString("N0") đ</td>
+                    <div class="col-12 card-item" data-text="@text">
+                        <div class="cardx">
+                            <div class="cardx-body">
+                                <div class="d-flex justify-content-between align-items-start gap-2">
+                                    <div class="min-w-0">
+                                        <a asp-action="StopDetail" asp-route-id="@o.Id"
+                                           class="text-primary fw-bold text-decoration-none">
+                                            @o.Code
+                                        </a>
+                                        <div class="text-muted small">#@o.Id • @o.ReceiverName</div>
+                                    </div>
 
-                        <td>
-                            @if (o.DeliveredAt != null)
-                            {
-                                @o.DeliveredAt.Value.ToString("dd/MM/yyyy HH:mm")
-                            }
-                        </td>
+                                    <div class="text-end">
+                                        <div class="fw-bold">@o.CodAmount.ToString("N0") đ</div>
+                                        <div class="mt-1">
+                                            @if (st == "done")
+                                            {
+                                                <span class="badge badge-soft badge-ok">Thành công</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge badge-soft badge-bad">Thất bại</span>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
 
-                        <td>
-                            @if (o.Status == "done")
-                            {
-                                <span class="badge bg-success">Thành công</span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-danger">Thất bại</span>
-                            }
-                        </td>
+                                <div class="mt-2 text-muted">
+                                    <i class="bi bi-geo-alt me-1"></i> @o.ReceiverAddress
+                                </div>
 
-                        <td>
-                            <a asp-action="StopDetail" asp-route-id="@o.Id" class="btn btn-sm btn-outline-primary">
-                                Chi tiết
-                            </a>
-                        </td>
-                    </tr>
+                                @if (o.DeliveredAt.HasValue)
+                                {
+                                    <div class="mt-2">
+                                        <span class="time-pill">
+                                            <i class="bi bi-clock me-1"></i>
+                                            @o.DeliveredAt.Value.ToString("dd/MM/yyyy HH:mm")
+                                        </span>
+                                    </div>
+                                }
+
+                                <div class="mt-3 d-flex gap-2">
+                                    <button type="button" class="btn btn-outline-dark btn-sm btn-soft"
+                                            onclick="copyText('@o.Code')">
+                                        <i class="bi bi-copy me-1"></i> Copy mã
+                                    </button>
+
+                                    <a asp-action="StopDetail" asp-route-id="@o.Id"
+                                       class="btn btn-outline-primary btn-sm btn-soft ms-auto">
+                                        Chi tiết
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 }
-            </tbody>
-        </table>
+            </div>
+        </div>
     }
     else
     {
-        <div class="alert alert-info text-center">
-            Không có dữ liệu.
+        <div class="empty">
+            <div class="empty-ic">📭</div>
+            <div class="fw-bold">Không có dữ liệu</div>
+            <div class="text-muted">Hãy thử đổi ngày hoặc trạng thái để lọc kết quả.</div>
         </div>
     }
-
 </div>
+
+<script>
+    // Search client-side (không gọi lại server)
+    function applySearch() {
+        const q = (document.getElementById('q')?.value || "").trim().toLowerCase();
+
+        document.querySelectorAll(".rowx").forEach(r => {
+            const text = r.getAttribute("data-text") || "";
+            r.style.display = (!q || text.includes(q)) ? "" : "none";
+        });
+
+        document.querySelectorAll(".card-item").forEach(r => {
+            const text = r.getAttribute("data-text") || "";
+            r.style.display = (!q || text.includes(q)) ? "" : "none";
+        });
+    }
+
+    document.getElementById("q")?.addEventListener("input", applySearch);
+
+    function copyText(text) {
+        navigator.clipboard.writeText(text);
+        toast("Đã sao chép: " + text);
+    }
+
+    function toast(msg) {
+        const t = document.createElement("div");
+        t.className = "toastx";
+        t.innerHTML = `<i class="bi bi-check2-circle me-2"></i><span>${msg}</span>`;
+        document.body.appendChild(t);
+        setTimeout(() => t.classList.add("show"), 10);
+        setTimeout(() => {
+            t.classList.remove("show");
+            setTimeout(() => t.remove(), 250);
+        }, 2200);
+    }
+</script>
+
+<style>
+    .driver-history{
+        --border: rgba(17,24,39,.12);
+        --shadow: 0 10px 30px rgba(17,24,39,.08);
+        font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    }
+
+    /* HERO */
+    .h-hero{
+        padding: 16px 18px;
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background: linear-gradient(180deg, rgba(13,110,253,.12), rgba(13,110,253,.02));
+        box-shadow: var(--shadow);
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap: 14px;
+        flex-wrap: wrap;
+    }
+    .h-ic{
+        width: 46px; height: 46px;
+        border-radius: 16px;
+        display:grid; place-items:center;
+        background:#fff;
+        border:1px solid var(--border);
+        box-shadow: 0 8px 24px rgba(17,24,39,.08);
+        font-size: 20px;
+        color:#0d6efd;
+        flex: 0 0 auto;
+    }
+    .h-title{
+        font-weight: 950;
+        letter-spacing: -0.2px;
+        color:#0d6efd;
+        text-transform: uppercase;
+        font-size: 1.2rem;
+    }
+    .h-sub{ margin-top: 4px; font-size: .95rem; line-height: 1.35; }
+
+    .h-badge{
+        display:inline-flex; align-items:center; gap:10px;
+        padding: 10px 12px;
+        border-radius: 999px;
+        border:1px solid var(--border);
+        background:#fff;
+        box-shadow: 0 8px 18px rgba(17,24,39,.06);
+        color:#6b7280;
+        font-weight: 900;
+        font-size: .85rem;
+        letter-spacing: .6px;
+        user-select:none;
+        white-space: nowrap;
+    }
+    .live-dot{
+        width:10px;height:10px;border-radius:99px;
+        background:#22c55e;
+        box-shadow: 0 0 0 4px rgba(34,197,94,.18);
+        display:inline-block;
+    }
+
+    /* Cards */
+    .cardx{
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background:#fff;
+        box-shadow: var(--shadow);
+        overflow:hidden;
+    }
+    .cardx-head{
+        padding: 14px 16px;
+        border-bottom: 1px solid rgba(17,24,39,.08);
+        background: linear-gradient(180deg, rgba(17,24,39,.03), rgba(17,24,39,.01));
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    .cardx-body{ padding: 16px; }
+
+    /* Inputs */
+    .input-soft{
+        border-radius: 12px;
+        border: 1px solid rgba(17,24,39,.15);
+        box-shadow: 0 6px 18px rgba(17,24,39,.05);
+    }
+    .btn-soft{ border-radius: 12px; font-weight: 850; }
+
+    /* Search */
+    .search-wrap{ position: relative; }
+    .search-wrap i{
+        position:absolute; top: 50%; left: 12px;
+        transform: translateY(-50%);
+        color:#6b7280;
+    }
+    .search-wrap .form-control{ padding-left: 36px; }
+
+    /* Table */
+    .table-wrap{ max-height: 70vh; }
+    .table-head th{
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: #f8fafc !important;
+        border-bottom: 1px solid rgba(17,24,39,.10);
+        font-weight: 900;
+        color:#111827;
+        white-space: nowrap;
+    }
+    .table td, .table th{ vertical-align: middle !important; }
+    .table tbody tr:hover{ background: rgba(13,110,253,.04); }
+
+    /* Badges */
+    .badge-soft{
+        font-size: .88rem;
+        padding: 7px 10px;
+        border-radius: 999px;
+        font-weight: 900;
+        border: 1px solid rgba(17,24,39,.10);
+        display:inline-block;
+        white-space: nowrap;
+    }
+    .badge-ok{ background: rgba(25,135,84,.16); color:#0f5132; }
+    .badge-bad{ background: rgba(220,53,69,.14); color:#842029; }
+
+    /* Pills */
+    .time-pill{
+        display:inline-flex;
+        align-items:center;
+        gap:6px;
+        padding: 7px 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(17,24,39,.10);
+        background: rgba(17,24,39,.02);
+        color:#111827;
+        font-weight: 800;
+        font-size: .86rem;
+        white-space: nowrap;
+    }
+
+    /* Stat */
+    .stat-card{
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background:#fff;
+        box-shadow: var(--shadow);
+        padding: 12px 14px;
+        height: 100%;
+    }
+    .stat-top{ display:flex; align-items:center; gap: 10px; }
+    .stat-ic{
+        width: 40px; height: 40px;
+        border-radius: 16px;
+        display:grid; place-items:center;
+        background:#fff;
+        border:1px solid rgba(17,24,39,.10);
+        box-shadow: 0 8px 18px rgba(17,24,39,.06);
+        font-size: 18px;
+        flex: 0 0 auto;
+    }
+    .stat-label{ font-weight: 850; color:#111827; font-size: .92rem; }
+    .stat-value{
+        font-weight: 950;
+        font-size: 1.35rem;
+        margin-top: 8px;
+        letter-spacing: -0.2px;
+        color:#111827;
+    }
+    .stat-ok{ background: linear-gradient(180deg, rgba(25,135,84,.14), rgba(25,135,84,.03)); }
+    .stat-bad{ background: linear-gradient(180deg, rgba(220,53,69,.12), rgba(220,53,69,.02)); }
+    .ic-dark{ color:#111827; }
+    .ic-ok{ color:#198754; }
+    .ic-bad{ color:#dc3545; }
+
+    /* Tip */
+    .tip-card{
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background: linear-gradient(180deg, rgba(17,24,39,.03), rgba(17,24,39,.01));
+        box-shadow: var(--shadow);
+        padding: 12px 14px;
+        height: 100%;
+        display:flex;
+        gap: 12px;
+        align-items:flex-start;
+    }
+    .tip-ic{
+        width: 40px; height: 40px;
+        border-radius: 16px;
+        display:grid; place-items:center;
+        background:#fff;
+        border:1px solid rgba(17,24,39,.10);
+        box-shadow: 0 8px 18px rgba(17,24,39,.06);
+        color:#111827;
+        flex: 0 0 auto;
+    }
+
+    /* Empty */
+    .empty{
+        padding: 22px 16px;
+        border-radius: 18px;
+        border: 1px dashed rgba(17,24,39,.16);
+        background: rgba(17,24,39,.02);
+        box-shadow: var(--shadow);
+        text-align:center;
+    }
+    .empty-ic{ font-size: 38px; margin-bottom: 6px; }
+
+    /* Toast */
+    .toastx{
+        position: fixed;
+        right: 16px;
+        bottom: 16px;
+        z-index: 9999;
+        background: #111827;
+        color: #fff;
+        padding: 10px 12px;
+        border-radius: 14px;
+        box-shadow: 0 14px 34px rgba(0,0,0,.22);
+        display:flex;
+        align-items:center;
+        gap: 8px;
+        opacity: 0;
+        transform: translateY(10px);
+        transition: .2s ease;
+        max-width: 92vw;
+    }
+    .toastx.show{
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    @@media (max-width: 576px){
+        .h-title{ font-size: 1.05rem; }
+    }
+</style>

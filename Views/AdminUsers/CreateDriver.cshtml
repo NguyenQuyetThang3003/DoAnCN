@@ -5,17 +5,128 @@
     Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
 }
 
-<div class="container-fluid">
+<style>
+    /* ===== Dashboard style token ===== */
+    .dash {
+        --text: #111827;
+        --muted: #6b7280;
+        --border: rgba(17,24,39,.10);
+        --shadow: 0 10px 30px rgba(17,24,39,.08);
+        --shadow2: 0 14px 40px rgba(17,24,39,.10);
+        font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+        color: var(--text);
+    }
+
+    /* ===== Header ===== */
+    .dash-head{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:14px;
+        padding:14px 16px;
+        border-radius:16px;
+        border:1px solid var(--border);
+        background:linear-gradient(180deg, rgba(13,110,253,.08), rgba(13,110,253,.02));
+        box-shadow:var(--shadow);
+        margin-bottom:16px;
+    }
+    .dash-left{display:flex;gap:12px;align-items:center;}
+    .dash-avatar{
+        width:44px;height:44px;border-radius:14px;
+        display:grid;place-items:center;
+        background:#fff;border:1px solid var(--border);
+        box-shadow:0 8px 24px rgba(17,24,39,.08);
+        font-size:20px;
+    }
+    .dash-title{font-weight:900;letter-spacing:-.2px;margin:0;}
+    .dash-sub{color:var(--muted);font-size:.95rem;margin-top:4px;}
+
+    .dash-back{
+        border-radius:999px;
+        border:1px solid var(--border);
+        background:#fff;
+        padding:8px 12px;
+        font-weight:800;
+        text-decoration:none;
+        color:#0d6efd;
+        box-shadow:0 8px 18px rgba(17,24,39,.06);
+    }
+
+    /* ===== Panel ===== */
+    .panel{
+        border-radius:18px;
+        border:1px solid var(--border);
+        background:#fff;
+        box-shadow:var(--shadow);
+        overflow:hidden;
+        transition:.18s ease;
+    }
+    .panel:hover{transform:translateY(-2px);box-shadow:var(--shadow2);}
+    .panel-head{
+        padding:14px 16px;
+        border-bottom:1px solid rgba(17,24,39,.08);
+        background:linear-gradient(180deg, rgba(17,24,39,.03), rgba(17,24,39,.01));
+        font-weight:900;
+    }
+    .panel-body{padding:16px;}
+
+    /* ===== Form ===== */
+    .form-label{
+        font-weight:800;
+        color:var(--text);
+    }
+    .form-control{
+        border-radius:12px;
+        padding:.55rem .75rem;
+    }
+
+    .submit-btn{
+        border-radius:999px;
+        font-weight:900;
+        padding:.6rem;
+    }
+
+    .hint{
+        font-size:.9rem;
+        color:var(--muted);
+        border-left:3px solid rgba(13,110,253,.35);
+        padding-left:10px;
+        margin-bottom:12px;
+    }
+</style>
+
+<div class="dash container-fluid">
+
+    <!-- Header -->
+    <div class="dash-head">
+        <div class="dash-left">
+            <div class="dash-avatar">🚚</div>
+            <div>
+                <h5 class="dash-title mb-0">Tạo tài khoản tài xế</h5>
+                <div class="dash-sub">
+                    Nhập thông tin để cấp tài khoản cho tài xế mới
+                </div>
+            </div>
+        </div>
+
+        <a asp-action="Index" asp-route-role="driver" class="dash-back">
+            <i class="fas fa-arrow-left me-1"></i> Quay lại
+        </a>
+    </div>
+
     <div class="row justify-content-center">
         <div class="col-lg-6">
-            <div class="card shadow-sm border-0 mt-3">
-                <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Tạo tài khoản tài xế</h5>
-                    <a asp-action="Index" asp-route-role="driver" class="btn btn-light btn-sm border">
-                        <i class="fas fa-arrow-left me-1"></i> Quay lại danh sách
-                    </a>
+
+            <div class="panel">
+                <div class="panel-head">
+                    Thông tin tài xế
                 </div>
-                <div class="card-body">
+
+                <div class="panel-body">
+                    <div class="hint">
+                        Các thông tin này sẽ được dùng để đăng nhập và xác minh tài xế trong hệ thống.
+                    </div>
+
                     <form asp-action="CreateDriver" method="post">
                         <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
@@ -55,14 +166,15 @@
                             <span asp-validation-for="CompanyName" class="text-danger"></span>
                         </div>
 
-                        <div class="d-grid gap-2 mt-4">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save me-1"></i> Tạo tài khoản
+                        <div class="d-grid mt-4">
+                            <button type="submit" class="btn btn-primary submit-btn">
+                                <i class="fas fa-save me-1"></i> Tạo tài khoản tài xế
                             </button>
                         </div>
                     </form>
                 </div>
             </div>
+
         </div>
     </div>
 </div>

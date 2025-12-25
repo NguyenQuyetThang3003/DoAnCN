@@ -10,6 +10,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -61,6 +62,49 @@ namespace WedNightFury.Controllers
             _nominatim = httpClientFactory.CreateClient("nominatim");
             _nominatim.Timeout = Timeout.InfiniteTimeSpan;
         }
+
+        // =========================================================
+        // PUBLIC TRACKING (KHÔNG CẦN ĐĂNG NHẬP)
+        // URL: /Track  (GET hiển thị form)
+        //      /Track  (POST tra cứu)
+        // =========================================================
+
+        [AllowAnonymous]
+        [HttpGet("/Track")]
+        public IActionResult Track()
+        {
+            return View("Track");
+        }
+
+        [AllowAnonymous]
+        [HttpPost]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> Find(string keyword)
+{
+    keyword = (keyword ?? "").Trim();
+
+    if (string.IsNullOrWhiteSpace(keyword))
+    {
+        ViewBag.Message = "Vui lòng nhập mã đơn.";
+        return View("Index"); // hoặc View("Track") tùy tên view
+    }
+
+    // Chỉ tra theo mã đơn
+    var code = keyword.ToLower();
+
+    var orders = await _context.Orders
+        .Where(o => o.Code != null && o.Code.ToLower() == code)
+        .OrderByDescending(o => o.CreatedAt)
+        .ToListAsync();
+
+    if (orders.Count == 0)
+    {
+        ViewBag.Message = "Không có dữ liệu phù hợp với mã bạn nhập.";
+        return View("Index"); // hoặc view tra cứu
+    }
+
+    return View("TrackResult", orders);
+}
 
         // =========================================================
         // FORM HELPERS
@@ -121,8 +165,6 @@ namespace WedNightFury.Controllers
 
         // =========================================================
         // PROMO (DB: giamgia)
-        // - Giảm theo % phí ship
-        // - CAP: tạm hardcode theo Code vì bảng giamgia của bạn không có cột cap
         // =========================================================
         private static decimal? GetPromoCapVnd(string? code)
         {
@@ -160,8 +202,6 @@ namespace WedNightFury.Controllers
             return (promo, null);
         }
 
-        // GET /Order/ValidatePromo?code=FREESHIP10K
-        // Trả: { ok, id, code, percent, cap, message }
         [HttpGet]
         public async Task<IActionResult> ValidatePromo(string code, CancellationToken ct)
         {
@@ -187,7 +227,7 @@ namespace WedNightFury.Controllers
         }
 
         // =========================================================
-        // CHI TIẾT ĐƠN HÀNG
+        // CHI TIẾT ĐƠN HÀNG (khách đã đăng nhập)
         // =========================================================
         public async Task<IActionResult> Details(int id)
         {
@@ -396,8 +436,6 @@ namespace WedNightFury.Controllers
             if (service == "express") factor = 1.5m;
 
             fee = fee * factor;
-
-            // JS Math.round
             fee = Math.Round(fee, 0, MidpointRounding.AwayFromZero);
 
             return fee < 0 ? 0 : fee;
@@ -416,21 +454,17 @@ namespace WedNightFury.Controllers
             LoadSenderInfo(userId.Value, model);
             await LoadActiveHubsToViewBagAsync(ct);
 
-            // ===== form fields =====
             model.GoodsType = GetFirstFormValue("GoodsType");
             model.AreaType = GetFirstFormValue("AreaType");
             model.PickupMethod = GetFirstFormValue("PickupMethod");
             model.ServiceLevel = GetFirstFormValue("ServiceLevel");
-            model.ShipPayer = GetFirstFormValue("ShipPayer"); // sender/receiver
+            model.ShipPayer = GetFirstFormValue("ShipPayer");
 
-            // parse money (Hidden input gửi "Value" và "CodAmount")
             model.Value = ParseDecimal(GetFirstFormValue("Value"));
             model.CodAmount = ParseDecimal(GetFirstFormValue("CodAmount"));
 
-            // weight
             if (model.Weight < 0) model.Weight = 0;
 
-            // không tin shipfee client (server tự tính)
             ModelState.Remove(nameof(Order.Value));
             ModelState.Remove(nameof(Order.CodAmount));
             ModelState.Remove(nameof(Order.ShipFee));
@@ -451,7 +485,6 @@ namespace WedNightFury.Controllers
                 return View(model);
             }
 
-            // Nếu có pin mà chưa có address => reverse
             if (hasPin && !hasAddressText)
             {
                 var (display, err) = await ReverseGeocodeAsync(model.Lat!.Value, model.Lng!.Value, ct);
@@ -502,7 +535,6 @@ namespace WedNightFury.Controllers
                 model.DropoffHub = hubs.FirstOrDefault(h => h.Id == hubIdCommon.Value)?.Name;
             }
 
-            // Nếu chưa có pin => forward geocode
             if (!hasPin)
             {
                 var addrRaw = (model.ReceiverAddress ?? "").Trim();
@@ -536,7 +568,6 @@ namespace WedNightFury.Controllers
                 }
             }
 
-            // Nếu không dropoff hub => tự chọn hub phụ trách theo nearest
             if (!isDropoffHub)
             {
                 if (model.Lat.HasValue && model.Lng.HasValue)
@@ -559,7 +590,6 @@ namespace WedNightFury.Controllers
                 return View(model);
             }
 
-            // ===== ShipFee base (server)
             var shipFeeBase = CalculateShipFeeSameAsClient(
                 areaType: model.AreaType,
                 pickupMethod: model.PickupMethod,
@@ -567,8 +597,7 @@ namespace WedNightFury.Controllers
                 weightKg: model.Weight
             );
 
-            // ===== Promo: validate + compute discount (server, DB)
-            var promoCode = GetFirstFormValue("PromoCode"); // input UI
+            var promoCode = GetFirstFormValue("PromoCode");
 
             GiamGia? promo = null;
             string? promoErr = null;
@@ -604,21 +633,15 @@ namespace WedNightFury.Controllers
 
                 model.DiscountCode = promo.Code?.Trim();
                 model.DiscountAmount = discountAmount;
-
-                // Nếu Order có cột này thì bật:
-                // model.GiamgiaId = promo.Magiamgia;
             }
             else
             {
                 model.DiscountCode = null;
                 model.DiscountAmount = 0m;
-
-                // model.GiamgiaId = null;
             }
 
             model.ShipFee = shipFeeFinal;
 
-            // ===== SAVE ORDER
             model.Code = $"NF-{DateTime.Now:yyyyMMddHHmmss}-{Random.Shared.Next(100, 999)}";
             model.Status = "pending";
             model.CreatedAt = DateTime.Now;
@@ -650,7 +673,7 @@ namespace WedNightFury.Controllers
         }
 
         // =========================================================
-        // Reverse geocode (via nominatim client)
+        // Reverse geocode
         // =========================================================
         private async Task<(string? displayName, string? err)> ReverseGeocodeAsync(double lat, double lng, CancellationToken ct)
         {
@@ -727,7 +750,7 @@ namespace WedNightFury.Controllers
         }
 
         // =========================================================
-        // GEO Resolve: forward geocode
+        // GEO Resolve
         // =========================================================
         private async Task<(double? lat, double? lng, string? err)> ResolveReceiverCoordinatesAsync(
             string addrRaw,

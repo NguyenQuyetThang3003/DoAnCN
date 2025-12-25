@@ -10,78 +10,321 @@
         : Model.Reply.Split('\n');
 }
 
-<div class="container py-3" style="max-width: 900px;">
-    <h2 class="mb-3">Hội thoại hỗ trợ với tài xế</h2>
+<style>
+    /* ===== Match your Dashboard style (dash) ===== */
+    .dash {
+        --text: #111827;
+        --muted: #6b7280;
+        --border: rgba(17, 24, 39, 0.10);
+        --shadow: 0 10px 30px rgba(17, 24, 39, 0.08);
+        --shadow2: 0 14px 40px rgba(17, 24, 39, 0.10);
+        font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+        color: var(--text);
+    }
 
-    <div class="mb-2 text-muted">
-        Tài xế:
-        <span class="fw-semibold">@Model.DriverUserName</span>
-        @if (!string.IsNullOrWhiteSpace(Model.DriverFullName))
-        {
-            <span class="text-muted">(@Model.DriverFullName)</span>
-        }
-    </div>
+    /* ===== Header like dashboard ===== */
+    .dash-head{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:14px;
+        padding:14px 16px;
+        border-radius:16px;
+        border:1px solid var(--border);
+        background: linear-gradient(180deg, rgba(13,110,253,.08), rgba(13,110,253,.02));
+        box-shadow: var(--shadow);
+        margin: 12px 0 14px;
+        flex-wrap: wrap;
+    }
+    .dash-left{display:flex;gap:12px;align-items:center;}
+    .dash-avatar{
+        width:44px;height:44px;border-radius:14px;
+        display:grid;place-items:center;
+        background:#fff;border:1px solid var(--border);
+        box-shadow:0 8px 24px rgba(17,24,39,.08);
+        font-size:20px;
+        flex:0 0 auto;
+    }
+    .dash-title{font-weight:950;letter-spacing:-.2px;margin:0;}
+    .dash-sub{
+        color:var(--muted);
+        font-size:.95rem;
+        margin-top:4px;
+        display:flex;
+        gap:10px;
+        align-items:center;
+        flex-wrap:wrap;
+    }
+    .dash-dot{width:6px;height:6px;border-radius:99px;background:rgba(17,24,39,0.25);display:inline-block;}
 
-    <div class="mb-3">
-        <span class="badge @(Model.Status == "replied" ? "bg-success" : "bg-warning text-dark")">
-            @(Model.Status == "replied" ? "Đã trả lời" : "Chờ phản hồi")
-        </span>
-    </div>
+    .dash-pill{
+        display:inline-flex;align-items:center;gap:10px;
+        padding:10px 12px;border-radius:999px;
+        border:1px solid var(--border);background:#fff;
+        box-shadow:0 8px 18px rgba(17,24,39,.06);
+        color: var(--muted);
+        font-weight:950;
+        font-size:.9rem;
+        user-select:none;
+        text-decoration:none;
+        white-space:nowrap;
+    }
+    .pill-dot{width:10px;height:10px;border-radius:99px;background:#22c55e;box-shadow:0 0 0 4px rgba(34,197,94,0.18);}
 
-    <!-- YÊU CẦU BAN ĐẦU -->
-    <div class="card mb-3">
-        <div class="card-header fw-semibold">
-            📩 Yêu cầu của tài xế
+    /* ===== Panel ===== */
+    .panel{
+        border-radius:18px;
+        border:1px solid var(--border);
+        background:#fff;
+        box-shadow: var(--shadow);
+        overflow:hidden;
+        transition: transform .18s ease, box-shadow .18s ease;
+    }
+    .panel:hover{transform:translateY(-2px);box-shadow:var(--shadow2);}
+    .panel-head{
+        padding:14px 16px;
+        border-bottom: 1px solid rgba(17, 24, 39, 0.08);
+        background: linear-gradient(180deg, rgba(17, 24, 39, 0.03), rgba(17, 24, 39, 0.01));
+        display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    }
+    .panel-title{font-weight:950;letter-spacing:-.2px;}
+    .panel-sub{color:var(--muted);font-size:.92rem;margin-top:4px;}
+    .panel-body{padding:14px 16px 16px 16px;}
+
+    /* ===== Chips / status ===== */
+    .chip{
+        display:inline-flex;
+        align-items:center;
+        gap:8px;
+        padding:6px 10px;
+        border-radius:999px;
+        border:1px solid rgba(17,24,39,0.12);
+        background:#fff;
+        font-weight:950;
+        font-size:.86rem;
+        color:#111827;
+        white-space:nowrap;
+    }
+    .dot{width:8px;height:8px;border-radius:50%;display:inline-block;box-shadow:0 0 0 3px rgba(0,0,0,.03);}
+    .dot-success{background:#22c55e;box-shadow:0 0 0 4px rgba(34,197,94,0.18);}
+    .dot-warning{background:#f59e0b;box-shadow:0 0 0 4px rgba(245,158,11,0.18);}
+
+    /* ===== Message bubbles ===== */
+    .chat-wrap{
+        display:flex;
+        flex-direction:column;
+        gap:10px;
+        padding: 4px 0;
+    }
+    .msg-row{
+        display:flex;
+        gap:10px;
+    }
+    .msg-row.left{justify-content:flex-start;}
+    .msg-row.right{justify-content:flex-end;}
+
+    .bubble{
+        max-width: 80%;
+        border-radius: 16px;
+        border: 1px solid rgba(17,24,39,0.10);
+        padding: 10px 12px;
+        line-height: 1.55;
+        white-space: pre-wrap;
+        word-break: break-word;
+        box-shadow: 0 8px 18px rgba(17,24,39,.06);
+    }
+    .bubble.driver{
+        background: rgba(13,110,253,0.08);
+        border-color: rgba(13,110,253,0.18);
+    }
+    .bubble.admin{
+        background: #fff;
+    }
+    .bubble-meta{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:10px;
+        margin-bottom: 6px;
+        font-size: .82rem;
+        color: var(--muted);
+        font-weight: 900;
+    }
+    .who{
+        display:inline-flex;
+        align-items:center;
+        gap:8px;
+    }
+    .who .tag{
+        font-size: .78rem;
+        padding: 3px 8px;
+        border-radius: 999px;
+        border: 1px solid rgba(17,24,39,0.12);
+        background: rgba(17,24,39,0.03);
+        color:#111827;
+        font-weight: 950;
+        white-space: nowrap;
+    }
+    .who .tag.driver{ border-color: rgba(13,110,253,0.22); background: rgba(13,110,253,0.08); }
+    .who .tag.admin{ border-color: rgba(25,135,84,0.22); background: rgba(25,135,84,0.08); }
+
+    /* ===== Compose ===== */
+    textarea.form-control{
+        border-radius: 12px;
+        border-color: rgba(17,24,39,0.12);
+        padding: .65rem .8rem;
+    }
+    textarea.form-control:focus{
+        box-shadow: 0 0 0 .2rem rgba(13,110,253,.12);
+        border-color: rgba(13,110,253,.35);
+    }
+    .help{
+        color: var(--muted);
+        font-size: .9rem;
+        margin-top: 8px;
+        line-height: 1.4;
+        border-left: 3px solid rgba(13,110,253,.25);
+        padding-left: 10px;
+    }
+
+    /* ===== Buttons ===== */
+    .btn-pill{
+        border-radius:999px !important;
+        font-weight:950;
+        padding:.55rem .95rem;
+        white-space:nowrap;
+    }
+    .btn-ghost{
+        border-radius:999px !important;
+        font-weight:950;
+        padding:.55rem .95rem;
+        background:#fff;
+        border: 1px solid rgba(17,24,39,0.14);
+        color:#111827;
+        text-decoration:none;
+    }
+
+    @@media (max-width: 992px){
+        .bubble{max-width: 100%;}
+    }
+</style>
+
+<div class="dash container-fluid py-3" style="max-width: 980px;">
+
+    <!-- Header -->
+    <div class="dash-head">
+        <div class="dash-left">
+            <div class="dash-avatar">🧵</div>
+            <div>
+                <h2 class="dash-title">Hội thoại hỗ trợ với tài xế</h2>
+                <div class="dash-sub">
+                    Tài xế: <b>@Model.DriverUserName</b>
+                    @if (!string.IsNullOrWhiteSpace(Model.DriverFullName))
+                    {
+                        <span class="text-muted">(@Model.DriverFullName)</span>
+                    }
+                    <span class="dash-dot"></span>
+                    <span class="text-muted">Thread</span>
+                </div>
+            </div>
         </div>
-        <div class="card-body">
-            <small class="text-muted d-block mb-2">
-                <i class="bi bi-clock me-1"></i>
-                @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")
-            </small>
-            <div class="p-3 bg-light rounded border">
+
+        @{
+            var isReplied = (Model.Status ?? "").ToLower() == "replied";
+        }
+        <div class="dash-pill">
+            <span class="pill-dot" style="background:@(isReplied ? "#22c55e" : "#f59e0b"); box-shadow: 0 0 0 4px rgba(0,0,0,0.08);"></span>
+            <span>@(isReplied ? "Đã trả lời" : "Chờ phản hồi")</span>
+        </div>
+    </div>
+
+    <!-- Original request -->
+    <div class="panel mb-3">
+        <div class="panel-head">
+            <div>
+                <div class="panel-title"><i class="fas fa-inbox me-1"></i> Yêu cầu ban đầu</div>
+                <div class="panel-sub">
+                    <i class="far fa-clock me-1"></i> @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                </div>
+            </div>
+
+            <div class="chip">
+                @if (isReplied)
+                {
+                    <span class="dot dot-success"></span><span>Đã có phản hồi</span>
+                }
+                else
+                {
+                    <span class="dot dot-warning"></span><span>Đang chờ</span>
+                }
+            </div>
+        </div>
+        <div class="panel-body">
+            <div class="bubble admin" style="max-width:100%; box-shadow:none;">
                 @Model.Message
             </div>
         </div>
     </div>
 
-    <!-- LOG HỘI THOẠI + FORM SOẠN TIN -->
-    <div class="card mb-3">
-        <div class="card-header fw-semibold">
-            💬 Tin nhắn trao đổi
+    <!-- Conversation + compose -->
+    <div class="panel mb-3">
+        <div class="panel-head">
+            <div>
+                <div class="panel-title"><i class="fas fa-comments me-1"></i> Tin nhắn trao đổi</div>
+                <div class="panel-sub">Lịch sử hội thoại được hiển thị theo từng dòng.</div>
+            </div>
         </div>
-        <div class="card-body">
-            @* Danh sách tin nhắn *@
-            @if (replyLines.Length == 0)
-            {
-                <div class="text-muted fst-italic mb-2">
-                    Chưa có tin nhắn nào trong hội thoại này.
-                </div>
-            }
-            else
-            {
-                @foreach (var line in replyLines)
-                {
-                    var trimmed = line?.Trim() ?? "";
-                    bool isDriver = trimmed.StartsWith("[Driver");
-                    var alignmentClass = isDriver ? "justify-content-end" : "justify-content-start";
-                    var bgColor = isDriver ? "#e7f1ff" : "#ffffff";
 
-                    <div class="d-flex @alignmentClass mb-2">
-                        <div class="p-2 rounded-3 border small"
-                             style="max-width: 80%; white-space: pre-line; background-color:@bgColor;">
-                            @trimmed
-                        </div>
+        <div class="panel-body">
+            <div class="chat-wrap">
+                @if (replyLines.Length == 0)
+                {
+                    <div class="text-muted fst-italic">
+                        Chưa có tin nhắn nào trong hội thoại này.
                     </div>
                 }
-            }
+                else
+                {
+                    foreach (var line in replyLines)
+                    {
+                        var trimmed = line?.Trim() ?? "";
+                        if (string.IsNullOrWhiteSpace(trimmed))
+                        {
+                            continue;
+                        }
+
+                        bool isDriverLine = trimmed.StartsWith("[Driver", StringComparison.OrdinalIgnoreCase);
+                        var rowClass = isDriverLine ? "right" : "left";
+                        var bubbleClass = isDriverLine ? "driver" : "admin";
+                        var tagClass = isDriverLine ? "driver" : "admin";
+                        var whoText = isDriverLine ? "Driver" : "Admin";
+
+                        <div class="msg-row @rowClass">
+                            <div class="bubble @bubbleClass">
+                                <div class="bubble-meta">
+                                    <div class="who">
+                                        <span class="tag @tagClass">@whoText</span>
+                                        <span class="text-muted">@Model.DriverUserName</span>
+                                    </div>
+                                </div>
+                                @trimmed
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
 
             @* Thông báo lỗi nếu có *@
             @if (TempData["Error"] != null)
             {
-                <div class="alert alert-danger mt-2 py-2 small">
+                <div class="alert alert-danger mt-3 py-2 small">
                     @TempData["Error"]
                 </div>
             }
+
+            <div class="help">
+                Gợi ý: Viết ngắn gọn, hướng dẫn bước xử lý rõ ràng để tài xế làm theo nhanh.
+            </div>
 
             <hr class="mt-3" />
 
@@ -91,29 +334,28 @@
                 <input type="hidden" name="id" value="@Model.Id" />
 
                 <div class="mb-2">
-                    <label class="form-label fw-semibold">Soạn trả lời mới</label>
+                    <label class="form-label fw-bold">Soạn trả lời mới</label>
                     <textarea name="replyText"
                               class="form-control"
-                              rows="3"
+                              rows="4"
                               placeholder="Nhập nội dung trả lời cho tài xế..."></textarea>
                 </div>
 
-                <div class="text-end">
-                    <button type="submit" class="btn btn-primary">
-                        Gửi trả lời
+                <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-primary btn-pill">
+                        <i class="fas fa-paper-plane me-1"></i> Gửi trả lời
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <div class="d-flex justify-content-between">
-        <a asp-action="Index" class="btn btn-secondary">
-            ← Quay lại danh sách
+    <div class="d-flex justify-content-between gap-2 flex-wrap">
+        <a asp-action="Index" class="btn btn-ghost btn-pill">
+            <i class="fas fa-arrow-left me-1"></i> Quay lại danh sách
         </a>
-        <a asp-action="Reply" asp-route-id="@Model.Id"
-           class="btn btn-outline-primary">
-            Mở trang trả lời cũ
+        <a asp-action="Reply" asp-route-id="@Model.Id" class="btn btn-outline-primary btn-pill">
+            <i class="fas fa-reply me-1"></i> Mở trang trả lời cũ
         </a>
     </div>
 </div>
